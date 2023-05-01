@@ -6,7 +6,7 @@ https://pb33f.io
 This software is licensed under the GNU General Public License v3.0
 
 To modify the software and distribute it under a different license, contact
-sales@pb33f.io for a commercial license.
+info@pb33f.io for a commercial license.
 
 GNU GENERAL PUBLIC LICENSE
 Version 3, 29 June 2007
