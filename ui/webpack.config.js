@@ -4,6 +4,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
+
 const path = require("path");
 
 module.exports = {
@@ -35,7 +37,7 @@ module.exports = {
             },
         ]
     },
-    //devtool: prod ? undefined : 'source-map',
+    devtool: prod ? undefined : 'source-map',
     devServer: {
         compress: true,
         port: 3000
@@ -49,5 +51,14 @@ module.exports = {
             template: 'index.html',
         }),
         new MiniCssExtractPlugin(),
-    ],
+        new CopyPlugin({
+            patterns: [
+                // Copy Shoelace assets to dist/shoelace
+                {
+                    from: path.resolve(__dirname, 'node_modules/@shoelace-style/shoelace/dist/assets'),
+                    to: path.resolve(__dirname, 'static/shoelace/assets')
+                }
+            ]
+        })
+    ]
 };

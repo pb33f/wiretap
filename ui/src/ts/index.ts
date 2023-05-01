@@ -1,3 +1,17 @@
+import '../css/variables.css'
+import '../css/pb33f.css'
+import '../css/navigation.css'
+import '../css/header.css'
+import '../css/syntax.css'
+
+import '@shoelace-style/shoelace/dist/themes/light.css';
+import '@shoelace-style/shoelace/dist/themes/dark.css';
+
+import './test';
+import './wiretap';
+import './components/header/header.component';
+
+
 import {Client} from "@stomp/stompjs";
 
 

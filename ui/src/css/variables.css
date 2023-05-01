@@ -1,0 +1,86 @@
+:root {
+    --max-width: 1000px;
+    --global-line-height: 1.7em;
+    --global-space: 10px;
+    --global-padding: 10px;
+    --font-stack-heading: Rockwell, Helvetica Neue,Helvetica,Verdana,Tahoma, Arial, sans-serif;
+    --font-stack-paragraph: Helvetica Neue,Helvetica,Verdana,Tahoma, Arial, sans-serif;
+    --font-stack: Roboto Mono, Monaco, Menlo, Lucida Console, Liberation Mono,
+    DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace,
+    serif;
+    --mono-font-stack: Roboto Mono, Monaco, Menlo, Lucida Console, Liberation Mono,
+    DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace,
+    serif;
+    --font-variant-emoji: Arial, Verdana, serif;
+    --toc-font-size: 0.7rem;
+    --background-color: #0d1117;
+    --background-color-alpha: rgba(13, 17, 23, 0.80);
+    --background-color-alpha-mobile: rgba(13, 17, 23, 0.99);
+    --navigation-hover: #b685ff33;
+    --navigation-child-selected: rgba(182, 133, 255, 0.36);
+    --navigation-child-hover: rgba(179, 131, 250, 0.09);
+    --navigation-child-container: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(182,133,255,0.2) 50%);
+    --main-nav-selected-background: linear-gradient(190deg, rgba(248, 58, 255, 0.30) 0%, rgba(13, 17, 23, 0.80) 70%);
+    --second-nav-selected-background: linear-gradient(90deg, rgba(248, 58, 255, 0.30) 0%, rgba(13, 17, 23, 0.80) 60%);
+    --page-width: 65em;
+    --font-color: #e8e9ed;
+    --darker-font-color: #a7a7a7;
+    --dark-font-color: #787878;
+    --darkest-font-color: #585858;
+    --invert-font-color: #222225;
+    --secondary-color: #f83aff;
+    --secondary-color-dimmer: rgba(248, 58, 255, 0.45);
+    --secondary-color-text-shadow: rgba(250, 113, 251, 0.5);
+    --secondary-color-text-shadow-outer: rgba(251, 169, 255, 0.14);
+    --secondary-color-lowalpha: rgba(248, 58, 255, 0.30);
+    --secondary-color-very-lowalpha: rgba(248, 58, 255, 0.05);
+    --secondary-color-shadow: rgb(59, 41, 87);
+    --secondary-color-shadow-mid: rgb(78, 54, 114);
+    --tertiary-color: #a3abba;
+
+    --table-header-background-solid: rgba(248, 58, 255, 0.30);
+    --kv-table-header-background-reversed:  linear-gradient(-90deg, rgba(248, 58, 255, 0.30) 0%, rgba(13, 17, 23, 0.80) 60%);
+    --kv-table-header-background:  linear-gradient(90deg, rgba(248, 58, 255, 0.30) 0%, rgba(13, 17, 23, 0.80) 60%);
+    --card-background-color: rgba(35, 35, 35, 0.55);
+
+
+    --terminal-border: rgba(76, 81, 91, 0.5);
+    --terminal-header-background: linear-gradient(90deg, rgb(5, 5, 5) 0%, rgba(5, 5, 5, 0.2) 80%);
+    --primary-color: rgba(98, 196, 255, 1.0);
+    --primary-color-lowalpha: rgba(98, 196, 255, 0.6);
+    --primary-color-verylowalpha: rgba(98, 196, 255, 0.2);
+    --error-color: #ff3c74;
+    --error-font-color: #ff246b;
+    --error-color-lowalpha: rgba(255, 60, 116, 0.4);
+    --error-color-loweralpha: rgba(255, 60, 116, 0.2);
+    --error-color-verylowalpha: #0c0000;
+    --progress-bar-background: #0a0a0a;
+    --progress-bar-fill: #62c4ff;
+    --code-bg-color: none;
+    --input-style: solid;
+    --display-h1-decoration: none;
+    --bold-text: #b685ff;
+    --terminal-green: #00FF00FF;
+
+    --terminal-yellow: #fddb00;
+    --hrcolor: #3d3d3d;
+    --code-border: #525252;
+    --string-literal: #fd66e5;
+    --neon-pink: #E400FB;
+    --warn-400: #ff6a00;
+    --warn-400-lowalpha: rgba(255, 106, 0, 0.3);
+    --warn-300: #ff9900;
+    --warn-300-lowalpha: rgba(255, 153, 0, 0.3);
+    --warn-200: #ffb700;
+    --warn-200-lowalpha: rgba(255, 183, 0, 0.3);
+    --warn-color: #ffd500;
+    --warn-color-lowalpha: rgba(255, 213, 0, 0.3);
+    --ok-400: #f7ff00;
+    --ok-400-lowalpha: rgba(230, 255, 0, 0.3);
+    --ok-300: #d0ff00;
+    --ok-300-lowalpha: rgba(208, 255, 0, 0.3);
+    --ok-200: #aaff00;
+    --ok-200-lowalpha: rgba(170, 255, 0, 0.3);
+    --ok-color: #1aff00;
+    --ok-color-lowalpha: rgba(170, 255, 0, 0.3);
+}

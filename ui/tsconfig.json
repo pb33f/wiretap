@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": "./src/ts",
     "experimentalDecorators": true,
     "outDir": "./build/dist/",
     "noImplicitAny": false,
@@ -8,8 +9,17 @@
     "jsx": "react",
     "allowJs": true,
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": [
+      "dom",
+      "esnext"
+    ]
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "./build","./layouts", "webpack.config.js"]
+  "paths": {
+    "@/*": ["./src/ts/*"]
+  },
+  "include": ["./src/ts/**/*.ts"],
+  "exclude": ["node_modules", "./build", "webpack.config.js"]
 }

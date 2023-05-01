@@ -21,10 +21,9 @@
     "webpack-dev-server": "^4.13.2"
   },
   "dependencies": {
+    "@shoelace-style/shoelace": "^2.4.0",
     "@stomp/stompjs": "^7.0.0",
-    "@vmw/transport": "^1.3.6",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "lit": "^2.7.3"
   },
   "scripts": {
     "serve": "webpack serve --open",
