@@ -46,12 +46,12 @@ doneWaitingForResponse:
     }
 
     if returnedResponse == nil && returnedError != nil {
-        go ws.broadcastResponseError(request, returnedResponse, returnedError)
+        go ws.broadcastResponseError(request, cloneResponse(returnedResponse), returnedError)
         core.SendErrorResponse(request, 500, returnedError.Error())
         return
     } else {
         // validate response
-        go ws.validateResponse(request, responseValidator, returnedResponse)
+        go ws.validateResponse(request, responseValidator, cloneResponse(returnedResponse))
     }
 
     body, _ := io.ReadAll(returnedResponse.Body)

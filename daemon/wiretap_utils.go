@@ -32,3 +32,16 @@ func cloneRequest(r *http.Request) *http.Request {
     newReq.Header = r.Header
     return newReq
 }
+
+func cloneResponse(r *http.Response) *http.Response {
+    // sniff and replace body.
+    b, _ := io.ReadAll(r.Body)
+    _ = r.Body.Close()
+    r.Body = io.NopCloser(bytes.NewBuffer(b))
+    resp := &http.Response{
+        StatusCode: r.StatusCode,
+        Body:       io.NopCloser(bytes.NewBuffer(b)),
+        Header:     r.Header,
+    }
+    return resp
+}

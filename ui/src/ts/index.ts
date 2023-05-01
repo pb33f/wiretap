@@ -10,22 +10,52 @@ import '@shoelace-style/shoelace/dist/themes/dark.css';
 import './test';
 import './wiretap';
 import './components/header/header.component';
+import {Bus, Channel, CreateBus, Subscription} from "./ranch/bus";
+import {HttpTransaction} from "./model/http_transaction";
+import {CreateStore, Store, StoreAllChangeSubscriptionFunction} from "./ranch/store";
+
+const WiretapChannel =  "wiretap-broadcast";
 
 
-import {Client} from "@stomp/stompjs";
+const bus: Bus = CreateBus()
 
-
-const client = new Client({
+const config = {
     brokerURL: 'ws://localhost:9090/ws',
     heartbeatIncoming: 0,
     heartbeatOutgoing: 0,
-    onConnect: () => {
+}
 
-        client.subscribe('/topic/wiretap-broadcast', message =>
-            console.log(`broadcast: ${message.body}`)
-        );
-    },
-});
 
-client.activate();
+const transactionStore: Store<HttpTransaction>  = CreateStore<HttpTransaction>()
+
+
+
+const channel: Channel = bus.createChannel(WiretapChannel)
+
+const sub: Subscription = channel.subscribe((msg)  => {
+    const httpTransaction: HttpTransaction = msg.payload as HttpTransaction
+    const existingTransaction: HttpTransaction = transactionStore.get(httpTransaction.id)
+    if (existingTransaction) {
+        if (httpTransaction.httpResponse) {
+            existingTransaction.httpResponse = httpTransaction.httpResponse
+            transactionStore.set(existingTransaction.id, existingTransaction)
+        }
+    } else {
+        transactionStore.set(httpTransaction.id, httpTransaction)
+    }
+})
+transactionStore.onAllChanges( (key: string, value: HttpTransaction) => {
+   if (value.httpResponse) {
+       console.log(JSON.parse(value.httpResponse.responseBody))
+   }
+})
+
+bus.mapChannelToBrokerDestination("/topic/" + WiretapChannel, WiretapChannel)
+
+bus.connectToBroker(config)
+
+
+
+
+
 
