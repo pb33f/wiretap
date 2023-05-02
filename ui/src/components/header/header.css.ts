@@ -15,7 +15,6 @@ export default css`
     display: flex;
     height: 57px;
     flex-direction: row;
-    position: fixed;
     width: 100vw;
     z-index: 1;
     background-color: var(--background-color);

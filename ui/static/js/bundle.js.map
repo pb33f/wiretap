@@ -1,1 +1,0 @@
-{"version":3,"file":"bundle.js","mappings":"AAAAA,QAAQC,IAAI","sources":["webpack://wiretap/./src/ts/index.ts"],"sourcesContent":["console.log(\"hello\");\n"],"names":["console","log"],"sourceRoot":""}

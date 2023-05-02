@@ -27,9 +27,10 @@ type WiretapService struct {
     serviceCore   service.FabricServiceCore
     broadcastChan *bus.Channel
     bus           bus.EventBus
+    config        *WiretapServiceConfiguration
 }
 
-func NewWiretapService(document libopenapi.Document) *WiretapService {
+func NewWiretapService(document libopenapi.Document, configuration *WiretapServiceConfiguration) *WiretapService {
     tr := &http.Transport{
         MaxIdleConns:    20,
         IdleConnTimeout: 30 * time.Second,
@@ -37,6 +38,7 @@ func NewWiretapService(document libopenapi.Document) *WiretapService {
     m, _ := document.BuildV3Model()
     return &WiretapService{
         document:  document,
+        config:    configuration,
         docModel:  &m.Model,
         transport: tr,
         client:    &http.Client{Transport: tr},
@@ -51,3 +53,29 @@ func (ws *WiretapService) HandleServiceRequest(request *model.Request, core serv
         core.HandleUnknownRequest(request)
     }
 }
+
+func (ws *WiretapService) OnServiceReady() chan bool {
+
+    readyChan := make(chan bool, 1)
+    readyChan <- true
+    return readyChan
+}
+
+//
+//func (ws *WiretapService) GetRESTBridgeConfig() []*service.RESTBridgeConfig {
+//    return []*service.RESTBridgeConfig{
+//        {
+//            ServiceChannel: WiretapServiceChan,
+//            Uri:            "/",
+//            FabricRequestBuilder: func(w http.ResponseWriter, r *http.Request) model.Request {
+//                id := uuid.New()
+//                return model.Request{
+//                    Id:                 &id,
+//                    RequestCommand:     IncomingHttpRequest,
+//                    HttpRequest:        r,
+//                    HttpResponseWriter: w,
+//                }
+//            },
+//        },
+//    }
+//}

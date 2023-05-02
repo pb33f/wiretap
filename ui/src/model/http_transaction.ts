@@ -41,3 +41,4 @@ export interface HttpTransaction {
     responseValidation?: ValidationError[];
     id?: string;
 }
+

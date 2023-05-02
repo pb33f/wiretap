@@ -4,6 +4,7 @@
 package cmd
 
 import (
+    "github.com/pb33f/wiretap/daemon"
     "github.com/pterm/pterm"
     "github.com/spf13/cobra"
     "os"
@@ -37,13 +38,19 @@ var (
                 port = "9090" // default.
             }
 
-            config := WiretapServiceConfiguration{
+            mport := os.Getenv("MONITOR_PORT")
+            if mport == "" {
+                mport = "9091" // default.
+            }
+
+            config := daemon.WiretapServiceConfiguration{
                 Contract:     file,
                 RedirectHost: host,
                 Port:         port,
+                MonitorPort:  mport,
             }
 
-            runWiretapService(&config)
+            _, _ = runWiretapService(&config)
 
             return nil
         },

@@ -11,7 +11,7 @@ const path = require("path");
 module.exports = {
     mode: prod ? 'production' : 'development',
     entry: {
-        bundle: './src/ts/index.ts'
+        bundle: './src/index.ts'
     },
     output: {
         path: path.resolve('build', 'static'),
@@ -49,6 +49,7 @@ module.exports = {
     plugins: [
         new HtmlWebpackPlugin({
             template: 'index.html',
+
         }),
         new MiniCssExtractPlugin(),
         new CopyPlugin({
@@ -56,7 +57,7 @@ module.exports = {
                 // Copy Shoelace assets to dist/shoelace
                 {
                     from: path.resolve(__dirname, 'node_modules/@shoelace-style/shoelace/dist/assets'),
-                    to: path.resolve(__dirname, 'static/shoelace/assets')
+                    to: path.resolve(__dirname, 'build/static/shoelace/assets')
                 }
             ]
         })

@@ -1,5 +1,4 @@
 body {
-    margin: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-color: var(--background-color);
@@ -7,11 +6,10 @@ body {
     color: var(--font-color);
     padding: 0;
     font-size: 14px;
-
-
     --sl-panel-background-color: var(--background-color);
     --sl-input-background-color: var(--background-color);
     --sl-input-border-color: var(--secondary-color);
+    margin: 0;
 }
 
 a, a:visited, a:active {
@@ -51,6 +49,11 @@ p {
 
 code, pre {
     font-family: var(--font-stack);
+}
+
+main {
+    margin-top: 20px;
+
 }
 
 .main-content ul {

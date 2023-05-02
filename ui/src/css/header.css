@@ -102,24 +102,6 @@ header .header-space {
 }
 
 
-#demo-header-content {
-    transition-property: all;
-    transition-duration: 400ms, 400ms;
-    transition-timing-function: ease-out, ease-out;
-    height: 150px;
-    overflow: hidden;
-}
-
-#demo-header-content.closed {
-    height: 0;
-    opacity: 0;
-    padding: 0;
-    margin: 0;
-}
-
-
-
-
 @-webkit-keyframes cursor {
     0% {
         opacity: 0;

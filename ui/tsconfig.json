@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "baseUrl": "./src/ts",
+    "baseUrl": ".",
     "experimentalDecorators": true,
     "outDir": "./build/dist/",
     "noImplicitAny": false,
@@ -15,11 +15,11 @@
     "lib": [
       "dom",
       "esnext"
-    ]
+    ],
+    "paths": {
+      "@/*": ["src/*"],
+    }
   },
-  "paths": {
-    "@/*": ["./src/ts/*"]
-  },
-  "include": ["./src/ts/**/*.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "./build", "webpack.config.js"]
 }

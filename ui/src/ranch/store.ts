@@ -1,6 +1,7 @@
 import {Subscription} from "./bus";
 export type StoreValueSubscriptionFunction<T> = (value: T) => void;
 export type StoreAllChangeSubscriptionFunction<T> = (key: string, value: T) => void;
+
 export interface Store<T> {
     set(key: string, value: T): void;
     get(key: string): T;
@@ -11,8 +12,6 @@ export interface Store<T> {
 export function CreateStore<T>(): Store<T> {
     return new store<T>();
 }
-
-
 
 class store<T> {
     private _values: Map<string, T>;

@@ -32,8 +32,13 @@ export interface Bus {
     mapChannelToBrokerDestination(destination: string, channel: string): void
 }
 
+let _busSingleton: Bus
+
 export function CreateBus(): Bus {
-    return new bus();
+    if (!_busSingleton) {
+        _busSingleton = new bus()
+    }
+    return _busSingleton
 }
 
 export class bus implements Bus {

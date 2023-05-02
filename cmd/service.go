@@ -8,10 +8,13 @@ import (
     "fmt"
     "github.com/google/uuid"
     "github.com/pb33f/libopenapi"
+    "github.com/pb33f/ranch/bus"
     "github.com/pb33f/ranch/model"
     "github.com/pb33f/ranch/plank/pkg/server"
+    "github.com/pb33f/ranch/plank/utils"
     "github.com/pb33f/ranch/service"
     "github.com/pb33f/wiretap/daemon"
+    "github.com/pterm/pterm"
     "github.com/sirupsen/logrus"
     "io"
     "net/http"
@@ -19,12 +22,6 @@ import (
     "os"
     "strconv"
 )
-
-type WiretapServiceConfiguration struct {
-    Contract     string
-    RedirectHost string
-    Port         string
-}
 
 func loadOpenAPISpec(contract string) (libopenapi.Document, error) {
     var specBytes []byte
@@ -58,7 +55,7 @@ func loadOpenAPISpec(contract string) (libopenapi.Document, error) {
     return libopenapi.NewDocument(specBytes)
 }
 
-func runWiretapService(config *WiretapServiceConfiguration) (server.PlatformServer, error) {
+func runWiretapService(config *daemon.WiretapServiceConfiguration) (server.PlatformServer, error) {
 
     doc, err := loadOpenAPISpec(config.Contract)
     if err != nil {
@@ -69,13 +66,10 @@ func runWiretapService(config *WiretapServiceConfiguration) (server.PlatformServ
         return nil, errors.Join(errs...)
     }
 
-    // configure daemon.
+    go runMonitor(config, doc)
+
     serverConfig, _ := server.CreateServerConfig()
     serverConfig.Port, _ = strconv.Atoi(config.Port)
-    serverConfig.SpaConfig = &server.SpaConfig{
-        RootFolder: "docs",
-        BaseUri:    "/",
-    }
     serverConfig.FabricConfig.EndpointConfig.Heartbeat = 0
     serverConfig.StaticDir = []string{"/static"}
 
@@ -99,7 +93,7 @@ func runWiretapService(config *WiretapServiceConfiguration) (server.PlatformServ
     //platformServer.SetStaticRoute("change-report", "change-report")
 
     // boot what-changed html report service.
-    if err = platformServer.RegisterService(daemon.NewWiretapService(doc),
+    if err = platformServer.RegisterService(daemon.NewWiretapService(doc, config),
         daemon.WiretapServiceChan); err != nil {
         panic(err)
     }
@@ -109,6 +103,55 @@ func runWiretapService(config *WiretapServiceConfiguration) (server.PlatformServ
 
     // start the ranch.
     sysChan := make(chan os.Signal, 1)
+
+    handler, err := bus.GetBus().ListenOnce(server.PLANK_SERVER_ONLINE_CHANNEL)
+    handler.Handle(func(message *model.Message) {
+        pterm.Println()
+        pterm.Info.Println("Wiretap Service is ready.")
+        pterm.Println()
+        pterm.Info.Printf("API Gateway: http://localhost:%s\n", config.Port)
+        pterm.Info.Printf("Monitor: http://localhost:%s/monitor\n", config.MonitorPort)
+        pterm.Println()
+    }, nil)
+
     platformServer.StartServer(sysChan)
+
     return platformServer, nil
+}
+
+func runMonitor(config *daemon.WiretapServiceConfiguration, doc libopenapi.Document) {
+    serverConfig := &server.PlatformServerConfig{}
+    serverConfig.Port, _ = strconv.Atoi(config.MonitorPort)
+    path, _ := os.Getwd()
+    serverConfig.RootDir = path
+    serverConfig.Host = "localhost"
+    serverConfig.SpaConfig = &server.SpaConfig{
+        RootFolder: "ui/build/static",
+        BaseUri:    "/",
+    }
+    serverConfig.FabricConfig = &server.FabricBrokerConfig{
+        FabricEndpoint: "/ranch",
+        EndpointConfig: &bus.EndpointConfig{
+            Heartbeat:             0,
+            UserQueuePrefix:       "/queue",
+            TopicPrefix:           "/topic",
+            AppRequestPrefix:      "/pub",
+            AppRequestQueuePrefix: "/pub/queue",
+        },
+    }
+    serverConfig.LogConfig = &utils.LogConfig{
+        AccessLog:     "stdout",
+        Root:          path,
+        ErrorLog:      "stderr",
+        OutputLog:     "stdout",
+        FormatOptions: &utils.LogFormatOption{},
+    }
+    serverConfig.FabricConfig.EndpointConfig.Heartbeat = 0
+    serverConfig.StaticDir = []string{"/static"}
+    platformServer := server.NewPlatformServer(serverConfig)
+
+    // start the ranch.
+    sysChan := make(chan os.Signal, 1)
+
+    platformServer.StartServer(sysChan)
 }
