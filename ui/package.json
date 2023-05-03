@@ -7,6 +7,7 @@
   "author": "Princess B33f Heavy Industries / Dave Shanley",
   "license": "MIT",
   "devDependencies": {
+    "@types/prismjs": "^1.26.0",
     "copy-webpack-plugin": "^11.0.0",
     "css-loader": "^6.7.3",
     "css-minimizer-webpack-plugin": "^4.2.2",
@@ -24,7 +25,8 @@
     "@shoelace-style/shoelace": "^2.4.0",
     "@stomp/stompjs": "^7.0.0",
     "lit": "^2.7.3",
-    "localforage": "^1.10.0"
+    "localforage": "^1.10.0",
+    "prismjs": "^1.29.0"
   },
   "scripts": {
     "serve": "webpack serve --open",

@@ -19,16 +19,26 @@ export interface ValidationError {
     context?: any;
 }
 
-export interface HttpRequest {
+export class HttpRequest {
     url?: string;
     method?: string;
     path?: string;
     query?: string;
-    headers?: Record<string, string>;
+    headers?: Map<string, string>;
     requestBody?: string;
+
+    checkContentType(contentType: string): boolean {
+        if (this.headers) {
+            if (this.headers.has("Content-Type")) {
+
+            }
+        }
+
+        return false
+    }
 }
 
-export interface HttpResponse {
+export class HttpResponse {
     httpRequest?: HttpRequest;
     statusCode?: number;
     responseBody?: string;

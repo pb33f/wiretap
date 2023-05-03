@@ -37,6 +37,7 @@ export default css`
     font-size: 1.7em;
     font-weight: bold;
     color: var(--primary-color);
+    text-shadow:  0 0 10px var(--primary-color-lowalpha), 0 0 10px rgba(251, 169, 255, 0.06);
   }
 
   header.site-header > .logo .name > a {

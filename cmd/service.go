@@ -106,13 +106,18 @@ func runWiretapService(config *daemon.WiretapServiceConfiguration) (server.Platf
 
     go func() {
         handler, _ := bus.GetBus().ListenStream(server.PLANK_SERVER_ONLINE_CHANNEL)
+        seen := false
         handler.Handle(func(message *model.Message) {
-            pterm.Println()
-            pterm.Info.Println("Wiretap Service is ready.")
-            pterm.Println()
-            pterm.Info.Printf("API Gateway: http://localhost:%s\n", config.Port)
-            pterm.Info.Printf("Monitor: http://localhost:%s/monitor\n", config.MonitorPort)
-            pterm.Println()
+            if !seen {
+                seen = true
+                pterm.Println()
+                pterm.Info.Println("Wiretap Service is ready.")
+                pterm.Println()
+                pterm.Info.Printf("API Gateway: http://localhost:%s\n", config.Port)
+                pterm.Info.Printf("Monitor: http://localhost:%s/monitor\n", config.MonitorPort)
+                pterm.Println()
+
+            }
         }, nil)
     }()
 

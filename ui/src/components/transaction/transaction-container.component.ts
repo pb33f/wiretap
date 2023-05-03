@@ -3,12 +3,16 @@ import {repeat} from 'lit/directives/repeat.js';
 import {html, LitElement} from "lit";
 import {Store} from "@/ranch/store";
 import {HttpTransaction} from '@/model/http_transaction';
-import {HttpTransactionComponent} from "@/components/transaction/transaction.component";
+import {HttpTransactionComponent} from "./transaction.component";
 import localforage from "localforage";
 import {WiretapLocalStorage} from "@/wiretap";
+import transactionContainerComponentCss from "./transaction-container.component.css";
 
 @customElement('http-transaction-container')
 export class HttpTransactionContainerComponent extends LitElement {
+
+    static styles = transactionContainerComponentCss;
+
     private _httpTransactionStore: Store<HttpTransaction>;
 
     @state()
@@ -78,9 +82,11 @@ export class HttpTransactionContainerComponent extends LitElement {
             }
         )
 
-        return html`${repeat(transactions,
+        return html`<section class="transactions">
+            ${repeat(transactions.reverse(),
             (t: HttpTransactionComponent) => t.transactionId,
-            (t: HttpTransactionComponent) => t)}`
+            (t: HttpTransactionComponent) => t)}
+        </section>`
     }
 
 }
