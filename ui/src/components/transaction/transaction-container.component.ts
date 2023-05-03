@@ -1,13 +1,18 @@
-import {customElement} from "lit/decorators.js";
+import {customElement, state} from "lit/decorators.js";
+import {repeat} from 'lit/directives/repeat.js';
 import {html, LitElement} from "lit";
 import {Store} from "@/ranch/store";
 import {HttpTransaction} from '@/model/http_transaction';
 import {HttpTransactionComponent} from "@/components/transaction/transaction.component";
+import localforage from "localforage";
+import {WiretapLocalStorage} from "@/wiretap";
 
 @customElement('http-transaction-container')
 export class HttpTransactionContainerComponent extends LitElement {
     private _httpTransactionStore: Store<HttpTransaction>;
-    private _httpTransactions: Map<string, HttpTransactionContainer>
+
+    @state()
+    _httpTransactions: Map<string, HttpTransactionContainer>
 
     constructor(store: Store<HttpTransaction>) {
         super()
@@ -18,10 +23,24 @@ export class HttpTransactionContainerComponent extends LitElement {
     connectedCallback() {
         super.connectedCallback();
         this._httpTransactionStore.onAllChanges(this.handleTransactionChange.bind(this))
+        this._httpTransactionStore.onPopulated((storeData: Map<string, HttpTransaction>) => {
+            // rebuild our internal state
+            const savedTransactions: Map<string, HttpTransactionContainer> = new Map<string, HttpTransactionContainer>()
+            storeData.forEach((value: HttpTransaction, key: string) => {
+                const container: HttpTransactionContainer = {
+                    Transaction: value,
+                    Listener: (update: HttpTransaction) => {
+                        this.requestUpdate();
+                    }
+                }
+                savedTransactions.set(key, container)
+            });
+            // save our internal state.
+            this._httpTransactions = savedTransactions
+        });
     }
 
     handleTransactionChange(key: string, value: HttpTransaction) {
-
         if (this._httpTransactions.has(value.id)) {
             const existingTransaction = this._httpTransactions.get(value.id)
             existingTransaction.Listener(value)
@@ -29,10 +48,22 @@ export class HttpTransactionContainerComponent extends LitElement {
             const container: HttpTransactionContainer = {
                 Transaction: value,
                 Listener: (trans: HttpTransaction) => {
-                    this.requestUpdate();
+                    // update db.
+                    let exp = this._httpTransactionStore.export()
+                    localforage.setItem<Map<string, HttpTransaction>>
+                    (WiretapLocalStorage, exp).then(
+                        () => {
+                            this.requestUpdate();
+                        }
+                    ).catch(
+                        (err) => {
+                            console.error(err)
+                        }
+                    )
                 }
             }
             this._httpTransactions.set(value.id, container)
+            this.requestUpdate();
         }
     }
 
@@ -47,8 +78,9 @@ export class HttpTransactionContainerComponent extends LitElement {
             }
         )
 
-
-        return html`${transactions}`
+        return html`${repeat(transactions,
+            (t: HttpTransactionComponent) => t.transactionId,
+            (t: HttpTransactionComponent) => t)}`
     }
 
 }

@@ -23,7 +23,8 @@
   "dependencies": {
     "@shoelace-style/shoelace": "^2.4.0",
     "@stomp/stompjs": "^7.0.0",
-    "lit": "^2.7.3"
+    "lit": "^2.7.3",
+    "localforage": "^1.10.0"
   },
   "scripts": {
     "serve": "webpack serve --open",

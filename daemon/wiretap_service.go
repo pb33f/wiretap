@@ -53,29 +53,3 @@ func (ws *WiretapService) HandleServiceRequest(request *model.Request, core serv
         core.HandleUnknownRequest(request)
     }
 }
-
-func (ws *WiretapService) OnServiceReady() chan bool {
-
-    readyChan := make(chan bool, 1)
-    readyChan <- true
-    return readyChan
-}
-
-//
-//func (ws *WiretapService) GetRESTBridgeConfig() []*service.RESTBridgeConfig {
-//    return []*service.RESTBridgeConfig{
-//        {
-//            ServiceChannel: WiretapServiceChan,
-//            Uri:            "/",
-//            FabricRequestBuilder: func(w http.ResponseWriter, r *http.Request) model.Request {
-//                id := uuid.New()
-//                return model.Request{
-//                    Id:                 &id,
-//                    RequestCommand:     IncomingHttpRequest,
-//                    HttpRequest:        r,
-//                    HttpResponseWriter: w,
-//                }
-//            },
-//        },
-//    }
-//}

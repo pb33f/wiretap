@@ -3,7 +3,9 @@
 
 package daemon
 
-import "net/http"
+import (
+    "net/http"
+)
 
 func (ws *WiretapService) callAPI(req *http.Request, responseChan chan *http.Response, errorChan chan error) {
     // create a new request from the original request, but replace the path

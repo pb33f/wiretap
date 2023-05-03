@@ -11,12 +11,15 @@ import (
     "github.com/pb33f/libopenapi-validator/responses"
     "github.com/pb33f/ranch/model"
     "net/http"
+    "time"
 )
 
 func (ws *WiretapService) validateResponse(
     request *model.Request,
     responseValidator responses.ResponseBodyValidator,
     returnedResponse *http.Response) {
+
+    time.Sleep(3 * time.Second) // simulate a slow response.
 
     _, validationErrors := responseValidator.ValidateResponseBody(request.HttpRequest, returnedResponse)
     if len(validationErrors) > 0 {
@@ -31,7 +34,7 @@ func (ws *WiretapService) validateRequest(
     requestValidator requests.RequestBodyValidator,
     paramValidator parameters.ParameterValidator,
     responseValidator responses.ResponseBodyValidator) {
-    
+
     var validationErrors []*errors.ValidationError
 
     // find path and populate validators.

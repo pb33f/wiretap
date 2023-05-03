@@ -5,28 +5,39 @@ import {HttpTransaction} from "./model/http_transaction";
 import {Store} from "./ranch/store";
 import {Bus, BusCallback, Channel, CreateBus, Subscription} from "./ranch/bus";
 import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container.component";
+import * as localforage from "localforage";
 
 export const WiretapChannel = "wiretap-broadcast";
 export const WiretapHttpTransactionStore = "http-transaction-store";
-
+export const WiretapLocalStorage = "wiretap-local-storage";
 
 @customElement('wiretap-application')
 export class WiretapComponent extends LitElement {
 
-    private _storeManager: StoreManager;
-    private _httpTransactionStore: Store<HttpTransaction>;
-    private _bus: Bus;
-    private _wiretapChannel: Channel;
+    private readonly _storeManager: StoreManager;
+    private readonly _httpTransactionStore: Store<HttpTransaction>;
+    private readonly _bus: Bus;
+    private readonly _wiretapChannel: Channel;
     private _channelSubscription: Subscription;
 
     constructor() {
         super();
+
+        localforage.config({
+            name        : 'pb33f-wiretap',
+            version     : 1.0,
+            storeName   : 'wiretap_transactions',
+        });
 
         // set up bus and stores
         this._bus = CreateBus();
         this._storeManager = CreateStoreManager();
         this._httpTransactionStore = this._storeManager.GetStore<HttpTransaction>(WiretapHttpTransactionStore);
         this._wiretapChannel = this._bus.createChannel(WiretapChannel);
+
+        this.loadHistoryFromLocalStorage().then((previousTransactions: Map<string, HttpTransaction>) => {
+            this._httpTransactionStore.populate(previousTransactions)
+        });
 
         // handle incoming http transactions.
         this._channelSubscription = this._wiretapChannel.subscribe(this.wireHandler());
@@ -41,6 +52,12 @@ export class WiretapComponent extends LitElement {
         this._bus.mapChannelToBrokerDestination("/topic/" + WiretapChannel, WiretapChannel)
         this._bus.connectToBroker(config)
     }
+
+
+    async loadHistoryFromLocalStorage(): Promise<Map<string, HttpTransaction>> {
+        return localforage.getItem<Map<string, HttpTransaction>>(WiretapLocalStorage);
+    }
+
 
     wireHandler(): BusCallback {
         return (msg) => {
