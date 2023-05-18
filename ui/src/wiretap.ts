@@ -9,6 +9,7 @@ import * as localforage from "localforage";
 
 export const WiretapChannel = "wiretap-broadcast";
 export const WiretapHttpTransactionStore = "http-transaction-store";
+export const WiretapSelectedTransactionStore = "selected-transaction-store";
 export const WiretapLocalStorage = "wiretap-local-storage";
 
 @customElement('wiretap-application')
@@ -16,6 +17,7 @@ export class WiretapComponent extends LitElement {
 
     private readonly _storeManager: StoreManager;
     private readonly _httpTransactionStore: Store<HttpTransaction>;
+    private readonly _selectedTransactionStore: Store<HttpTransaction>;
     private readonly _bus: Bus;
     private readonly _wiretapChannel: Channel;
     private _channelSubscription: Subscription;
@@ -32,9 +34,19 @@ export class WiretapComponent extends LitElement {
         // set up bus and stores
         this._bus = CreateBus();
         this._storeManager = CreateStoreManager();
-        this._httpTransactionStore = this._storeManager.GetStore<HttpTransaction>(WiretapHttpTransactionStore);
+
+        // create transaction store
+        this._httpTransactionStore =
+            this._storeManager.CreateStore<HttpTransaction>(WiretapHttpTransactionStore);
+
+        // create selected transaction store
+        this._selectedTransactionStore =
+            this._storeManager.CreateStore<HttpTransaction>(WiretapSelectedTransactionStore);
+
+        // set up wiretap channel
         this._wiretapChannel = this._bus.createChannel(WiretapChannel);
 
+        // load previous transactions from local storage.
         this.loadHistoryFromLocalStorage().then((previousTransactions: Map<string, HttpTransaction>) => {
             this._httpTransactionStore.populate(previousTransactions)
         });
@@ -69,13 +81,15 @@ export class WiretapComponent extends LitElement {
                     this._httpTransactionStore.set(existingTransaction.id, existingTransaction)
                 }
             } else {
+                httpTransaction.timestamp = new Date().getTime();
                 this._httpTransactionStore.set(httpTransaction.id, httpTransaction)
             }
         }
     }
 
     render() {
-        const transaction = new HttpTransactionContainerComponent(this._httpTransactionStore)
+        const transaction =
+            new HttpTransactionContainerComponent(this._httpTransactionStore, this._selectedTransactionStore)
         return html`${transaction}`
     }
 

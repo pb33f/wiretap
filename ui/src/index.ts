@@ -9,9 +9,12 @@ import '@shoelace-style/shoelace/dist/components/tag/tag.js';
 import '@shoelace-style/shoelace/dist/components/tab-panel/tab-panel.js';
 import '@shoelace-style/shoelace/dist/components/tab-group/tab-group.js';
 import '@shoelace-style/shoelace/dist/components/tab/tab.js';
+import '@shoelace-style/shoelace/dist/components/split-panel/split-panel.js';
+
 
 import './components/header/header.component';
 import './components/transaction/transaction-container.component';
+import './components/transaction/transaction-view.component';
 import './ranch/bus';
 import './model/http_transaction';
 import './ranch/store';

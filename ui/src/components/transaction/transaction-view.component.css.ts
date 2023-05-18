@@ -110,21 +110,7 @@ export default css`
   .token.entity {
     cursor: help;
   }
-
-
-  section.transaction {
-    border: 1px dashed var(--secondary-color-lowalpha);
-    margin-bottom: 30px;
-  } 
   
-  header {
-    padding: 10px;
- 
-  }
-  
-  main {
-    padding: 10px;
-  }
   
   .method::part(base) {
     background: var(--background-color);
@@ -134,8 +120,25 @@ export default css`
   .tab::part(base) {
     font: var(--font-stack);
   }
-  
-  
+
+  .tab-secondary::part(base) {
+    font: var(--font-stack);
+  }
+
+  .tab-secondary::part(base) {
+    --active: var(--secondary-color);
+  }
+
+
+  .secondary-tabs {
+    --indicator-color: var(--secondary-color);
+    font: var(--font-stack);
+  }
+
+
+
+
+
   pre {
     border: none;
     border-left: 2px solid var(--secondary-color);

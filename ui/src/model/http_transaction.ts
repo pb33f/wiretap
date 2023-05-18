@@ -39,12 +39,13 @@ export class HttpRequest {
 }
 
 export class HttpResponse {
-    httpRequest?: HttpRequest;
+    headers?: Map<string, string>;
     statusCode?: number;
     responseBody?: string;
 }
 
 export interface HttpTransaction {
+    timestamp?: number;
     httpRequest?: HttpRequest;
     requestValidation?: ValidationError[];
     httpResponse?: HttpResponse;

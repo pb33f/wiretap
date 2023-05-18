@@ -14,7 +14,7 @@ class storeManager implements StoreManager {
     CreateStore<T>(key: string): Store<T> {
         const store: Store<T> = CreateStore<T>();
         this._stores.set(key, store);
-        return null
+        return store;
     }
 
     GetStore<T>(key: string): Store<T> {
