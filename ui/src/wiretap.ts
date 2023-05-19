@@ -26,9 +26,9 @@ export class WiretapComponent extends LitElement {
         super();
 
         localforage.config({
-            name        : 'pb33f-wiretap',
-            version     : 1.0,
-            storeName   : 'wiretap_transactions',
+            name: 'pb33f-wiretap',
+            version: 1.0,
+            storeName: 'wiretap_transactions',
         });
 
         // set up bus and stores
@@ -89,6 +89,7 @@ export class WiretapComponent extends LitElement {
             if (existingTransaction) {
                 if (httpTransaction.httpResponse) {
                     existingTransaction.httpResponse = httpTransaction.httpResponse
+                    existingTransaction.responseValidation = httpTransaction.responseValidation
                     this._httpTransactionStore.set(existingTransaction.id, existingTransaction)
                 }
             } else {

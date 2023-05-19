@@ -80,7 +80,7 @@ export class HttpTransactionContainerComponent extends LitElement {
                 this._transactionComponents.find((v: HttpTransactionItemComponent) => {
                     return v.transactionId === value.id;
                 });
-            component.httpTransaction = value;
+            component.httpTransaction = BuildLiveTransactionFromState(value);
             component.requestUpdate()
 
         } else {
@@ -96,7 +96,7 @@ export class HttpTransactionContainerComponent extends LitElement {
                     (WiretapLocalStorage, exp).then(
                         () => {
                             console.log('saved')
-                            //this.requestUpdate();
+                            this._transactionView.requestUpdate();
                         }
                     ).catch(
                         (err) => {

@@ -1,6 +1,7 @@
 import {customElement, state} from "lit/decorators.js";
 import {html} from "lit";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
+import {map} from "lit/directives/map.js";
 import {LitElement, TemplateResult} from "lit";
 
 import {HttpTransaction} from "@/model/http_transaction";
@@ -48,11 +49,31 @@ export class HttpTransactionViewComponent extends LitElement {
 
     render() {
 
+        console.log(this._httpTransaction);
 
         if (this._httpTransaction) {
 
             const req = this._httpTransaction?.httpRequest;
             const resp = this._httpTransaction?.httpResponse;
+
+            const requestViolations: TemplateResult = html`
+                ${this._httpTransaction?.requestValidation?.length > 0 ? html`<h3>Request Violations</h3>` : html``}
+                ${map(this._httpTransaction.requestValidation, (i) => {
+                    return html`
+                        <sl-details summary="${i.message}">
+                            ${i.reason}
+                        </sl-details>
+                    `})}`;
+
+            const responseViolations: TemplateResult = html`
+                ${this._httpTransaction?.responseValidation?.length > 0 ? html`<h3>Response Violations</h3>` : html``}
+                ${map(this._httpTransaction.responseValidation, (i) => {
+                    return html`
+                        <sl-details summary="${i.message}">
+                            ${i.reason}
+                        </sl-details>
+                    `})}`;
+
 
             let highlight: string;
             if (resp && resp.responseBody) {
@@ -60,75 +81,57 @@ export class HttpTransactionViewComponent extends LitElement {
             }
 
             const tabGroup: TemplateResult = html`
-            <sl-tab-group>
-                <sl-tab slot="nav" panel="violations" class="tab">Violations</sl-tab>
-                <sl-tab slot="nav" panel="parameters" class="tab">Query Parameters</sl-tab>
-                <sl-tab slot="nav" panel="request" class="tab">Request</sl-tab>
-                <sl-tab slot="nav" panel="response" class="tab">Response</sl-tab>
-              
-
-                <sl-tab-panel name="violations">violations</sl-tab-panel>
-                <sl-tab-panel name="parameters">
-                    parameters.
-                </sl-tab-panel>
-                <sl-tab-panel name="request">
-
-                    <sl-tab-group class="secondary-tabs" placement="start">
-                        <sl-tab slot="nav" panel="request-headers" class="tab-secondary">Headers</sl-tab>
-                        <sl-tab slot="nav" panel="request-cookies" class="tab-secondary">Cookies</sl-tab>
-                        <sl-tab slot="nav" panel="request-body" class="tab-secondary">Body</sl-tab>
-                        <sl-tab-panel name="request-headers">
-                          
-                           ${this._requestHeadersView}
-                            
-                            
-                            
-                            
-                        </sl-tab-panel>
-                        <sl-tab-panel name="request-cookies">
-                            ${this._requestCookiesView}
-                        </sl-tab-panel>
-                        <sl-tab-panel name="request-body">
-                            ${req.requestBody}
-                        </sl-tab-panel>
-                    </sl-tab-group>
-                </sl-tab-panel>
-                <sl-tab-panel name="response">
-
-                    <sl-tab-group class="secondary-tabs" placement="start">
-                        <sl-tab slot="nav" panel="response-headers" class="tab-secondary">Headers</sl-tab>
-                        <sl-tab slot="nav" panel="response-cookies" class="tab-secondary">Cookies</sl-tab>
-                        <sl-tab slot="nav" panel="response-body" class="tab-secondary">Body</sl-tab>
-                        <sl-tab-panel name="response-headers">
-
-                            ${this._responseHeadersView}
-                            
-
-                        </sl-tab-panel>
-                        <sl-tab-panel name="response-cookies">
-                            ${this._responseCookiesView}
-                        </sl-tab-panel>
-                        <sl-tab-panel name="response-body">
-                            <pre><code>${unsafeHTML(highlight)}</code></pre>
-                        </sl-tab-panel>
-                    </sl-tab-group>
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-
-                    
-                </sl-tab-panel>
-            </sl-tab-group>
-        `
+                <sl-tab-group>
+                    <sl-tab slot="nav" panel="violations" class="tab">Violations</sl-tab>
+                    <sl-tab slot="nav" panel="parameters" class="tab">Query Parameters</sl-tab>
+                    <sl-tab slot="nav" panel="request" class="tab">Request</sl-tab>
+                    <sl-tab slot="nav" panel="response" class="tab">Response</sl-tab>
+                    <sl-tab-panel name="violations">
+                        ${requestViolations}
+                        ${responseViolations}
+                    </sl-tab-panel>
+                    <sl-tab-panel name="parameters">
+                        parameters.
+                    </sl-tab-panel>
+                    <sl-tab-panel name="request">
+                        <sl-tab-group class="secondary-tabs" placement="start">
+                            <sl-tab slot="nav" panel="request-headers" class="tab-secondary">Headers</sl-tab>
+                            <sl-tab slot="nav" panel="request-cookies" class="tab-secondary">Cookies</sl-tab>
+                            <sl-tab slot="nav" panel="request-body" class="tab-secondary">Body</sl-tab>
+                            <sl-tab-panel name="request-headers">
+                                ${this._requestHeadersView}
+                            </sl-tab-panel>
+                            <sl-tab-panel name="request-cookies">
+                                ${this._requestCookiesView}
+                            </sl-tab-panel>
+                            <sl-tab-panel name="request-body">
+                                ${req.requestBody}
+                            </sl-tab-panel>
+                        </sl-tab-group>
+                    </sl-tab-panel>
+                    <sl-tab-panel name="response">
+                        <sl-tab-group class="secondary-tabs" placement="start">
+                            <sl-tab slot="nav" panel="response-headers" class="tab-secondary">Headers</sl-tab>
+                            <sl-tab slot="nav" panel="response-cookies" class="tab-secondary">Cookies</sl-tab>
+                            <sl-tab slot="nav" panel="response-body" class="tab-secondary">Body</sl-tab>
+                            <sl-tab-panel name="response-headers">
+                                ${this._responseHeadersView}
+                            </sl-tab-panel>
+                            <sl-tab-panel name="response-cookies">
+                                ${this._responseCookiesView}
+                            </sl-tab-panel>
+                            <sl-tab-panel name="response-body">
+                                <pre><code>${unsafeHTML(highlight)}</code></pre>
+                            </sl-tab-panel>
+                        </sl-tab-group>
+                    </sl-tab-panel>
+                </sl-tab-group>
+            `
 
 
             return html`${tabGroup}`
         } else {
-            return html`hheeeeeeyyyyyyyyyyy`
+            return html`select a transaction`
         }
 
 
