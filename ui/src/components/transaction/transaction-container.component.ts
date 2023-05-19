@@ -1,12 +1,12 @@
 import {customElement, state, query} from "lit/decorators.js";
 import {html, LitElement} from "lit";
 import {Store} from "@/ranch/store";
-import {HttpTransaction} from '@/model/http_transaction';
+import {BuildLiveTransactionFromState, HttpTransaction} from '@/model/http_transaction';
 import {HttpTransactionItemComponent} from "./transaction-item.component";
 import localforage from "localforage";
 import {WiretapLocalStorage} from "@/wiretap";
 import transactionContainerComponentCss from "./transaction-container.component.css";
-import {HttpTransactionViewComponent} from "@/components/transaction/transaction-view.component";
+import {HttpTransactionViewComponent} from "./transaction-view.component";
 
 @customElement('http-transaction-container')
 export class HttpTransactionContainerComponent extends LitElement {
@@ -45,7 +45,7 @@ export class HttpTransactionContainerComponent extends LitElement {
             const savedTransactions: Map<string, HttpTransactionContainer> = new Map<string, HttpTransactionContainer>()
             storeData.forEach((value: HttpTransaction, key: string) => {
                 const container: HttpTransactionContainer = {
-                    Transaction: value,
+                    Transaction: BuildLiveTransactionFromState(value),
                     Listener: (update: HttpTransaction) => {
                         this.requestUpdate();
                     }
@@ -76,9 +76,10 @@ export class HttpTransactionContainerComponent extends LitElement {
         if (this._mappedHttpTransactions.has(value.id)) {
             const existingTransaction = this._mappedHttpTransactions.get(value.id)
             existingTransaction.Listener(value)
-            const component: HttpTransactionItemComponent = this._transactionComponents.find((v: HttpTransactionItemComponent) => {
-                return v.transactionId === value.id;
-            });
+            const component: HttpTransactionItemComponent =
+                this._transactionComponents.find((v: HttpTransactionItemComponent) => {
+                    return v.transactionId === value.id;
+                });
             component.httpTransaction = value;
             component.requestUpdate()
 
@@ -86,7 +87,7 @@ export class HttpTransactionContainerComponent extends LitElement {
 
             // otherwise, add it.
             const container: HttpTransactionContainer = {
-                Transaction: value,
+                Transaction: BuildLiveTransactionFromState(value),
                 Listener: (trans: HttpTransaction) => {
 
                     // update db.
@@ -113,16 +114,17 @@ export class HttpTransactionContainerComponent extends LitElement {
 
 
     render() {
-        const reversed = this._transactionComponents.sort((a: HttpTransactionItemComponent, b: HttpTransactionItemComponent) => {
-            return b.httpTransaction.timestamp - a.httpTransaction.timestamp
-        });
+        const reversed = this._transactionComponents.sort(
+            (a: HttpTransactionItemComponent, b: HttpTransactionItemComponent) => {
+                return b.httpTransaction.timestamp - a.httpTransaction.timestamp
+            });
 
         return html`
             <section class="split-panel-divider">
                 <sl-split-panel vertical style="height: calc(100vh - 57px); --min: 150px; --max: calc(100% - 400px);"
                                 position-in-pixels="300">
                     <sl-icon slot="divider" name="grip-vertical"></sl-icon>
-                    <div slot="start" class="transactions-container" 
+                    <div slot="start" class="transactions-container"
                          @httpTransactionSelected="${this.updateSelectedTransactionState}">
                         ${reversed}
                     </div>
@@ -133,7 +135,7 @@ export class HttpTransactionContainerComponent extends LitElement {
                                 <http-transaction-view></http-transaction-view>
                             </div>
                             <div slot="end" class="transaction-view-container">
-                               spec in here.
+                                spec in here.
                             </div>
                         </sl-split-panel>
                     </div>

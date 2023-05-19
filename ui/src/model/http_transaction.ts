@@ -1,4 +1,16 @@
 
+export interface HttpCookie {
+    value?:   string;
+    path?:     string;
+    domain?:   string;
+    expires?:  string;
+    // MaxAge=0 means no 'Max-Age' attribute specified.
+    // MaxAge<0 means delete cookie now, equivalently 'Max-Age: 0'
+    // MaxAge>0 means Max-Age attribute present and given in seconds
+    maxAge?:    number;
+    secure?:    boolean;
+    httpOnly?:  boolean;
+}
 
 export interface SchemaValidationFailure {
     reason?: string;
@@ -24,8 +36,22 @@ export class HttpRequest {
     method?: string;
     path?: string;
     query?: string;
-    headers?: Map<string, string>;
+    headers?: any;
+    cookies?: any;
     requestBody?: string;
+
+    constructor() {
+        this.headers = {}
+        this.cookies = {}
+    }
+
+    public extractHeaders(): Map<string, string> {
+        return new Map(Object.entries(this.headers));
+    }
+
+    public extractCookies(): Map<string, HttpCookie> {
+        return new Map(Object.entries(this.cookies));
+    }
 
     checkContentType(contentType: string): boolean {
         if (this.headers) {
@@ -33,15 +59,28 @@ export class HttpRequest {
 
             }
         }
-
         return false
     }
 }
 
 export class HttpResponse {
-    headers?: Map<string, string>;
+    headers?: any;
+    cookies?: any;
     statusCode?: number;
     responseBody?: string;
+
+    constructor() {
+        this.headers = {}
+        this.cookies = {}
+    }
+
+    extractHeaders(): Map<string, string> {
+        return new Map(Object.entries(this.headers));
+    }
+
+    extractCookies(): Map<string, string> {
+        return new Map(Object.entries(this.cookies));
+    }
 }
 
 export interface HttpTransaction {
@@ -53,3 +92,13 @@ export interface HttpTransaction {
     id?: string;
 }
 
+export function BuildLiveTransactionFromState(httpTransaction: HttpTransaction): HttpTransaction {
+    return {
+        timestamp: httpTransaction.timestamp,
+        httpRequest: Object.assign(new HttpRequest(), httpTransaction.httpRequest),
+        httpResponse: Object.assign(new HttpResponse(), httpTransaction.httpResponse),
+        id: httpTransaction.id,
+        requestValidation: httpTransaction.requestValidation,
+        responseValidation: httpTransaction.responseValidation,
+    }
+}

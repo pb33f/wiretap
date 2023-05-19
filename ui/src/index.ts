@@ -12,9 +12,10 @@ import '@shoelace-style/shoelace/dist/components/tab/tab.js';
 import '@shoelace-style/shoelace/dist/components/split-panel/split-panel.js';
 
 
-import './components/header/header.component';
+import './components/wiretap-header/header.component';
 import './components/transaction/transaction-container.component';
 import './components/transaction/transaction-view.component';
+import '@/components/kv-view/kv-view.component';
 import './ranch/bus';
 import './model/http_transaction';
 import './ranch/store';

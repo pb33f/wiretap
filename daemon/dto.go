@@ -5,26 +5,40 @@ package daemon
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/ranch/model"
 	"io"
 	"net/http"
 )
 
+type HttpCookie struct {
+	Value   string `json:"value,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Domain  string `json:"domain,omitempty"`
+	Expires string `json:"expires,omitempty"`
+	// MaxAge=0 means no 'Max-Age' attribute specified.
+	// MaxAge<0 means delete cookie now, equivalently 'Max-Age: 0'
+	// MaxAge>0 means Max-Age attribute present and given in seconds
+	MaxAge   int  `json:"maxAge,omitempty"`
+	Secure   bool `json:"secure,omitempty"`
+	HttpOnly bool `json:"httpOnly,omitempty"`
+}
+
 type HttpRequest struct {
-	URL     string            `json:"url,omitempty"`
-	Method  string            `json:"method,omitempty"`
-	Path    string            `json:"path,omitempty"`
-	Query   string            `json:"query,omitempty"`
-	Headers map[string]string `json:"headers,omitempty"`
-	Body    string            `json:"requestBody,omitempty"`
+	URL     string                 `json:"url,omitempty"`
+	Method  string                 `json:"method,omitempty"`
+	Path    string                 `json:"path,omitempty"`
+	Query   string                 `json:"query,omitempty"`
+	Headers map[string]any         `json:"headers,omitempty"`
+	Body    string                 `json:"requestBody,omitempty"`
+	Cookies map[string]*HttpCookie `json:"cookies,omitempty"`
 }
 
 type HttpResponse struct {
-	Headers    map[string]string `json:"headers,omitempty"`
-	StatusCode int               `json:"statusCode,omitempty"`
-	Body       string            `json:"responseBody,omitempty"`
+	Headers    map[string]any         `json:"headers,omitempty"`
+	StatusCode int                    `json:"statusCode,omitempty"`
+	Body       string                 `json:"responseBody,omitempty"`
+	Cookies    map[string]*HttpCookie `json:"cookies,omitempty"`
 }
 
 type HttpTransaction struct {
@@ -41,9 +55,22 @@ func buildResponse(r *model.Request, response *http.Response) *HttpTransaction {
 		code = response.StatusCode
 	}
 
-	headers := make(map[string]string)
+	headers := make(map[string]any)
 	for k, v := range response.Header {
-		headers[k] = fmt.Sprint(v)
+		headers[k] = v[0]
+	}
+
+	cookies := make(map[string]*HttpCookie)
+	for _, c := range response.Cookies() {
+		cookies[c.Name] = &HttpCookie{
+			Value:    c.Value,
+			Path:     c.Path,
+			Domain:   c.Domain,
+			Expires:  c.RawExpires,
+			MaxAge:   c.MaxAge,
+			Secure:   c.Secure,
+			HttpOnly: c.HttpOnly,
+		}
 	}
 
 	// sniff and replace response body.
@@ -57,14 +84,28 @@ func buildResponse(r *model.Request, response *http.Response) *HttpTransaction {
 			headers,
 			code,
 			string(respBody),
+			cookies,
 		},
 	}
 }
 
 func buildRequest(r *model.Request) *HttpTransaction {
-	headers := make(map[string]string)
+	headers := make(map[string]any)
 	for k, v := range r.HttpRequest.Header {
-		headers[k] = fmt.Sprint(v)
+		headers[k] = v[0]
+	}
+
+	cookies := make(map[string]*HttpCookie)
+	for _, c := range r.HttpRequest.Cookies() {
+		cookies[c.Name] = &HttpCookie{
+			Value:    c.Value,
+			Path:     c.Path,
+			Domain:   c.Domain,
+			Expires:  c.RawExpires,
+			MaxAge:   c.MaxAge,
+			Secure:   c.Secure,
+			HttpOnly: c.HttpOnly,
+		}
 	}
 
 	// sniff and replace request body.
@@ -79,6 +120,7 @@ func buildRequest(r *model.Request) *HttpTransaction {
 			Method:  r.HttpRequest.Method,
 			Path:    r.HttpRequest.URL.Path,
 			Query:   r.HttpRequest.URL.RawQuery,
+			Cookies: cookies,
 			Headers: headers,
 			Body:    string(requestBody),
 		},

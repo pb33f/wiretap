@@ -4,52 +4,50 @@
 package daemon
 
 import (
-    "github.com/pb33f/libopenapi"
-    "github.com/pb33f/libopenapi/datamodel/high/v3"
-    "github.com/pb33f/ranch/bus"
-    "github.com/pb33f/ranch/model"
-    "github.com/pb33f/ranch/service"
-    "net/http"
-    "time"
+	"github.com/pb33f/libopenapi"
+	"github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/pb33f/ranch/bus"
+	"github.com/pb33f/ranch/model"
+	"github.com/pb33f/ranch/service"
+	"net/http"
+	"time"
 )
 
 const (
-    WiretapServiceChan   = "wiretap"
-    WiretapBroadcastChan = "wiretap-broadcast"
-    IncomingHttpRequest  = "incoming-http-request"
+	WiretapServiceChan   = "wiretap"
+	WiretapBroadcastChan = "wiretap-broadcast"
+	IncomingHttpRequest  = "incoming-http-request"
 )
 
 type WiretapService struct {
-    transport     *http.Transport
-    client        *http.Client
-    document      libopenapi.Document
-    docModel      *v3.Document
-    serviceCore   service.FabricServiceCore
-    broadcastChan *bus.Channel
-    bus           bus.EventBus
-    config        *WiretapServiceConfiguration
+	transport     *http.Transport
+	document      libopenapi.Document
+	docModel      *v3.Document
+	serviceCore   service.FabricServiceCore
+	broadcastChan *bus.Channel
+	bus           bus.EventBus
+	config        *WiretapServiceConfiguration
 }
 
 func NewWiretapService(document libopenapi.Document, configuration *WiretapServiceConfiguration) *WiretapService {
-    tr := &http.Transport{
-        MaxIdleConns:    20,
-        IdleConnTimeout: 30 * time.Second,
-    }
-    m, _ := document.BuildV3Model()
-    return &WiretapService{
-        document:  document,
-        config:    configuration,
-        docModel:  &m.Model,
-        transport: tr,
-        client:    &http.Client{Transport: tr},
-    }
+	tr := &http.Transport{
+		MaxIdleConns:    20,
+		IdleConnTimeout: 30 * time.Second,
+	}
+	m, _ := document.BuildV3Model()
+	return &WiretapService{
+		document:  document,
+		config:    configuration,
+		docModel:  &m.Model,
+		transport: tr,
+	}
 }
 
 func (ws *WiretapService) HandleServiceRequest(request *model.Request, core service.FabricServiceCore) {
-    switch request.RequestCommand {
-    case IncomingHttpRequest:
-        ws.handleHttpRequest(request, core)
-    default:
-        core.HandleUnknownRequest(request)
-    }
+	switch request.RequestCommand {
+	case IncomingHttpRequest:
+		ws.handleHttpRequest(request, core)
+	default:
+		core.HandleUnknownRequest(request)
+	}
 }

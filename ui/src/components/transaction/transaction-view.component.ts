@@ -1,28 +1,49 @@
 import {customElement, state} from "lit/decorators.js";
-import {LitElement, TemplateResult} from "lit";
-import {HttpTransaction} from "@/model/http_transaction";
 import {html} from "lit";
+import {unsafeHTML} from "lit/directives/unsafe-html.js";
+import {LitElement, TemplateResult} from "lit";
 
+import {HttpTransaction} from "@/model/http_transaction";
+import transactionViewComponentCss from "./transaction-view.component.css";
+import {KVViewComponent} from "@/components/kv-view/kv-view.component";
+
+import prismCss from "@/components/prism.css";
 import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/themes/prism-okaidia.css';
-import {unsafeHTML} from "lit/directives/unsafe-html.js";
-import transactionViewComponentCss from "@/components/transaction/transaction-view.component.css";
 
 @customElement('http-transaction-view')
 export class HttpTransactionViewComponent extends LitElement {
 
-    static styles = transactionViewComponentCss
+    static styles = [prismCss, transactionViewComponentCss];
 
     @state()
-    _httpTransaction: HttpTransaction
+    private _httpTransaction: HttpTransaction
+
+    private readonly _requestHeadersView: KVViewComponent;
+    private readonly _responseHeadersView: KVViewComponent;
+    private readonly _requestCookiesView: KVViewComponent;
+    private readonly _responseCookiesView: KVViewComponent;
+
 
     constructor() {
         super();
+        this._requestHeadersView = new KVViewComponent();
+        this._requestCookiesView = new KVViewComponent();
+        this._responseHeadersView = new KVViewComponent();
+        this._responseCookiesView = new KVViewComponent();
     }
 
     set httpTransaction(value: HttpTransaction) {
         this._httpTransaction = value;
+        if (this._requestHeadersView && value.httpRequest) {
+            this._requestHeadersView.data = value.httpRequest.extractHeaders();
+            this._requestCookiesView.data = value.httpRequest.extractCookies();
+        }
+        if (this._responseHeadersView && value.httpResponse) {
+            this._responseHeadersView.data = value.httpResponse.extractHeaders();
+            this._responseCookiesView.data = value.httpResponse.extractCookies();
+        }
     }
 
     render() {
@@ -52,27 +73,54 @@ export class HttpTransactionViewComponent extends LitElement {
                 </sl-tab-panel>
                 <sl-tab-panel name="request">
 
-                    <sl-tab-group class="secondary-tabs">
+                    <sl-tab-group class="secondary-tabs" placement="start">
                         <sl-tab slot="nav" panel="request-headers" class="tab-secondary">Headers</sl-tab>
                         <sl-tab slot="nav" panel="request-cookies" class="tab-secondary">Cookies</sl-tab>
                         <sl-tab slot="nav" panel="request-body" class="tab-secondary">Body</sl-tab>
                         <sl-tab-panel name="request-headers">
-                            mooo.
+                          
+                           ${this._requestHeadersView}
+                            
+                            
+                            
+                            
                         </sl-tab-panel>
                         <sl-tab-panel name="request-cookies">
-                            mooo.
+                            ${this._requestCookiesView}
                         </sl-tab-panel>
                         <sl-tab-panel name="request-body">
-                            mooo.
+                            ${req.requestBody}
                         </sl-tab-panel>
                     </sl-tab-group>
                 </sl-tab-panel>
                 <sl-tab-panel name="response">
-                    
-                    
-                    ${req.requestBody}
 
-                    <pre><code>${unsafeHTML(highlight)}</code></pre>
+                    <sl-tab-group class="secondary-tabs" placement="start">
+                        <sl-tab slot="nav" panel="response-headers" class="tab-secondary">Headers</sl-tab>
+                        <sl-tab slot="nav" panel="response-cookies" class="tab-secondary">Cookies</sl-tab>
+                        <sl-tab slot="nav" panel="response-body" class="tab-secondary">Body</sl-tab>
+                        <sl-tab-panel name="response-headers">
+
+                            ${this._responseHeadersView}
+                            
+
+                        </sl-tab-panel>
+                        <sl-tab-panel name="response-cookies">
+                            ${this._responseCookiesView}
+                        </sl-tab-panel>
+                        <sl-tab-panel name="response-body">
+                            <pre><code>${unsafeHTML(highlight)}</code></pre>
+                        </sl-tab-panel>
+                    </sl-tab-group>
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+
+                    
                 </sl-tab-panel>
             </sl-tab-group>
         `

@@ -1,7 +1,7 @@
 import {customElement} from "lit/decorators.js";
 import {html, LitElement} from "lit";
 import {CreateStoreManager, StoreManager} from "./ranch/store.manager";
-import {HttpTransaction} from "./model/http_transaction";
+import {HttpRequest, HttpResponse, HttpTransaction} from "./model/http_transaction";
 import {Store} from "./ranch/store";
 import {Bus, BusCallback, Channel, CreateBus, Subscription} from "./ranch/bus";
 import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container.component";
@@ -73,7 +73,18 @@ export class WiretapComponent extends LitElement {
 
     wireHandler(): BusCallback {
         return (msg) => {
-            const httpTransaction: HttpTransaction = msg.payload as HttpTransaction
+            const wiretapMessage = msg.payload as HttpTransaction
+
+            const httpTransaction: HttpTransaction = {
+                httpRequest: Object.assign(new HttpRequest(), wiretapMessage.httpRequest),
+                id: wiretapMessage.id,
+                requestValidation: wiretapMessage.requestValidation,
+                responseValidation: wiretapMessage.responseValidation,
+            }
+            if (wiretapMessage.httpResponse) {
+                httpTransaction.httpResponse = Object.assign(new HttpResponse(), wiretapMessage.httpResponse);
+            }
+
             const existingTransaction: HttpTransaction = this._httpTransactionStore.get(httpTransaction.id)
             if (existingTransaction) {
                 if (httpTransaction.httpResponse) {
