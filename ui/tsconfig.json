@@ -4,8 +4,7 @@
     "experimentalDecorators": true,
     "outDir": "./build/dist/",
     "noImplicitAny": false,
-    "module": "es6",
-    "target": "es6",
+    "module": "esnext",
     "jsx": "react",
     "allowJs": true,
     "moduleResolution": "node",
@@ -14,7 +13,8 @@
     "allowSyntheticDefaultImports": true,
     "lib": [
       "dom",
-      "esnext"
+      "esnext",
+      "es2017"
     ],
     "paths": {
       "@/*": ["src/*"],

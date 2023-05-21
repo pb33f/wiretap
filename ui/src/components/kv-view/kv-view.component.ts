@@ -1,4 +1,4 @@
-import {customElement, state} from "lit/decorators.js";
+import {customElement, state, property} from "lit/decorators.js";
 import {map} from "lit/directives/map.js";
 
 import {LitElement, TemplateResult} from "lit";
@@ -10,11 +10,18 @@ import 'prismjs/components/prism-json';
 import 'prismjs/themes/prism-okaidia.css';
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import prismCss from "@/components/prism.css";
+import sharedCss from "@/components/shared.css";
 
 @customElement('http-kv-view')
 export class KVViewComponent extends LitElement {
 
-    static styles = [prismCss, kvViewComponentCss];
+    static styles = [prismCss, sharedCss, kvViewComponentCss];
+
+    @property()
+    keyLabel: string = 'Header';
+
+    @property()
+    valueLabel: string = 'Value';
 
     @state()
     private _data: Map<string, any>;
@@ -52,15 +59,19 @@ export class KVViewComponent extends LitElement {
             `
         }
 
-        const noData: TemplateResult = html`No data available`;
+        const noData: TemplateResult = html`
+            <div class="empty-data">
+                <sl-icon name="mic-mute" class="mute-icon"></sl-icon><br/>
+                No data extracted
+            </div>`;
 
         const table: TemplateResult = html`
             <div class="kv-table">
                 <table>
                     <thead>
                     <tr>
-                        <th>Header</th>
-                        <th>Value</th>
+                        <th>${this.keyLabel}</th>
+                        <th>${this.valueLabel}</th>
                     </tr>
                     </thead>
                     <tbody>

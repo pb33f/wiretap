@@ -1,13 +1,11 @@
-import {customElement, property, state} from "lit/decorators.js";
-import {html, LitElement, TemplateResult} from "lit";
-import {unsafeHTML} from "lit/directives/unsafe-html.js";
+import {customElement, state} from "lit/decorators.js";
+import {html, LitElement} from "lit";
 import {HttpTransaction} from "@/model/http_transaction";
 import transactionComponentCss from "@/components/transaction/transaction-item.component.css";
 import Prism from 'prismjs'
 import 'prismjs/components/prism-javascript' // Language
-import 'prismjs/themes/prism-okaidia.css' // Theme
-
-export const HttpTransactionSelectedEvent = "httpTransactionSelected";
+import 'prismjs/themes/prism-okaidia.css'
+import {HttpTransactionSelectedEvent} from "@/model/events"; // Theme
 
 @customElement('http-transaction-item')
 export class HttpTransactionItemComponent extends LitElement {
@@ -19,6 +17,8 @@ export class HttpTransactionItemComponent extends LitElement {
 
     @state()
     _active = false;
+
+    private _processing = false;
 
     constructor(httpTransaction: HttpTransaction) {
         super();
@@ -68,6 +68,10 @@ export class HttpTransactionItemComponent extends LitElement {
         const req = this._httpTransaction?.httpRequest;
         const resp = this._httpTransaction?.httpResponse;
 
+        this._processing = req && !resp;
+
+
+        console.log('processing...', this._processing);
 
         const exchangeMethod = (method: string): string => {
             switch (method) {
@@ -92,19 +96,35 @@ export class HttpTransactionItemComponent extends LitElement {
             }
         }
 
-
-
         let tClass = "transaction";
         if (this._active) {
             tClass += " active";
+        }
+
+        let statusIcon = html``
+
+        if (this._processing) {
+            statusIcon = html`<sl-spinner class="spinner"></sl-spinner>`
+        } else {
+            if (req && resp) {
+                if (this._httpTransaction.requestValidation?.length > 0 ||
+                    this._httpTransaction.responseValidation?.length > 0) {
+                    statusIcon = html`<sl-icon name="exclamation-circle" class="invalid"></sl-icon>`
+                } else {
+                    statusIcon = html`<sl-icon name="check-lg" class="valid"></sl-icon>`
+                }
+            }
         }
 
         return html`
             <div class="${tClass}" @click="${this.setActive}">
                 <header>
                     <sl-tag variant="${exchangeMethod(req.method)}" class="method">${req.method}</sl-tag>
-                    ${req.url} ${tClass}
+                    ${decodeURI(req.url)}
                 </header>
+                <div class="transaction-status">
+                    ${statusIcon}
+                </div>
             </div>`
     }
 

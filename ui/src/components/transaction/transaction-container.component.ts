@@ -4,9 +4,11 @@ import {Store} from "@/ranch/store";
 import {BuildLiveTransactionFromState, HttpTransaction} from '@/model/http_transaction';
 import {HttpTransactionItemComponent} from "./transaction-item.component";
 import localforage from "localforage";
-import {WiretapLocalStorage} from "@/wiretap";
+import {WiretapCurrentSpec, WiretapLocalStorage} from "@/wiretap";
 import transactionContainerComponentCss from "./transaction-container.component.css";
 import {HttpTransactionViewComponent} from "./transaction-view.component";
+import {SpecEditor} from "@/components/editor/editor.component";
+import {ViolationLocation} from "@/model/events";
 
 @customElement('http-transaction-container')
 export class HttpTransactionContainerComponent extends LitElement {
@@ -15,6 +17,7 @@ export class HttpTransactionContainerComponent extends LitElement {
 
     private _allTransactionStore: Store<HttpTransaction>;
     private _selectedTransactionStore: Store<HttpTransaction>;
+    private _specStore: Store<String>;
     private _transactionComponents: HttpTransactionItemComponent[] = [];
 
     @state()
@@ -26,18 +29,27 @@ export class HttpTransactionContainerComponent extends LitElement {
     @query('http-transaction-view')
     private _transactionView: HttpTransactionViewComponent
 
-    constructor(allTransactionStore: Store<HttpTransaction>, selectedTransactionStore: Store<HttpTransaction>) {
+    @query('spec-editor')
+    private _specEditor: SpecEditor;
+
+    constructor(allTransactionStore: Store<HttpTransaction>,
+                selectedTransactionStore: Store<HttpTransaction>,
+                specStore: Store<String>) {
         super()
         this._allTransactionStore = allTransactionStore
         this._selectedTransactionStore = selectedTransactionStore
+        this._specStore = specStore;
         this._mappedHttpTransactions = new Map<string, HttpTransactionContainer>()
     }
+
 
     connectedCallback() {
         super.connectedCallback();
 
         // listen for changes to selected transaction.
         this._selectedTransactionStore.onAllChanges(this.handleSelectedTransactionChange.bind(this))
+        this._specStore.subscribe(WiretapCurrentSpec, this.handleSpecChange.bind(this))
+
 
         this._allTransactionStore.onAllChanges(this.handleTransactionChange.bind(this))
         this._allTransactionStore.onPopulated((storeData: Map<string, HttpTransaction>) => {
@@ -69,6 +81,11 @@ export class HttpTransactionContainerComponent extends LitElement {
         this._selectedTransaction = transaction;
         this._transactionView.httpTransaction = transaction;
     }
+
+    handleSpecChange(key: string) {
+        this._specEditor.setValue(key)
+    }
+
 
     handleTransactionChange(key: string, value: HttpTransaction) {
 
@@ -119,6 +136,11 @@ export class HttpTransactionContainerComponent extends LitElement {
                 return b.httpTransaction.timestamp - a.httpTransaction.timestamp
             });
 
+        // return html`
+        //     <spec-editor>
+        //         hello.
+        //     </spec-editor>`
+
         return html`
             <section class="split-panel-divider">
                 <sl-split-panel vertical style="height: calc(100vh - 57px); --min: 150px; --max: calc(100% - 400px);"
@@ -132,16 +154,26 @@ export class HttpTransactionContainerComponent extends LitElement {
                         <sl-split-panel style="height: 100%;  --min: 300px; --max: calc(100% - 250px);" position="60">
                             <sl-icon slot="divider" name="grip-vertical"></sl-icon>
                             <div slot="start" class="transaction-view-container">
-                                <http-transaction-view></http-transaction-view>
+                                <http-transaction-view @violationLocationSelected="${this.locationSelected}"></http-transaction-view>
                             </div>
                             <div slot="end" class="transaction-view-container">
-                                spec in here.
+                                <spec-editor id="spec-editor">
+                                </spec-editor>
                             </div>
                         </sl-split-panel>
                     </div>
                 </sl-split-panel>
             </section>
         `
+    }
+
+    locationSelected(e: CustomEvent<ViolationLocation>) {
+        console.log('SPIN THE WHHEEEEEEL', e.detail)
+        const editorRef = this._specEditor.editor
+        editorRef.setPosition({column: e.detail.column, lineNumber: e.detail.line});
+        editorRef.revealLinesInCenter(e.detail.line, e.detail.line);
+        editorRef.revealPositionInCenter({column: e.detail.column, lineNumber: e.detail.line})
+        editorRef.focus();
     }
 
     updateSelectedTransactionState(d: CustomEvent<HttpTransaction>): void {

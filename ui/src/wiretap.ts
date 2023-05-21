@@ -3,14 +3,23 @@ import {html, LitElement} from "lit";
 import {CreateStoreManager, StoreManager} from "./ranch/store.manager";
 import {HttpRequest, HttpResponse, HttpTransaction} from "./model/http_transaction";
 import {Store} from "./ranch/store";
-import {Bus, BusCallback, Channel, CreateBus, Subscription} from "./ranch/bus";
+import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Subscription} from "./ranch/bus";
 import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container.component";
 import * as localforage from "localforage";
 
 export const WiretapChannel = "wiretap-broadcast";
+export const SpecChannel = "specs";
+
 export const WiretapHttpTransactionStore = "http-transaction-store";
 export const WiretapSelectedTransactionStore = "selected-transaction-store";
-export const WiretapLocalStorage = "wiretap-local-storage";
+
+export const WiretapSpecStore = "wiretap-spec-store";
+export const WiretapCurrentSpec = "current-spec";
+export const GetCurrentSpecCommand = "get-current-spec";
+
+
+
+export const WiretapLocalStorage = "wiretap-transactions";
 
 @customElement('wiretap-application')
 export class WiretapComponent extends LitElement {
@@ -18,9 +27,14 @@ export class WiretapComponent extends LitElement {
     private readonly _storeManager: StoreManager;
     private readonly _httpTransactionStore: Store<HttpTransaction>;
     private readonly _selectedTransactionStore: Store<HttpTransaction>;
+    private readonly _specStore: Store<string>;
+
     private readonly _bus: Bus;
     private readonly _wiretapChannel: Channel;
-    private _channelSubscription: Subscription;
+    private readonly _specChannel: Channel;
+    private _transactionChannelSubscription: Subscription;
+    private _specChannelSubscription: Subscription;
+
 
     constructor() {
         super();
@@ -28,7 +42,7 @@ export class WiretapComponent extends LitElement {
         localforage.config({
             name: 'pb33f-wiretap',
             version: 1.0,
-            storeName: 'wiretap_transactions',
+            storeName: 'wiretap',
         });
 
         // set up bus and stores
@@ -43,16 +57,31 @@ export class WiretapComponent extends LitElement {
         this._selectedTransactionStore =
             this._storeManager.CreateStore<HttpTransaction>(WiretapSelectedTransactionStore);
 
+        this._specStore = this._storeManager.CreateStore<string>(WiretapSpecStore);
+
         // set up wiretap channel
         this._wiretapChannel = this._bus.createChannel(WiretapChannel);
+        this._specChannel = this._bus.createChannel(SpecChannel);
 
         // load previous transactions from local storage.
         this.loadHistoryFromLocalStorage().then((previousTransactions: Map<string, HttpTransaction>) => {
             this._httpTransactionStore.populate(previousTransactions)
         });
 
+        this.loadSpecFromLocalStorage().then((spec: string) => {
+            if (!spec || spec.length <= 0) {
+                this._bus.getClient().publish({
+                    destination: "/pub/queue/specs",
+                    body: JSON.stringify({requestCommand: GetCurrentSpecCommand}),
+                })
+            } else {
+                this._specStore.set(WiretapCurrentSpec, spec);
+            }
+        });
+
         // handle incoming http transactions.
-        this._channelSubscription = this._wiretapChannel.subscribe(this.wireHandler());
+        this._transactionChannelSubscription = this._wiretapChannel.subscribe(this.wireTransactionHandler());
+        this._specChannelSubscription = this._specChannel.subscribe(this.specHandler());
 
         // configure broker.
         const config = {
@@ -62,16 +91,34 @@ export class WiretapComponent extends LitElement {
         }
         // map and connect.
         this._bus.mapChannelToBrokerDestination("/topic/" + WiretapChannel, WiretapChannel)
-        this._bus.connectToBroker(config)
+        this._bus.mapChannelToBrokerDestination("/queue/" + SpecChannel, SpecChannel)
+
+        //setTimeout(() => {
+            this._bus.connectToBroker(config)
+        //},4000);
+;
     }
 
+
+    async loadSpecFromLocalStorage(): Promise<string> {
+        return localforage.getItem<string>(WiretapCurrentSpec);
+    }
 
     async loadHistoryFromLocalStorage(): Promise<Map<string, HttpTransaction>> {
         return localforage.getItem<Map<string, HttpTransaction>>(WiretapLocalStorage);
     }
 
+    specHandler(): BusCallback<CommandResponse>{
+        return (msg) => {
+            const decoded = atob(msg.payload.payload);
+            this._specStore.set(WiretapCurrentSpec, decoded)
+            localforage.setItem(WiretapCurrentSpec, decoded);
+        }
+    }
 
-    wireHandler(): BusCallback {
+
+
+    wireTransactionHandler(): BusCallback {
         return (msg) => {
             const wiretapMessage = msg.payload as HttpTransaction
 
@@ -101,7 +148,11 @@ export class WiretapComponent extends LitElement {
 
     render() {
         const transaction =
-            new HttpTransactionContainerComponent(this._httpTransactionStore, this._selectedTransactionStore)
+            new HttpTransactionContainerComponent(
+                this._httpTransactionStore,
+                this._selectedTransactionStore,
+                this._specStore);
+
         return html`${transaction}`
     }
 

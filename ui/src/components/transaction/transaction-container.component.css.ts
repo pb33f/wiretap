@@ -16,8 +16,8 @@ export default css`
   .split-panel-divider sl-icon {
     position: absolute;
     border-radius: var(--sl-border-radius-small);
-    background: var(--divider-handle-background);
-    color: var(--primary-color);
+    background: var(--background-color);
+    color: var(--secondary-color);
     border: 1px dashed var(--secondary-color);
     //height: 20px;
     //width: 40px;
@@ -41,9 +41,10 @@ export default css`
   }
 
   .transaction-view-container {
-    height: 100%;
-    align-items: start;
+    height: calc(100% - 2px);
+    width: 100%;
     overflow: auto;
+    position: relative;
   }
   
   

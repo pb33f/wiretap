@@ -2,7 +2,7 @@ import {RanchUtils} from "./utils";
 import {Client, StompConfig} from "@stomp/stompjs";
 
 
-export type BusCallback = (message: Message) => void
+export type BusCallback<T = any> = (message: Message<T>) => void
 
 export interface Subscription {
     unsubscribe(): void
@@ -13,10 +13,10 @@ export interface Subscriber {
     callback: BusCallback
 }
 
-export interface Message {
+export interface Message<T = any> {
     id?: string
     command?: string
-    payload?: any
+    payload?: T
 }
 
 export interface Channel {
@@ -30,7 +30,14 @@ export interface Bus {
     createChannel(channelName: string): Channel
     connectToBroker(config: StompConfig)
     mapChannelToBrokerDestination(destination: string, channel: string): void
+    getClient(): Client
 }
+
+export interface CommandResponse {
+    channel: string;
+    payload: any;
+}
+
 
 let _busSingleton: Bus
 
@@ -49,6 +56,10 @@ export class bus implements Bus {
         this._preMappedChannels = new Map<string, string>()
     }
 
+    getClient(): Client {
+        return this._stompClient
+    }
+
     get channels(): Channel[] {
         return this._channels
     }
@@ -64,6 +75,9 @@ export class bus implements Bus {
             this._preMappedChannels.forEach((channel: string, destination: string) => {
                 this._mapDestination(destination, channel)
             });
+            if (config.onConnect) {
+                config.onConnect(frame);
+            }
         }
     }
 

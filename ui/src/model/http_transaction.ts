@@ -1,3 +1,4 @@
+import {ExtractQueryString} from "@/model/extract_query";
 
 export interface HttpCookie {
     value?:   string;
@@ -25,7 +26,7 @@ export interface ValidationError {
     validationType: string;
     validationSubType: string;
     specLine: number;
-    specCol: number;
+    specColumn: number;
     howToFix: string;
     schemaValidationErrors?: SchemaValidationFailure[];
     context?: any;
@@ -47,6 +48,10 @@ export class HttpRequest {
 
     public extractHeaders(): Map<string, string> {
         return new Map(Object.entries(this.headers));
+    }
+
+    public extractQuery(): Map<string, string> {
+        return ExtractQueryString(this.query);
     }
 
     public extractCookies(): Map<string, HttpCookie> {

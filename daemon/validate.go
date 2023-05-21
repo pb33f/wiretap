@@ -22,8 +22,17 @@ func (ws *WiretapService) validateResponse(
 	time.Sleep(3 * time.Second) // simulate a slow response.
 
 	_, validationErrors := responseValidator.ValidateResponseBody(request.HttpRequest, returnedResponse)
-	if len(validationErrors) > 0 {
-		ws.broadcastResponseValidationErrors(request, returnedResponse, validationErrors)
+
+	// wipe out any path not found errors, they are not relevant to the response.
+	var cleanedErrors []*errors.ValidationError
+	for x := range validationErrors {
+		if !validationErrors[x].IsPathMissingError() {
+			cleanedErrors = append(cleanedErrors, validationErrors[x])
+		}
+	}
+
+	if len(cleanedErrors) > 0 {
+		ws.broadcastResponseValidationErrors(request, returnedResponse, cleanedErrors)
 	} else {
 		ws.broadcastResponse(request, returnedResponse)
 	}

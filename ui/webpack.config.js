@@ -5,6 +5,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 
 const path = require("path");
 
@@ -47,6 +48,7 @@ module.exports = {
         minimize: true,
     },
     plugins: [
+        new MonacoWebpackPlugin(),
         new HtmlWebpackPlugin({
             template: 'index.html',
 

@@ -14,6 +14,7 @@ import (
 	"github.com/pb33f/ranch/plank/utils"
 	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/wiretap/daemon"
+	"github.com/pb33f/wiretap/specs"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -100,6 +101,10 @@ func runWiretapService(config *daemon.WiretapServiceConfiguration) (server.Platf
 	// boot what-changed html report service.
 	if err = platformServer.RegisterService(daemon.NewWiretapService(doc, config),
 		daemon.WiretapServiceChan); err != nil {
+		panic(err)
+	}
+
+	if err = platformServer.RegisterService(specs.NewSpecService(doc), specs.SpecServiceChan); err != nil {
 		panic(err)
 	}
 
