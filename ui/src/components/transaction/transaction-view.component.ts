@@ -206,10 +206,14 @@ export class HttpTransactionViewComponent extends LitElement {
 
             return html`${tabGroup}`
         } else {
-            return html`select a transaction`
+
+            return html`
+                <div class="empty-data engage">
+                    <sl-icon name="arrow-up-square" class="up-icon"></sl-icon>
+                    <br/>
+                    Select an API call to explore...
+                </div>`
         }
-
-
     }
 
 

@@ -2,9 +2,6 @@ import './css/variables.css'
 import './css/pb33f.css'
 import './css/header.css'
 import './css/syntax.css'
-import 'monaco-editor/min/vs/editor/editor.main.css'
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
-
 import '@shoelace-style/shoelace/dist/themes/light.css';
 import '@shoelace-style/shoelace/dist/themes/dark.css';
 import '@shoelace-style/shoelace/dist/components/tag/tag.js';
@@ -21,8 +18,11 @@ import './components/wiretap-header/header.component';
 import './components/transaction/transaction-container.component';
 import './components/transaction/transaction-view.component';
 import './components/violation/violation.component';
-import '@/components/kv-view/kv-view.component';
-import '@/components/editor/editor.component';
+import './components/kv-view/kv-view.component';
+import './components/editor/editor.component';
+import './components/wiretap-header/metrics.component';
+import './components/wiretap-header/metric.component';
+
 import './ranch/bus';
 import './model/http_transaction';
 import './ranch/store';

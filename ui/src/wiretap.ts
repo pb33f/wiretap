@@ -1,4 +1,4 @@
-import {customElement} from "lit/decorators.js";
+import {customElement, query, property} from "lit/decorators.js";
 import {html, LitElement} from "lit";
 import {CreateStoreManager, StoreManager} from "./ranch/store.manager";
 import {HttpRequest, HttpResponse, HttpTransaction} from "./model/http_transaction";
@@ -6,6 +6,8 @@ import {Store} from "./ranch/store";
 import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Subscription} from "./ranch/bus";
 import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container.component";
 import * as localforage from "localforage";
+import {HeaderComponent} from "@/components/wiretap-header/header.component";
+
 
 export const WiretapChannel = "wiretap-broadcast";
 export const SpecChannel = "specs";
@@ -35,6 +37,17 @@ export class WiretapComponent extends LitElement {
     private _transactionChannelSubscription: Subscription;
     private _specChannelSubscription: Subscription;
 
+    @query("wiretap-header")
+    private _wiretapHeader: HeaderComponent;
+
+    @property({type: Number})
+    requestCount = 0;
+    @property({type: Number})
+    responseCount = 0;
+    @property({type: Number})
+    violationsCount = 0;
+    @property({type: Number})
+    complianceLevel: number = 0;
 
     constructor() {
         super();
@@ -85,7 +98,7 @@ export class WiretapComponent extends LitElement {
 
         // configure broker.
         const config = {
-            brokerURL: 'ws://localhost:9091/ranch',
+            brokerURL: 'ws://localhost:9090/ranch',
             heartbeatIncoming: 0,
             heartbeatOutgoing: 0,
         }
@@ -121,7 +134,6 @@ export class WiretapComponent extends LitElement {
     wireTransactionHandler(): BusCallback {
         return (msg) => {
             const wiretapMessage = msg.payload as HttpTransaction
-
             const httpTransaction: HttpTransaction = {
                 httpRequest: Object.assign(new HttpRequest(), wiretapMessage.httpRequest),
                 id: wiretapMessage.id,
@@ -129,6 +141,8 @@ export class WiretapComponent extends LitElement {
                 responseValidation: wiretapMessage.responseValidation,
             }
             if (wiretapMessage.httpResponse) {
+                this.responseCount++;
+                console.log("ho ho", this.responseCount);
                 httpTransaction.httpResponse = Object.assign(new HttpResponse(), wiretapMessage.httpResponse);
             }
 
@@ -140,20 +154,31 @@ export class WiretapComponent extends LitElement {
                     this._httpTransactionStore.set(existingTransaction.id, existingTransaction)
                 }
             } else {
+                this.requestCount++;
                 httpTransaction.timestamp = new Date().getTime();
                 this._httpTransactionStore.set(httpTransaction.id, httpTransaction)
             }
+            console.log("hey hey", this.requestCount);
         }
     }
 
     render() {
+
+        // TODO: re-work this to allow the header state to update without needing a rebuild of the transaction container.
+
         const transaction =
             new HttpTransactionContainerComponent(
                 this._httpTransactionStore,
                 this._selectedTransactionStore,
                 this._specStore);
 
-        return html`${transaction}`
+        return html`<wiretap-header
+            requests="${this.requestCount}"
+            responses="${this.responseCount}"
+            violations="${this.violationsCount}"
+            compliance="${this.complianceLevel}">
+        </wiretap-header>
+        ${transaction}`
     }
 
 }

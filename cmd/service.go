@@ -11,13 +11,13 @@ import (
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/plank/pkg/server"
-	"github.com/pb33f/ranch/plank/utils"
 	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/wiretap/daemon"
 	"github.com/pb33f/wiretap/specs"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -72,12 +72,22 @@ func runWiretapService(config *daemon.WiretapServiceConfiguration) (server.Platf
 		return nil, errors.Join(errs...)
 	}
 
-	go runMonitor(config, doc)
+	//go runMonitor(config, doc)
 
 	serverConfig, _ := server.CreateServerConfig()
 	serverConfig.Port, _ = strconv.Atoi(config.Port)
 	serverConfig.FabricConfig.EndpointConfig.Heartbeat = 0
-	serverConfig.StaticDir = []string{"/static"}
+
+	serverConfig.FabricConfig = &server.FabricBrokerConfig{
+		FabricEndpoint: "/ranch",
+		EndpointConfig: &bus.EndpointConfig{
+			Heartbeat:             0,
+			UserQueuePrefix:       "/queue",
+			TopicPrefix:           "/topic",
+			AppRequestPrefix:      "/pub",
+			AppRequestQueuePrefix: "/pub/queue",
+		},
+	}
 
 	// create a REST bridge configuration and set it for a prefix for all our requests off root.
 	rbc := &service.RESTBridgeConfig{
@@ -93,6 +103,18 @@ func runWiretapService(config *daemon.WiretapServiceConfiguration) (server.Platf
 			}
 		},
 	}
+
+	/* serve monitor */
+	go func() {
+		fs := http.FileServer(http.Dir("ui/build/static"))
+		http.Handle("/", fs)
+
+		log.Print("Monitor service booting on 9091...")
+		err = http.ListenAndServe(":9091", nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	// create an instance of plank.
 	platformServer := server.NewPlatformServer(serverConfig)
@@ -124,7 +146,7 @@ func runWiretapService(config *daemon.WiretapServiceConfiguration) (server.Platf
 				pterm.Info.Println("Wiretap Service is ready.")
 				pterm.Println()
 				pterm.Info.Printf("API Gateway: http://localhost:%s\n", config.Port)
-				pterm.Info.Printf("Monitor: http://localhost:%s/monitor\n", config.MonitorPort)
+				pterm.Info.Printf("Monitor: http://localhost:%s\n", config.MonitorPort)
 				pterm.Println()
 
 			}
@@ -132,43 +154,5 @@ func runWiretapService(config *daemon.WiretapServiceConfiguration) (server.Platf
 	}()
 
 	platformServer.StartServer(sysChan)
-
 	return platformServer, nil
-}
-
-func runMonitor(config *daemon.WiretapServiceConfiguration, doc libopenapi.Document) {
-	serverConfig := &server.PlatformServerConfig{}
-	serverConfig.Port, _ = strconv.Atoi(config.MonitorPort)
-	path, _ := os.Getwd()
-	serverConfig.RootDir = path
-	serverConfig.Host = "localhost"
-	serverConfig.SpaConfig = &server.SpaConfig{
-		RootFolder: "ui/build/static",
-		BaseUri:    "/",
-	}
-	serverConfig.FabricConfig = &server.FabricBrokerConfig{
-		FabricEndpoint: "/ranch",
-		EndpointConfig: &bus.EndpointConfig{
-			Heartbeat:             0,
-			UserQueuePrefix:       "/queue",
-			TopicPrefix:           "/topic",
-			AppRequestPrefix:      "/pub",
-			AppRequestQueuePrefix: "/pub/queue",
-		},
-	}
-	serverConfig.LogConfig = &utils.LogConfig{
-		AccessLog:     "stdout",
-		Root:          path,
-		ErrorLog:      "stderr",
-		OutputLog:     "stdout",
-		FormatOptions: &utils.LogFormatOption{},
-	}
-	serverConfig.FabricConfig.EndpointConfig.Heartbeat = 0
-	serverConfig.StaticDir = []string{"/static"}
-	platformServer := server.NewPlatformServer(serverConfig)
-
-	// start the ranch.
-	sysChan := make(chan os.Signal, 1)
-
-	platformServer.StartServer(sysChan)
 }

@@ -29,7 +29,12 @@ export default css`
     margin-bottom: 20px;
     color: var(--secondary-color);
   }
-  
+
+  .empty-data .up-icon {
+    font-size: 100px;
+    margin-bottom: 20px;
+    color: var(--primary-color);
+  }
 
   .empty-data .ok-icon {
     font-size: 100px;
@@ -38,6 +43,11 @@ export default css`
   }
   
   .empty-data.ok {
+    color: var(--primary-color);
+  }
+
+  .empty-data.engage {
+    padding-top: 90px;
     color: var(--primary-color);
   }
 
