@@ -163,7 +163,7 @@ export class WiretapComponent extends LitElement {
 
             if (wiretapMessage.requestValidation)
                 this.violationsCount = wiretapMessage.requestValidation.length
-            
+
             if (wiretapMessage.httpResponse) {
                 this.responseCount++;
                 httpTransaction.httpResponse = Object.assign(new HttpResponse(), wiretapMessage.httpResponse);

@@ -163,7 +163,6 @@ export class HttpTransactionContainerComponent extends LitElement {
     }
 
     locationSelected(e: CustomEvent<ViolationLocation>) {
-        console.log('SPIN THE WHHEEEEEEL', e.detail)
         const editorRef = this._specEditor.editor
         editorRef.setPosition({column: e.detail.column, lineNumber: e.detail.line});
         editorRef.revealLinesInCenter(e.detail.line, e.detail.line);
