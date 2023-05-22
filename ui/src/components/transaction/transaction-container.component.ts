@@ -136,11 +136,6 @@ export class HttpTransactionContainerComponent extends LitElement {
                 return b.httpTransaction.timestamp - a.httpTransaction.timestamp
             });
 
-        // return html`
-        //     <spec-editor>
-        //         hello.
-        //     </spec-editor>`
-
         return html`
             <section class="split-panel-divider">
                 <sl-split-panel vertical style="height: calc(100vh - 57px); --min: 150px; --max: calc(100% - 400px);"

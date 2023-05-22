@@ -8,19 +8,13 @@ import {HttpTransactionContainerComponent} from "./components/transaction/transa
 import * as localforage from "localforage";
 import {HeaderComponent} from "@/components/wiretap-header/header.component";
 
-
 export const WiretapChannel = "wiretap-broadcast";
 export const SpecChannel = "specs";
-
 export const WiretapHttpTransactionStore = "http-transaction-store";
 export const WiretapSelectedTransactionStore = "selected-transaction-store";
-
 export const WiretapSpecStore = "wiretap-spec-store";
 export const WiretapCurrentSpec = "current-spec";
 export const GetCurrentSpecCommand = "get-current-spec";
-
-
-
 export const WiretapLocalStorage = "wiretap-transactions";
 
 @customElement('wiretap-application')
@@ -42,10 +36,13 @@ export class WiretapComponent extends LitElement {
 
     @property({type: Number})
     requestCount = 0;
+
     @property({type: Number})
     responseCount = 0;
+
     @property({type: Number})
     violationsCount = 0;
+
     @property({type: Number})
     complianceLevel: number = 0;
 
@@ -79,7 +76,11 @@ export class WiretapComponent extends LitElement {
         // load previous transactions from local storage.
         this.loadHistoryFromLocalStorage().then((previousTransactions: Map<string, HttpTransaction>) => {
             this._httpTransactionStore.populate(previousTransactions)
+
+            // calculate counts from stored state.
+            this.calculateMetricsFromState(previousTransactions);
         });
+
 
         this.loadSpecFromLocalStorage().then((spec: string) => {
             if (!spec || spec.length <= 0) {
@@ -106,10 +107,30 @@ export class WiretapComponent extends LitElement {
         this._bus.mapChannelToBrokerDestination("/topic/" + WiretapChannel, WiretapChannel)
         this._bus.mapChannelToBrokerDestination("/queue/" + SpecChannel, SpecChannel)
 
-        //setTimeout(() => {
-            this._bus.connectToBroker(config)
-        //},4000);
-;
+        this._bus.connectToBroker(config);
+    }
+
+    calculateMetricsFromState(previousTransactions: Map<string, HttpTransaction>) {
+
+        let requests = 0;
+        let responses = 0;
+        let violations = 0;
+        previousTransactions.forEach((transaction: HttpTransaction) => {
+            requests++;
+            if (transaction.httpResponse) {
+                responses++;
+            }
+            if (transaction.requestValidation) {
+                violations += transaction.requestValidation.length
+            }
+            if (transaction.responseValidation) {
+                violations += transaction.responseValidation.length;
+            }
+
+        });
+        this.requestCount = requests;
+        this.responseCount = responses;
+        this.violationsCount = violations;
     }
 
 
@@ -121,14 +142,13 @@ export class WiretapComponent extends LitElement {
         return localforage.getItem<Map<string, HttpTransaction>>(WiretapLocalStorage);
     }
 
-    specHandler(): BusCallback<CommandResponse>{
+    specHandler(): BusCallback<CommandResponse> {
         return (msg) => {
             const decoded = atob(msg.payload.payload);
             this._specStore.set(WiretapCurrentSpec, decoded)
             localforage.setItem(WiretapCurrentSpec, decoded);
         }
     }
-
 
 
     wireTransactionHandler(): BusCallback {
@@ -140,13 +160,19 @@ export class WiretapComponent extends LitElement {
                 requestValidation: wiretapMessage.requestValidation,
                 responseValidation: wiretapMessage.responseValidation,
             }
+
+            if (wiretapMessage.requestValidation)
+                this.violationsCount = wiretapMessage.requestValidation.length
+            
             if (wiretapMessage.httpResponse) {
                 this.responseCount++;
-                console.log("ho ho", this.responseCount);
                 httpTransaction.httpResponse = Object.assign(new HttpResponse(), wiretapMessage.httpResponse);
+                if (wiretapMessage.requestValidation)
+                    this.violationsCount = wiretapMessage.responseValidation.length
             }
 
             const existingTransaction: HttpTransaction = this._httpTransactionStore.get(httpTransaction.id)
+
             if (existingTransaction) {
                 if (httpTransaction.httpResponse) {
                     existingTransaction.httpResponse = httpTransaction.httpResponse
@@ -155,30 +181,35 @@ export class WiretapComponent extends LitElement {
                 }
             } else {
                 this.requestCount++;
+
                 httpTransaction.timestamp = new Date().getTime();
                 this._httpTransactionStore.set(httpTransaction.id, httpTransaction)
             }
-            console.log("hey hey", this.requestCount);
         }
     }
 
+    private _transactionContainer: HttpTransactionContainerComponent;
+
     render() {
 
-        // TODO: re-work this to allow the header state to update without needing a rebuild of the transaction container.
-
-        const transaction =
-            new HttpTransactionContainerComponent(
+        let transaction: HttpTransactionContainerComponent
+        if (this._transactionContainer) {
+            transaction = this._transactionContainer;
+        } else {
+            transaction = new HttpTransactionContainerComponent(
                 this._httpTransactionStore,
                 this._selectedTransactionStore,
                 this._specStore);
-
-        return html`<wiretap-header
-            requests="${this.requestCount}"
-            responses="${this.responseCount}"
-            violations="${this.violationsCount}"
-            compliance="${this.complianceLevel}">
-        </wiretap-header>
-        ${transaction}`
+            this._transactionContainer = transaction;
+        }
+        return html`
+            <wiretap-header
+                    requests="${this.requestCount}"
+                    responses="${this.responseCount}"
+                    violations="${this.violationsCount}"
+                    compliance="${this.complianceLevel}">
+            </wiretap-header>
+            ${transaction}`
     }
 
 }
