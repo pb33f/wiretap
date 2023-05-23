@@ -17,6 +17,7 @@ const (
 	WiretapServiceChan   = "wiretap"
 	WiretapBroadcastChan = "wiretap-broadcast"
 	IncomingHttpRequest  = "incoming-http-request"
+	ChangeDelayRequest   = "change-delay-request"
 )
 
 type WiretapService struct {
@@ -47,6 +48,8 @@ func (ws *WiretapService) HandleServiceRequest(request *model.Request, core serv
 	switch request.RequestCommand {
 	case IncomingHttpRequest:
 		ws.handleHttpRequest(request, core)
+	case ChangeDelayRequest:
+		ws.changeDelay(request, core)
 	default:
 		core.HandleUnknownRequest(request)
 	}

@@ -4,8 +4,9 @@
 package daemon
 
 type WiretapServiceConfiguration struct {
-    Contract     string
-    RedirectHost string
-    Port         string
-    MonitorPort  string
+	Contract       string
+	RedirectHost   string
+	Port           string
+	MonitorPort    string
+	GlobalAPIDelay int // how long to delay all API responses by.
 }

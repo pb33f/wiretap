@@ -16,10 +16,34 @@ export default css`
   
   .title {
     font-size: 0.7rem;
+    color: var(--dark-font-color)
   }
   
   .value {
     font-size: 1.3rem;
   }
   
+  .error {
+    color: var(--error-color)
+  }
+  
+  .big-warning {
+    color: var(--warn-400);
+  }
+  
+  .warning {
+    color: var(--warn-200);
+  }
+
+  .light-warning {
+    color: var(--ok-400);
+  }
+
+  .ok {
+    color: var(--ok-300);
+  }
+
+  .ok {
+    color: var(--terminal-green);
+  }
 `

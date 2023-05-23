@@ -138,16 +138,15 @@ export class HttpTransactionContainerComponent extends LitElement {
 
         return html`
             <section class="split-panel-divider">
-                <sl-split-panel vertical style="height: calc(100vh - 57px); --min: 150px; --max: calc(100% - 400px);"
-                                position-in-pixels="300">
-                    <sl-icon slot="divider" name="grip-vertical"></sl-icon>
+                <sl-split-panel vertical position-in-pixels="300">
+                    <sl-icon slot="divider" name="grip-horizontal" class="grip-horizontal"></sl-icon>
                     <div slot="start" class="transactions-container"
                          @httpTransactionSelected="${this.updateSelectedTransactionState}">
                         ${reversed}
                     </div>
                     <div slot="end">
-                        <sl-split-panel style="height: 100%;  --min: 300px; --max: calc(100% - 250px);" position="60">
-                            <sl-icon slot="divider" name="grip-vertical"></sl-icon>
+                        <sl-split-panel class="editor-split" position="60">
+                            <sl-icon slot="divider" name="grip-vertical" class="grip-vertical"></sl-icon>
                             <div slot="start" class="transaction-view-container">
                                 <http-transaction-view @violationLocationSelected="${this.locationSelected}"></http-transaction-view>
                             </div>

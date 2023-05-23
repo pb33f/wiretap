@@ -48,18 +48,21 @@ export default css`
     font-size: 25px; 
     --track-width: 3px;
     margin-top: 2px;
+    margin-right: 12px;
   }
   
   .invalid {
     color: var(--warn-color);
     font-size: 25px;
     margin-top: 2px;
+    margin-right: 12px;
   }
 
   .valid {
     color: var(--terminal-green);
     font-size: 25px;
     margin-top: 2px;
+    margin-right: 12px;
   }
   
 `

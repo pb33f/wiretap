@@ -1,7 +1,4 @@
-import './css/variables.css'
-import './css/pb33f.css'
-import './css/header.css'
-import './css/syntax.css'
+
 import '@shoelace-style/shoelace/dist/themes/light.css';
 import '@shoelace-style/shoelace/dist/themes/dark.css';
 import '@shoelace-style/shoelace/dist/components/tag/tag.js';
@@ -13,6 +10,15 @@ import '@shoelace-style/shoelace/dist/components/split-panel/split-panel.js';
 import '@shoelace-style/shoelace/dist/components/details/details.js';
 import '@shoelace-style/shoelace/dist/components/icon/icon.js';
 import '@shoelace-style/shoelace/dist/components/spinner/spinner.js';
+import '@shoelace-style/shoelace/dist/components/drawer/drawer.js';
+import '@shoelace-style/shoelace/dist/components/button/button.js';
+import '@shoelace-style/shoelace/dist/components/input/input.js';
+
+
+import './css/variables.css'
+import './css/pb33f.css'
+import './css/header.css'
+import './css/syntax.css'
 
 import './components/wiretap-header/header.component';
 import './components/transaction/transaction-container.component';
@@ -22,6 +28,7 @@ import './components/kv-view/kv-view.component';
 import './components/editor/editor.component';
 import './components/wiretap-header/metrics.component';
 import './components/wiretap-header/metric.component';
+import './components/controls/controls.component';
 
 import './ranch/bus';
 import './model/http_transaction';

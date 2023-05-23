@@ -7,14 +7,18 @@ import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Subscription} fro
 import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container.component";
 import * as localforage from "localforage";
 import {HeaderComponent} from "@/components/wiretap-header/header.component";
+import {WiretapControls} from "@/model/controls";
 
 export const WiretapChannel = "wiretap-broadcast";
 export const SpecChannel = "specs";
 export const WiretapHttpTransactionStore = "http-transaction-store";
 export const WiretapSelectedTransactionStore = "selected-transaction-store";
 export const WiretapSpecStore = "wiretap-spec-store";
+export const WiretapControlsStore = "wiretap-controls-store";
 export const WiretapCurrentSpec = "current-spec";
 export const GetCurrentSpecCommand = "get-current-spec";
+
+export const ChangeDelayCommand = "change-delay-request";
 export const WiretapLocalStorage = "wiretap-transactions";
 
 @customElement('wiretap-application')
@@ -23,6 +27,7 @@ export class WiretapComponent extends LitElement {
     private readonly _storeManager: StoreManager;
     private readonly _httpTransactionStore: Store<HttpTransaction>;
     private readonly _selectedTransactionStore: Store<HttpTransaction>;
+    private readonly _controlsStore: Store<WiretapControls>;
     private readonly _specStore: Store<string>;
 
     private readonly _bus: Bus;
@@ -44,11 +49,16 @@ export class WiretapComponent extends LitElement {
     violationsCount = 0;
 
     @property({type: Number})
-    complianceLevel: number = 0;
+    violatedTransactions = 0.0;
+
+    @property({type: Number})
+    complianceLevel: number = 100.0;
+
 
     constructor() {
         super();
 
+        //configure local storage
         localforage.config({
             name: 'pb33f-wiretap',
             version: 1.0,
@@ -67,9 +77,13 @@ export class WiretapComponent extends LitElement {
         this._selectedTransactionStore =
             this._storeManager.CreateStore<HttpTransaction>(WiretapSelectedTransactionStore);
 
+        // spec store
         this._specStore = this._storeManager.CreateStore<string>(WiretapSpecStore);
 
-        // set up wiretap channel
+        // controls store
+        this._controlsStore = this._storeManager.CreateStore<WiretapControls>(WiretapSpecStore);
+
+        // set up wiretap channels
         this._wiretapChannel = this._bus.createChannel(WiretapChannel);
         this._specChannel = this._bus.createChannel(SpecChannel);
 
@@ -81,13 +95,10 @@ export class WiretapComponent extends LitElement {
             this.calculateMetricsFromState(previousTransactions);
         });
 
-
         this.loadSpecFromLocalStorage().then((spec: string) => {
             if (!spec || spec.length <= 0) {
-                this._bus.getClient().publish({
-                    destination: "/pub/queue/specs",
-                    body: JSON.stringify({requestCommand: GetCurrentSpecCommand}),
-                })
+                // nothing in local storage, request from server.
+                this.requestSpec()
             } else {
                 this._specStore.set(WiretapCurrentSpec, spec);
             }
@@ -111,27 +122,40 @@ export class WiretapComponent extends LitElement {
     }
 
     calculateMetricsFromState(previousTransactions: Map<string, HttpTransaction>) {
-
         let requests = 0;
         let responses = 0;
         let violations = 0;
+        let violated = 0.0
         previousTransactions.forEach((transaction: HttpTransaction) => {
             requests++;
             if (transaction.httpResponse) {
                 responses++;
             }
             if (transaction.requestValidation) {
+                violated += 0.5;
                 violations += transaction.requestValidation.length
             }
             if (transaction.responseValidation) {
+                violated += 0.5;
                 violations += transaction.responseValidation.length;
             }
-
         });
         this.requestCount = requests;
         this.responseCount = responses;
         this.violationsCount = violations;
+        this.violatedTransactions = violated;
+        this.calcComplianceLevel();
+
+
     }
+
+    requestSpec() {
+        this._bus.getClient().publish({
+            destination: "/pub/queue/specs",
+            body: JSON.stringify({requestCommand: GetCurrentSpecCommand}),
+        })
+    }
+
 
 
     async loadSpecFromLocalStorage(): Promise<string> {
@@ -161,14 +185,18 @@ export class WiretapComponent extends LitElement {
                 responseValidation: wiretapMessage.responseValidation,
             }
 
-            if (wiretapMessage.requestValidation)
-                this.violationsCount = wiretapMessage.requestValidation.length
+            if (wiretapMessage.requestValidation && wiretapMessage.requestValidation.length > 0) {
+                this.violatedTransactions += 0.5;
+                this.violationsCount += wiretapMessage.requestValidation.length
+            }
 
             if (wiretapMessage.httpResponse) {
                 this.responseCount++;
                 httpTransaction.httpResponse = Object.assign(new HttpResponse(), wiretapMessage.httpResponse);
-                if (wiretapMessage.requestValidation)
-                    this.violationsCount = wiretapMessage.responseValidation.length
+                if (wiretapMessage.responseValidation && wiretapMessage.responseValidation.length > 0) {
+                    this.violatedTransactions += 0.5;
+                    this.violationsCount += wiretapMessage.responseValidation.length
+                }
             }
 
             const existingTransaction: HttpTransaction = this._httpTransactionStore.get(httpTransaction.id)
@@ -181,11 +209,16 @@ export class WiretapComponent extends LitElement {
                 }
             } else {
                 this.requestCount++;
-
                 httpTransaction.timestamp = new Date().getTime();
                 this._httpTransactionStore.set(httpTransaction.id, httpTransaction)
             }
+
+            this.calcComplianceLevel();
         }
+    }
+
+    calcComplianceLevel(): void {
+        this.complianceLevel = 100 - parseFloat((this.violatedTransactions / (this.requestCount + this.responseCount)*100).toFixed(2));
     }
 
     private _transactionContainer: HttpTransactionContainerComponent;
@@ -207,6 +240,7 @@ export class WiretapComponent extends LitElement {
                     requests="${this.requestCount}"
                     responses="${this.responseCount}"
                     violations="${this.violationsCount}"
+                    violationsDelta="${this.violatedTransactions}"
                     compliance="${this.complianceLevel}">
             </wiretap-header>
             ${transaction}`

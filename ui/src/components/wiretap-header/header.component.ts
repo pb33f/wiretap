@@ -17,23 +17,29 @@ export class HeaderComponent extends LitElement {
     violations: number;
 
     @property({type: Number})
+    violationsDelta: number;
+
+    @property({type: Number})
     compliance: number;
 
     render() {
-        console.log('MY MAN.', this.requests, this.responses)
-        return html`<header class="site-header">
-            <div class="logo">
-                <span class="caret">$</span>
-                <span class="name"><a href="https://pb33f.io?ref=wiretap-ui">wiretap</a></span>
-            </div>
-            <div class="header-space">
-                <wiretap-header-metrics
-                    requests="${this.requests}"
-                    responses="${this.responses}"
-                    violations="${this.violations}"
-                    compliance="${this.compliance}"
-                ></wiretap-header-metrics>
-            </div>
-        </header>`
+        return html`
+            <header class="site-header">
+                <div class="logo">
+                    <span class="caret">$</span>
+                    <span class="name"><a href="https://pb33f.io?ref=wiretap-ui">wiretap</a></span>
+                </div>
+                <div class="header-space">
+                    <wiretap-header-metrics
+                            requests="${this.requests}"
+                            responses="${this.responses}"
+                            violations="${this.violations}"
+                            violationsDelta="${this.violationsDelta}"
+                            compliance="${this.compliance}">
+                    </wiretap-header-metrics>
+                   
+                </div>
+                <wiretap-controls></wiretap-controls>
+            </header>`
     }
 }

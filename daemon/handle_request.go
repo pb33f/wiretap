@@ -11,6 +11,7 @@ import (
     "github.com/pb33f/ranch/service"
     "io"
     "net/http"
+    "time"
 )
 
 func (ws *WiretapService) handleHttpRequest(request *model.Request, core service.FabricServiceCore) {
@@ -54,14 +55,20 @@ doneWaitingForResponse:
         go ws.validateResponse(request, responseValidator, cloneResponse(returnedResponse))
     }
 
-    body, _ := io.ReadAll(returnedResponse.Body)
-    headers := extractHeaders(returnedResponse)
+    // send response back to client.
+    go func() {
+        if ws.config.GlobalAPIDelay > 0 {
+            time.Sleep(time.Duration(ws.config.GlobalAPIDelay) * time.Millisecond) // simulate a slow response.
+        }
+        body, _ := io.ReadAll(returnedResponse.Body)
+        headers := extractHeaders(returnedResponse)
 
-    // todo: deal with headers and correct raw values
-    if returnedResponse.StatusCode >= 400 {
-        core.SendErrorResponseAsStringWithHeadersAndPayload(request, returnedResponse.StatusCode,
-            "HTTP Request failed", string(body), headers)
-    } else {
-        core.SendResponseAsStringWithHeaders(request, string(body), headers)
-    }
+        if returnedResponse.StatusCode >= 400 {
+            core.SendErrorResponseAsStringWithHeadersAndPayload(request, returnedResponse.StatusCode,
+                "HTTP Request failed", string(body), headers)
+        } else {
+            core.SendResponseAsStringWithHeaders(request, string(body), headers)
+        }
+    }()
+
 }

@@ -11,6 +11,14 @@ export default css`
     text-decoration: underline;
   }
   
+  wiretap-controls {
+    width: 50px;
+    height: 55px;
+    position: absolute;
+    right: 0
+  }
+  
+  
   header.site-header {
     display: flex;
     height: 57px;
