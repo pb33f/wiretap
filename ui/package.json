@@ -1,29 +1,22 @@
 {
-  "name": "wiretap",
+  "name": "@pb33f/wiretap-ui",
   "version": "0.0.1",
   "description": "Monitor API requests and responses between a client/server and validate OpenAPI contract compliance",
-  "main": "index.js",
   "repository": "https://github.com/pb33f/openapi-wiretap",
   "author": "Princess B33f Heavy Industries / Dave Shanley",
-  "license": "MIT",
+  "license": "GPL-3.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "typings": "./build/index.d.ts",
   "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.1",
     "@types/node": "^20.2.1",
     "@types/prismjs": "^1.26.0",
-    "copy-webpack-plugin": "^11.0.0",
-    "css-loader": "^6.7.3",
-    "css-minimizer-webpack-plugin": "^4.2.2",
-    "html-webpack-plugin": "^5.5.0",
-    "mini-css-extract-plugin": "^2.7.2",
     "rollup-plugin-copy": "^3.4.0",
-    "style-loader": "^3.3.1",
-    "ts-loader": "^9.4.2",
-    "tsconfig-paths-webpack-plugin": "^4.0.1",
+    "tslib": "^2.5.2",
     "typescript": "^5.0.4",
-    "vite-tsconfig-paths": "^4.2.0",
-    "webpack": "^5.79.0",
-    "webpack-cli": "^5.0.1",
-    "webpack-dev-server": "^4.13.2",
-    "vite": "^4.3.8"
+    "vite": "^4.3.8",
+    "vite-tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
     "@shoelace-style/shoelace": "^2.4.0",
@@ -32,11 +25,9 @@
     "localforage": "^1.10.0",
     "monaco-editor": "^0.38.0",
     "prismjs": "^1.29.0"
-
   },
   "scripts": {
-    "serve": "webpack serve --open",
-    "start": "webpack --mode=development --watch",
-    "build": "webpack --mode=production"
+    "serve": "vite",
+    "start": "vite build"
   }
 }
