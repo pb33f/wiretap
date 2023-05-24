@@ -4,11 +4,11 @@ import {Store} from "@/ranch/store";
 import {BuildLiveTransactionFromState, HttpTransaction} from '@/model/http_transaction';
 import {HttpTransactionItemComponent} from "./transaction-item.component";
 import localforage from "localforage";
-import {WiretapCurrentSpec, WiretapLocalStorage} from "@/wiretap";
 import transactionContainerComponentCss from "./transaction-container.component.css";
 import {HttpTransactionViewComponent} from "./transaction-view.component";
 import {SpecEditor} from "@/components/editor/editor.component";
 import {ViolationLocation} from "@/model/events";
+import {WiretapCurrentSpec, WiretapLocalStorage} from "@/model/constants";
 
 @customElement('http-transaction-container')
 export class HttpTransactionContainerComponent extends LitElement {
@@ -40,6 +40,10 @@ export class HttpTransactionContainerComponent extends LitElement {
         this._selectedTransactionStore = selectedTransactionStore
         this._specStore = specStore;
         this._mappedHttpTransactions = new Map<string, HttpTransactionContainer>()
+    }
+
+    reset(): void {
+        this._selectedTransactionStore.reset()
     }
 
 
@@ -78,8 +82,13 @@ export class HttpTransactionContainerComponent extends LitElement {
     }
 
     handleSelectedTransactionChange(key: string, transaction: HttpTransaction) {
-        this._selectedTransaction = transaction;
-        this._transactionView.httpTransaction = transaction;
+        if (transaction) {
+            this._selectedTransaction = transaction;
+            this._transactionView.httpTransaction = transaction;
+        } else {
+            this._selectedTransaction = null;
+            this._transactionView.httpTransaction = null;
+        }
     }
 
     handleSpecChange(key: string) {
@@ -88,43 +97,57 @@ export class HttpTransactionContainerComponent extends LitElement {
 
 
     handleTransactionChange(key: string, value: HttpTransaction) {
+        if (value) {
+            // if we already have this transaction, update it.
+            if (this._mappedHttpTransactions.has(value.id)) {
+                const existingTransaction = this._mappedHttpTransactions.get(value.id)
+                existingTransaction.Listener(value)
+                const component: HttpTransactionItemComponent =
+                    this._transactionComponents.find((v: HttpTransactionItemComponent) => {
+                        return v.transactionId === value.id;
+                    });
+                component.httpTransaction = BuildLiveTransactionFromState(value);
+                component.requestUpdate()
 
-        // if we already have this transaction, update it.
-        if (this._mappedHttpTransactions.has(value.id)) {
-            const existingTransaction = this._mappedHttpTransactions.get(value.id)
-            existingTransaction.Listener(value)
-            const component: HttpTransactionItemComponent =
-                this._transactionComponents.find((v: HttpTransactionItemComponent) => {
-                    return v.transactionId === value.id;
-                });
-            component.httpTransaction = BuildLiveTransactionFromState(value);
-            component.requestUpdate()
+            } else {
 
-        } else {
+                // otherwise, add it.
+                const container: HttpTransactionContainer = {
+                    Transaction: BuildLiveTransactionFromState(value),
+                    Listener: (trans: HttpTransaction) => {
 
-            // otherwise, add it.
-            const container: HttpTransactionContainer = {
-                Transaction: BuildLiveTransactionFromState(value),
-                Listener: (trans: HttpTransaction) => {
-
-                    // update db.
-                    let exp = this._allTransactionStore.export()
-                    localforage.setItem<Map<string, HttpTransaction>>
-                    (WiretapLocalStorage, exp).then(
-                        () => {
-                            console.log('saved')
-                            this._transactionView.requestUpdate();
-                        }
-                    ).catch(
-                        (err) => {
-                            console.error(err)
-                        }
-                    )
+                        // update db.
+                        let exp = this._allTransactionStore.export()
+                        localforage.setItem<Map<string, HttpTransaction>>
+                        (WiretapLocalStorage, exp).then(
+                            () => {
+                                this._transactionView.requestUpdate();
+                            }
+                        ).catch(
+                            (err) => {
+                                console.error(err)
+                            }
+                        )
+                    }
                 }
+                this._mappedHttpTransactions.set(value.id, container)
+                const comp: HttpTransactionItemComponent = new HttpTransactionItemComponent(value)
+                this._transactionComponents.push(comp)
+                this.requestUpdate();
             }
-            this._mappedHttpTransactions.set(value.id, container)
-            const comp: HttpTransactionItemComponent = new HttpTransactionItemComponent(value)
-            this._transactionComponents.push(comp)
+        } else {
+            // remove it.
+            let allTransactions = this._allTransactionStore.export()
+            allTransactions.delete(key)
+            localforage.setItem<Map<string, HttpTransaction>>(WiretapLocalStorage, allTransactions);
+
+            // remove from components.
+            const comp: HttpTransactionItemComponent =
+                this._transactionComponents.find((v: HttpTransactionItemComponent) => {
+                    return v.transactionId === key;
+                });
+            const index = this._transactionComponents.indexOf(comp);
+            this._transactionComponents.splice(index, 1);
             this.requestUpdate();
         }
     }

@@ -3,6 +3,7 @@ import {CreateStore, Store} from "./store";
 export interface StoreManager {
     CreateStore<T>(key: string): Store<T>;
     GetStore<T>(key: string): Store<T>;
+    ResetStores(): void;
 }
 
 class storeManager implements StoreManager {
@@ -23,6 +24,12 @@ class storeManager implements StoreManager {
         }
         return CreateStore<T>();
     }
+
+    ResetStores() {
+        this._stores.forEach((store: Store<any>) => {
+            store.reset();
+        });
+    }
 }
 
 let _storeManagerSingleton: StoreManager;
@@ -31,4 +38,8 @@ export function CreateStoreManager(): StoreManager {
         _storeManagerSingleton = new storeManager();
     }
     return _storeManagerSingleton;
+}
+
+export function GetStoreManager(): StoreManager {
+   return CreateStoreManager();
 }

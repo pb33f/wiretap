@@ -41,25 +41,3 @@ import {setBasePath} from '@shoelace-style/shoelace/dist/utilities/base-path.js'
 
 // Set the base path to the folder you copied Shoelace's assets to
 setBasePath('/shoelace');
-
-
-
-// transactionStore.onAllChanges( (key: string, value: HttpTransaction) => {
-//    if (value.httpResponse) {
-//        console.log(JSON.parse(value.httpResponse.responseBody))
-//    }
-// })
-
-
-// monaco.editor.create(document.getElementById('root'), {
-//     value: `const foo = () => 0;`,
-//     language: 'javascript',
-//     theme: 'vs-dark'
-// });
-//
-
-
-
-
-
-

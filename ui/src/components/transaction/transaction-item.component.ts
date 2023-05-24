@@ -64,14 +64,9 @@ export class HttpTransactionItemComponent extends LitElement {
     render() {
 
         Prism.highlightAll();
-
         const req = this._httpTransaction?.httpRequest;
         const resp = this._httpTransaction?.httpResponse;
-
         this._processing = req && !resp;
-
-
-        console.log('processing...', this._processing);
 
         const exchangeMethod = (method: string): string => {
             switch (method) {
@@ -85,14 +80,8 @@ export class HttpTransactionItemComponent extends LitElement {
                     return 'danger'
                 case 'PATCH':
                     return 'warning'
-                case 'OPTIONS':
-                    return 'neutral'
-                case 'HEAD':
-                    return 'neutral'
-                case 'TRACE':
-                    return 'neutral'
                 default:
-                    return 'primary'
+                    return 'neutral'
             }
         }
 

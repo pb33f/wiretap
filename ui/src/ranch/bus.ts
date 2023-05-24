@@ -28,14 +28,15 @@ export interface Channel {
 export interface Bus {
     channels: Channel[]
     createChannel(channelName: string): Channel
+    getChannel(channelName: string): Channel
     connectToBroker(config: StompConfig)
     mapChannelToBrokerDestination(destination: string, channel: string): void
     getClient(): Client
 }
 
-export interface CommandResponse {
+export interface CommandResponse<T = any> {
     channel: string;
-    payload: any;
+    payload: T;
 }
 
 
@@ -46,6 +47,10 @@ export function CreateBus(): Bus {
         _busSingleton = new bus()
     }
     return _busSingleton
+}
+
+export function GetBus(): Bus {
+    return CreateBus()
 }
 
 export class bus implements Bus {
@@ -68,6 +73,16 @@ export class bus implements Bus {
         this._channels.push(chan)
         return chan
     }
+
+    getChannel(channelName: string): Channel {
+       const idx = this._channels.findIndex(c => c.name === channelName)
+        if (idx > -1) {
+            return this._channels[idx]
+        } else {
+            return this.createChannel(channelName)
+        }
+    }
+
     connectToBroker(config: StompConfig) {
         this._stompClient = new Client(config)
         this._stompClient.activate()

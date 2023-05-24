@@ -34,4 +34,10 @@ export default css`
   sl-button::part(base) {
     font-family: var(--font-stack);
   }
+  
+  hr {
+    margin-top: 30px;
+    margin-bottom: 30px;
+  }
+  
 `

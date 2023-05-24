@@ -45,23 +45,28 @@ export class KVViewComponent extends LitElement {
                             <tr>
                                 <td><code>${i[0]}</code></td>
                                 <td>
-                                    <pre><code>${ unsafeHTML(Prism.highlight(JSON.stringify(i[1]), Prism.languages['json'], 'json'))}</pre></code>
+                                    <pre><code>${unsafeHTML(Prism.highlight(
+                                            JSON.stringify(i[1]),
+                                            Prism.languages['json'],
+                                            'json'))}</pre>
+                                    </code>
                                 </td>
                             </tr>`
-                    } 
-                    
+                    }
+
                     return html`
-                    <tr>
-                        <td><code>${i[0]}</code></td>
-                        <td>${i[1]}</td>
-                    </tr>`
-            })}
+                        <tr>
+                            <td><code>${i[0]}</code></td>
+                            <td>${i[1]}</td>
+                        </tr>`
+                })}
             `
         }
 
         const noData: TemplateResult = html`
             <div class="empty-data">
-                <sl-icon name="mic-mute" class="mute-icon"></sl-icon><br/>
+                <sl-icon name="mic-mute" class="mute-icon"></sl-icon>
+                <br/>
                 No data extracted
             </div>`;
 
@@ -81,7 +86,7 @@ export class KVViewComponent extends LitElement {
             </div>
         `;
 
-        const output = this._data.size > 0 ? table : noData;
+        const output = this._data?.size > 0 ? table : noData;
 
         return html`${output}`;
     }

@@ -9,6 +9,7 @@ import (
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
+	"github.com/pb33f/wiretap/controls"
 	"net/http"
 	"time"
 )
@@ -17,7 +18,6 @@ const (
 	WiretapServiceChan   = "wiretap"
 	WiretapBroadcastChan = "wiretap-broadcast"
 	IncomingHttpRequest  = "incoming-http-request"
-	ChangeDelayRequest   = "change-delay-request"
 )
 
 type WiretapService struct {
@@ -27,20 +27,25 @@ type WiretapService struct {
 	serviceCore   service.FabricServiceCore
 	broadcastChan *bus.Channel
 	bus           bus.EventBus
-	config        *WiretapServiceConfiguration
+	controlsStore bus.BusStore
 }
 
-func NewWiretapService(document libopenapi.Document, configuration *WiretapServiceConfiguration) *WiretapService {
+func NewWiretapService(document libopenapi.Document) *WiretapService {
+
+	ebus := bus.GetBus()
+	storeManager := ebus.GetStoreManager()
+	controlsStore := storeManager.GetStore(controls.ControlServiceChan)
+
 	tr := &http.Transport{
 		MaxIdleConns:    20,
 		IdleConnTimeout: 30 * time.Second,
 	}
 	m, _ := document.BuildV3Model()
 	return &WiretapService{
-		document:  document,
-		config:    configuration,
-		docModel:  &m.Model,
-		transport: tr,
+		document:      document,
+		docModel:      &m.Model,
+		transport:     tr,
+		controlsStore: controlsStore,
 	}
 }
 
@@ -48,8 +53,6 @@ func (ws *WiretapService) HandleServiceRequest(request *model.Request, core serv
 	switch request.RequestCommand {
 	case IncomingHttpRequest:
 		ws.handleHttpRequest(request, core)
-	case ChangeDelayRequest:
-		ws.changeDelay(request, core)
 	default:
 		core.HandleUnknownRequest(request)
 	}

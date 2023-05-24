@@ -4,66 +4,66 @@
 package cmd
 
 import (
-    "github.com/pb33f/wiretap/daemon"
-    "github.com/pterm/pterm"
-    "github.com/spf13/cobra"
-    "os"
+	"github.com/pb33f/wiretap/shared"
+	"github.com/pterm/pterm"
+	"github.com/spf13/cobra"
+	"os"
 )
 
 var (
-    Version string
-    Commit  string
-    Date    string
+	Version string
+	Commit  string
+	Date    string
 
-    rootCmd = &cobra.Command{
-        SilenceUsage:  true,
-        SilenceErrors: true,
-        Use:           "wiretap",
-        Short:         "wiretap is a tool for detecting API compliance against an OpenAPI contract, by sniffing network traffic.",
-        Long:          `wiretap is a tool for detecting API compliance against an OpenAPI contract, by sniffing network traffic.`,
-        RunE: func(cmd *cobra.Command, args []string) error {
+	rootCmd = &cobra.Command{
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Use:           "wiretap",
+		Short:         "wiretap is a tool for detecting API compliance against an OpenAPI contract, by sniffing network traffic.",
+		Long:          `wiretap is a tool for detecting API compliance against an OpenAPI contract, by sniffing network traffic.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
 
-            PrintBanner()
+			PrintBanner()
 
-            if len(args) == 0 {
-                pterm.Error.Println("Supply at least a single argument, pointing to an OpenAPI file to load...")
-                return nil
-            }
+			if len(args) == 0 {
+				pterm.Error.Println("Supply at least a single argument, pointing to an OpenAPI file to load...")
+				return nil
+			}
 
-            file := args[0]
-            host, _ := cmd.Flags().GetString("server")
-            // get port from environment.
-            port := os.Getenv("PORT")
-            if port == "" {
-                port = "9090" // default.
-            }
+			file := args[0]
+			host, _ := cmd.Flags().GetString("server")
+			// get port from environment.
+			port := os.Getenv("PORT")
+			if port == "" {
+				port = "9090" // default.
+			}
 
-            mport := os.Getenv("MONITOR_PORT")
-            if mport == "" {
-                mport = "9091" // default.
-            }
+			mport := os.Getenv("MONITOR_PORT")
+			if mport == "" {
+				mport = "9091" // default.
+			}
 
-            config := daemon.WiretapServiceConfiguration{
-                Contract:     file,
-                RedirectHost: host,
-                Port:         port,
-                MonitorPort:  mport,
-            }
+			config := shared.WiretapConfiguration{
+				Contract:     file,
+				RedirectHost: host,
+				Port:         port,
+				MonitorPort:  mport,
+			}
 
-            _, _ = runWiretapService(&config)
+			_, _ = runWiretapService(&config)
 
-            return nil
-        },
-    }
+			return nil
+		},
+	}
 )
 
 func Execute(version, commit, date string) {
-    Version = version
-    Commit = commit
-    Date = date
-    rootCmd.PersistentFlags().StringP("server", "s", "", "override the host in the OpenAPI specification")
+	Version = version
+	Commit = commit
+	Date = date
+	rootCmd.PersistentFlags().StringP("server", "s", "", "override the host in the OpenAPI specification")
 
-    if err := rootCmd.Execute(); err != nil {
-        os.Exit(1)
-    }
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

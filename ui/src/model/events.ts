@@ -4,3 +4,5 @@ export interface ViolationLocation {
     line: number;
     column: number;
 }
+
+export const WipeDataEvent = "wipeData";

@@ -53,21 +53,28 @@ export class HttpTransactionViewComponent extends LitElement {
     }
 
     set httpTransaction(value: HttpTransaction) {
-        this._httpTransaction = value;
-        if (this._requestHeadersView && value.httpRequest) {
-            this._requestHeadersView.data = value.httpRequest.extractHeaders();
-            this._requestCookiesView.data = value.httpRequest.extractCookies();
-            this._requestQueryView.data = value.httpRequest.extractQuery();
-        }
-        if (this._responseHeadersView && value.httpResponse) {
-            this._responseHeadersView.data = value.httpResponse.extractHeaders();
-            this._responseCookiesView.data = value.httpResponse.extractCookies();
+        if (value) {
+            this._httpTransaction = value;
+            if (this._requestHeadersView && value.httpRequest) {
+                this._requestHeadersView.data = value.httpRequest.extractHeaders();
+                this._requestCookiesView.data = value.httpRequest.extractCookies();
+                this._requestQueryView.data = value.httpRequest.extractQuery();
+            }
+            if (this._responseHeadersView && value.httpResponse) {
+                this._responseHeadersView.data = value.httpResponse.extractHeaders();
+                this._responseCookiesView.data = value.httpResponse.extractCookies();
+            }
+        } else {
+            this._httpTransaction = null;
+            this._requestCookiesView.data = null;
+            this._requestHeadersView.data = null;
+            this._requestQueryView.data = null;
+            this._responseCookiesView.data = null;
+            this._responseHeadersView.data = null;
         }
     }
 
     render() {
-
-        console.log(this._httpTransaction);
 
         if (this._httpTransaction) {
 
@@ -128,8 +135,6 @@ export class HttpTransactionViewComponent extends LitElement {
                     requestHighlight = Prism.highlight(req.requestBody, Prism.languages[language], language)
                 }
             }
-
-
 
             let total = 0;
             let violations: TemplateResult = html`Violations`;

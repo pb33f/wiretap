@@ -1,17 +1,27 @@
 import {customElement, query, state} from "lit/decorators.js";
 import {LitElement} from "lit";
 import {html} from "lit";
-import {WiretapControls} from "@/model/controls";
+import {ControlsResponse, WiretapConfig, WiretapControls} from "@/model/controls";
 import localforage from "localforage";
-import {ChangeDelayCommand, WiretapControlsStore} from "@/wiretap";
-import {Bus, Channel, CreateBus} from "@/ranch/bus";
+import {Bus, BusCallback, Channel, CommandResponse, GetBus, Message, Subscription} from "@/ranch/bus";
 import controlsComponentCss from "./controls.component.css";
-import {SlDrawer} from "@shoelace-style/shoelace";
+import {SlDrawer, SlInput} from "@shoelace-style/shoelace";
+import {RanchUtils} from "@/ranch/utils";
+import {CreateStoreManager, GetStoreManager, StoreManager} from "@/ranch/store.manager";
+import {WipeDataEvent} from "@/model/events";
+import sharedCss from "@/components/shared.css";
+import {
+    ChangeDelayCommand,
+    WiretapControlsChannel,
+    WiretapControlsStore,
+    WiretapHttpTransactionStore
+} from "@/model/constants";
 
 @customElement('wiretap-controls')
 export class WiretapControlsComponent extends LitElement {
 
-    static styles = controlsComponentCss
+    static styles = [sharedCss, controlsComponentCss]
+
 
     @state()
     private _controls: WiretapControls;
@@ -21,24 +31,36 @@ export class WiretapControlsComponent extends LitElement {
     @query('sl-drawer')
     drawer: SlDrawer;
 
+    @query("#global-delay")
+    delayInput: SlInput;
+
     @state()
     private _drawerOpen: boolean = false;
+
+    private readonly _wiretapControlsSubscription: Subscription;
+    private readonly _wiretapControlsChannel: Channel;
+    private readonly _storeManager: StoreManager;
 
     constructor() {
         super();
 
         // get bus.
-        this._bus = CreateBus();
+        this._bus = GetBus();
+        this._storeManager = GetStoreManager();
+        this._wiretapControlsChannel = this._bus.getChannel(WiretapControlsChannel);
+        this._wiretapControlsSubscription = this._wiretapControlsChannel.subscribe(this.controlUpdateHandler());
+
 
         this.loadControlStateFromStorage().then((controls: WiretapControls) => {
             if (!controls) {
                 this._controls = {
-                    globalDelay: 0,
+                    globalDelay: -1,
                 }
-                localforage.setItem<WiretapControls>(WiretapControlsStore, this._controls);
             } else {
                 this._controls = controls;
             }
+            // get the delay from the backend.
+            this.changeGlobalDelay(-1) // -1 won't update anything, but will return the current delay
         });
     }
 
@@ -46,41 +68,74 @@ export class WiretapControlsComponent extends LitElement {
         return localforage.getItem<WiretapControls>(WiretapControlsStore);
     }
 
+    controlUpdateHandler(): BusCallback<CommandResponse> {
+        return (msg: Message<CommandResponse<ControlsResponse>> ) => {
+            const delay = msg.payload.payload.config.globalAPIDelay;
+            const existingDelay = this._controls.globalDelay;
+
+            if (delay == undefined) {
+                // this means a reset back to 0.
+                this._controls.globalDelay = 0;
+            }
+
+            if (delay != undefined && delay !== existingDelay) {
+                this._controls.globalDelay = delay;
+            }
+            localforage.setItem<WiretapControls>(WiretapControlsStore, this._controls);
+        }
+    }
+
     changeGlobalDelay(delay: number) {
-        console.log('yeeeeeeee har', delay)
         this._bus.getClient().publish({
-            destination: "/pub/queue/wiretap",
-            body: JSON.stringify({requestCommand: ChangeDelayCommand, payload: delay}),
-        })
+            destination: "/pub/queue/controls",
+            body: JSON.stringify(
+                {
+                    id: RanchUtils.genUUID(),
+                    requestCommand: ChangeDelayCommand,
+                    payload: {
+                        delay: delay
+                    }
+                }
+            ),
+        });
     }
 
     openControls() {
         this.drawer.show();
     }
 
-   closeControls() {
+    closeControls() {
         this.drawer.hide()
     }
 
-    handleGlobalDelayChange(event: CustomEvent) {
-        const delay = event.detail.value;
-        this.changeGlobalDelay(delay);
+    handleGlobalDelayChange(event) {
+        const delay = event.target.value;
+        this.changeGlobalDelay(parseInt(delay));
+    }
+
+    wipeData() {
+        this.dispatchEvent(new CustomEvent(WipeDataEvent, {
+            bubbles: true,
+            detail: WiretapHttpTransactionStore,
+            composed: true,
+        }));
     }
 
     render() {
-        console.log(this._controls);
+
         return html`
             <sl-button @click=${this.openControls} variant="default" size="medium" circle outline>
                 <sl-icon name="gear" label="controls" class="gear"></sl-icon>
             </sl-button>
-        <sl-drawer label="wiretap controls" class="drawer-focus">
-            <label>Global API Delay (MS)</label>
-            <sl-input @sl-change=${this.handleGlobalDelayChange} placeholder="size" size="medium" type="number">
-                <sl-icon name="hourglass-split" slot="prefix"></sl-icon>
-            </sl-input>
-            <sl-button @click=${this.closeControls} slot="footer" variant="primary" outline>Close</sl-button>
-        </sl-drawer>
+            <sl-drawer label="wiretap controls" class="drawer-focus">
+                <label>Global API Delay (MS)</label>
+                <sl-input @sl-change=${this.handleGlobalDelayChange} value=${this._controls?.globalDelay} placeholder="size" size="medium" type="number" id="global-delay">
+                    <sl-icon name="hourglass-split" slot="prefix"></sl-icon>
+                </sl-input>
+                <hr />
+                <sl-button @click=${this.wipeData} variant="danger" outline>Erase all HTTP Traffic</sl-button>
+                <sl-button @click=${this.closeControls} slot="footer" variant="primary" outline>Close</sl-button>
+            </sl-drawer>
         `
     }
-
 }

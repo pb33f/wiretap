@@ -1,4 +1,4 @@
-import {customElement, query, property} from "lit/decorators.js";
+import {customElement, property, query} from "lit/decorators.js";
 import {html, LitElement} from "lit";
 import {CreateStoreManager, StoreManager} from "./ranch/store.manager";
 import {HttpRequest, HttpResponse, HttpTransaction} from "./model/http_transaction";
@@ -8,18 +8,18 @@ import {HttpTransactionContainerComponent} from "./components/transaction/transa
 import * as localforage from "localforage";
 import {HeaderComponent} from "@/components/wiretap-header/header.component";
 import {WiretapControls} from "@/model/controls";
+import {
+    GetCurrentSpecCommand,
+    SpecChannel,
+    WiretapChannel,
+    WiretapControlsChannel,
+    WiretapCurrentSpec,
+    WiretapHttpTransactionStore,
+    WiretapLocalStorage,
+    WiretapSelectedTransactionStore,
+    WiretapSpecStore
+} from "@/model/constants";
 
-export const WiretapChannel = "wiretap-broadcast";
-export const SpecChannel = "specs";
-export const WiretapHttpTransactionStore = "http-transaction-store";
-export const WiretapSelectedTransactionStore = "selected-transaction-store";
-export const WiretapSpecStore = "wiretap-spec-store";
-export const WiretapControlsStore = "wiretap-controls-store";
-export const WiretapCurrentSpec = "current-spec";
-export const GetCurrentSpecCommand = "get-current-spec";
-
-export const ChangeDelayCommand = "change-delay-request";
-export const WiretapLocalStorage = "wiretap-transactions";
 
 @customElement('wiretap-application')
 export class WiretapComponent extends LitElement {
@@ -33,8 +33,13 @@ export class WiretapComponent extends LitElement {
     private readonly _bus: Bus;
     private readonly _wiretapChannel: Channel;
     private readonly _specChannel: Channel;
+    private readonly _wiretapControlsChannel: Channel;
+
     private _transactionChannelSubscription: Subscription;
     private _specChannelSubscription: Subscription;
+    private _wiretapControlsSubscription: Subscription;
+
+    private _transactionContainer: HttpTransactionContainerComponent;
 
     @query("wiretap-header")
     private _wiretapHeader: HeaderComponent;
@@ -86,6 +91,7 @@ export class WiretapComponent extends LitElement {
         // set up wiretap channels
         this._wiretapChannel = this._bus.createChannel(WiretapChannel);
         this._specChannel = this._bus.createChannel(SpecChannel);
+        this._wiretapControlsChannel = this._bus.createChannel(WiretapControlsChannel);
 
         // load previous transactions from local storage.
         this.loadHistoryFromLocalStorage().then((previousTransactions: Map<string, HttpTransaction>) => {
@@ -104,9 +110,10 @@ export class WiretapComponent extends LitElement {
             }
         });
 
-        // handle incoming http transactions.
+        // handle incoming messages on different channels.
         this._transactionChannelSubscription = this._wiretapChannel.subscribe(this.wireTransactionHandler());
         this._specChannelSubscription = this._specChannel.subscribe(this.specHandler());
+
 
         // configure broker.
         const config = {
@@ -117,6 +124,7 @@ export class WiretapComponent extends LitElement {
         // map and connect.
         this._bus.mapChannelToBrokerDestination("/topic/" + WiretapChannel, WiretapChannel)
         this._bus.mapChannelToBrokerDestination("/queue/" + SpecChannel, SpecChannel)
+        this._bus.mapChannelToBrokerDestination("/queue/" + WiretapControlsChannel, WiretapControlsChannel)
 
         this._bus.connectToBroker(config);
     }
@@ -157,7 +165,6 @@ export class WiretapComponent extends LitElement {
     }
 
 
-
     async loadSpecFromLocalStorage(): Promise<string> {
         return localforage.getItem<string>(WiretapCurrentSpec);
     }
@@ -173,7 +180,6 @@ export class WiretapComponent extends LitElement {
             localforage.setItem(WiretapCurrentSpec, decoded);
         }
     }
-
 
     wireTransactionHandler(): BusCallback {
         return (msg) => {
@@ -212,16 +218,32 @@ export class WiretapComponent extends LitElement {
                 httpTransaction.timestamp = new Date().getTime();
                 this._httpTransactionStore.set(httpTransaction.id, httpTransaction)
             }
-
             this.calcComplianceLevel();
         }
     }
 
     calcComplianceLevel(): void {
-        this.complianceLevel = 100 - parseFloat((this.violatedTransactions / (this.requestCount + this.responseCount)*100).toFixed(2));
+        if (this.violatedTransactions > 0) {
+            this.complianceLevel = 100 - parseFloat(
+                (this.violatedTransactions / (this.requestCount + this.responseCount) * 100)
+                    .toFixed(2));
+        } else {
+            this.complianceLevel = 100;
+        }
     }
 
-    private _transactionContainer: HttpTransactionContainerComponent;
+
+    wipeData(e: CustomEvent) {
+        const store = this._storeManager.GetStore(e.detail)
+        if (store) {
+            store.reset();
+        }
+        this.responseCount = 0;
+        this.requestCount = 0;
+        this.violatedTransactions = 0;
+        this.violationsCount = 0;
+        this.calcComplianceLevel();
+    }
 
     render() {
 
@@ -237,6 +259,7 @@ export class WiretapComponent extends LitElement {
         }
         return html`
             <wiretap-header
+                    @wipeData=${this.wipeData}
                     requests="${this.requestCount}"
                     responses="${this.responseCount}"
                     violations="${this.violationsCount}"

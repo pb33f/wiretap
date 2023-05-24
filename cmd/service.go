@@ -12,7 +12,9 @@ import (
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/plank/pkg/server"
 	"github.com/pb33f/ranch/service"
+	"github.com/pb33f/wiretap/controls"
 	"github.com/pb33f/wiretap/daemon"
+	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
@@ -21,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -61,7 +64,7 @@ func loadOpenAPISpec(contract string) (libopenapi.Document, error) {
 	return libopenapi.NewDocument(specBytes)
 }
 
-func runWiretapService(config *daemon.WiretapServiceConfiguration) (server.PlatformServer, error) {
+func runWiretapService(config *shared.WiretapConfiguration) (server.PlatformServer, error) {
 
 	doc, err := loadOpenAPISpec(config.Contract)
 	if err != nil {
@@ -116,17 +119,27 @@ func runWiretapService(config *daemon.WiretapServiceConfiguration) (server.Platf
 		}
 	}()
 
-	// create an instance of plank.
-	platformServer := server.NewPlatformServer(serverConfig)
-	//platformServer.SetStaticRoute("change-report", "change-report")
+	// create a store and put the config in it.
+	ebus := bus.GetBus()
+	storeManager := ebus.GetStoreManager()
+	controlsStore := storeManager.CreateStoreWithType(controls.ControlServiceChan, reflect.TypeOf(config))
+	controlsStore.Put(shared.ConfigKey, config, nil)
 
-	// boot what-changed html report service.
-	if err = platformServer.RegisterService(daemon.NewWiretapService(doc, config),
-		daemon.WiretapServiceChan); err != nil {
+	// create an instance of ranch
+	platformServer := server.NewPlatformServer(serverConfig)
+
+	// register wiretap service
+	if err = platformServer.RegisterService(daemon.NewWiretapService(doc), daemon.WiretapServiceChan); err != nil {
 		panic(err)
 	}
 
+	// register spec service
 	if err = platformServer.RegisterService(specs.NewSpecService(doc), specs.SpecServiceChan); err != nil {
+		panic(err)
+	}
+
+	// register control service
+	if err = platformServer.RegisterService(controls.NewControlsService(), controls.ControlServiceChan); err != nil {
 		panic(err)
 	}
 
@@ -137,7 +150,7 @@ func runWiretapService(config *daemon.WiretapServiceConfiguration) (server.Platf
 	sysChan := make(chan os.Signal, 1)
 
 	go func() {
-		handler, _ := bus.GetBus().ListenStream(server.PLANK_SERVER_ONLINE_CHANNEL)
+		handler, _ := bus.GetBus().ListenStream(server.RANCH_SERVER_ONLINE_CHANNEL)
 		seen := false
 		handler.Handle(func(message *model.Message) {
 			if !seen {

@@ -8,10 +8,11 @@ export interface Store<T> {
     set(key: string, value: T): void;
     get(key: string): T;
     populate(data: Map<string, T>): void
-    export()
+    export(): Map<string, T>
     subscribe(key: string, callback: StoreValueSubscriptionFunction<T>): Subscription;
     onAllChanges(callback: StoreAllChangeSubscriptionFunction<T>): Subscription;
     onPopulated(callback: StorePopulatedSubscriptionFunction<T>): Subscription;
+    reset(): void;
 }
 
 export function CreateStore<T>(): Store<T> {
@@ -34,6 +35,13 @@ class store<T> {
     set(key: string, value: T): void {
         this._values.set(key, value);
         this.alertSubscribers(key, value)
+    }
+
+    reset(): void {
+        this._values.forEach((value: T, key: string) => {
+            this.alertSubscribers(key, null); // the value is gone!
+        });
+        this._values = new Map<string, T>();
     }
 
     private alertSubscribers(key: string, value: T): void {
