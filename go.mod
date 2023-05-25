@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/pb33f/libopenapi v0.8.1
+	github.com/pb33f/libopenapi v0.8.4
 	github.com/pb33f/libopenapi-validator v0.0.5
-	github.com/pb33f/ranch v0.1.0
+	github.com/pb33f/ranch v0.2.0
 )
 
 require (
@@ -31,7 +31,7 @@ require (
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
-	github.com/mitchellh/mapstructure v1.4.2 // indirect
+	github.com/mitchellh/mapstructure v1.4.2
 	github.com/pelletier/go-toml v1.9.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pterm/pterm v0.12.59
