@@ -16,6 +16,8 @@ const vitePath = `${paths[mode]}`
 export default defineConfig({
     plugins: [tsconfigPaths()],
     build: {
+        //manifest: true,
+        minify: true,
         outDir: './dist',
         rollupOptions: {
             external: [

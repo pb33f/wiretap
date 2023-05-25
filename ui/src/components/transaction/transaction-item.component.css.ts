@@ -11,13 +11,14 @@ export default css`
   }
   
   .transaction:hover{
-    background: var(--kv-table-header-background);
+    background: var(--transaction-background-color-hover);
     cursor: pointer;
     border-bottom: 1px dashed var(--secondary-color);
     border-top: 1px dashed var(--secondary-color);
   }
 
   .transaction:active {
+    background: var(--transaction-background-color-active);
     border-bottom: 1px dashed var(--primary-color);
     border-top: 1px dashed var(--primary-color);
     color: var(--primary-color);
@@ -25,6 +26,7 @@ export default css`
 
   
   .transaction.active {
+    background: var(--kv-table-header-background);
     border-bottom: 1px dashed var(--primary-color);
     border-top: 1px dashed var(--primary-color);
     color: var(--primary-color);
