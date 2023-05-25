@@ -15,7 +15,7 @@ export default css`
     width: 50px;
     height: 55px;
     position: absolute;
-    right: 8px
+    right: 2px
   }
   
   

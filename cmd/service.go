@@ -75,8 +75,6 @@ func runWiretapService(config *shared.WiretapConfiguration) (server.PlatformServ
 		return nil, errors.Join(errs...)
 	}
 
-	//go runMonitor(config, doc)
-
 	serverConfig, _ := server.CreateServerConfig()
 	serverConfig.Port, _ = strconv.Atoi(config.Port)
 	serverConfig.FabricConfig.EndpointConfig.Heartbeat = 0
@@ -109,10 +107,10 @@ func runWiretapService(config *shared.WiretapConfiguration) (server.PlatformServ
 
 	/* serve monitor */
 	go func() {
-		fs := http.FileServer(http.Dir("ui/build/static"))
+		fs := http.FileServer(http.Dir("ui/dist/"))
 		http.Handle("/", fs)
 
-		log.Print("Monitor service booting on 9091...")
+		log.Print("Monitor UI booting on 9091...")
 		err = http.ListenAndServe(":9091", nil)
 		if err != nil {
 			log.Fatal(err)

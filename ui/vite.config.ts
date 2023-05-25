@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import copy from 'rollup-plugin-copy';
-import typescript from "@rollup/plugin-typescript";
+//import typescript from "@rollup/plugin-typescript";
 import * as path from "path"
 
 
@@ -30,13 +30,12 @@ export default defineConfig({
                     ],
                 hook: 'writeBundle',
                 }),
-                typescript({
-                    sourceMap: false,
-                    declaration: true,
-                    outDir: "dist",
-                }),
+                // typescript({
+                //     sourceMap: false,
+                //     declaration: true,
+                //     outDir: "dist",
+                // }),
             ],
-
         }
     }
 })
