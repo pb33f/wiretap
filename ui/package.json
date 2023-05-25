@@ -1,22 +1,19 @@
 {
-  "name": "@pb33f/wiretap-ui",
+  "name": "wiretap",
   "version": "0.0.1",
   "description": "Monitor API requests and responses between a client/server and validate OpenAPI contract compliance",
+  "main": "index.js",
   "repository": "https://github.com/pb33f/openapi-wiretap",
   "author": "Princess B33f Heavy Industries / Dave Shanley",
-  "license": "GPL-3.0",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "typings": "./build/index.d.ts",
+  "license": "MIT",
   "devDependencies": {
-    "@rollup/plugin-typescript": "^11.1.1",
     "@types/node": "^20.2.1",
     "@types/prismjs": "^1.26.0",
     "rollup-plugin-copy": "^3.4.0",
-    "tslib": "^2.5.2",
     "typescript": "^5.0.4",
     "vite": "^4.3.8",
-    "vite-tsconfig-paths": "^4.2.0"
+    "vite-tsconfig-paths": "^4.2.0",
+    "@rollup/plugin-typescript": "^11.1.1"
   },
   "dependencies": {
     "@shoelace-style/shoelace": "^2.4.0",
@@ -27,7 +24,7 @@
     "prismjs": "^1.29.0"
   },
   "scripts": {
-    "serve": "vite",
-    "start": "vite build"
+    "start": "vite",
+    "build": "vite build"
   }
 }

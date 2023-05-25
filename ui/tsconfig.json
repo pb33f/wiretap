@@ -1,8 +1,6 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-    "target": "esnext",
-    "types": ["vite/client", "node"],
     "experimentalDecorators": true,
     "outDir": "./dist",
     "noImplicitAny": false,
@@ -13,16 +11,15 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "noEmit": true,
     "lib": [
       "dom",
       "esnext",
-      "dom.iterable",
+      "es2017"
     ],
     "paths": {
       "@/*": ["src/*"],
     }
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "./build", "./shoelace"]
+  "exclude": ["node_modules", "./build", "webpack.config.js"]
 }
