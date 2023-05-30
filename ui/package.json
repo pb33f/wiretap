@@ -7,15 +7,17 @@
   "author": "Princess B33f Heavy Industries / Dave Shanley",
   "license": "MIT",
   "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.1",
     "@types/node": "^20.2.1",
     "@types/prismjs": "^1.26.0",
     "rollup-plugin-copy": "^3.4.0",
     "typescript": "^5.0.4",
     "vite": "^4.3.8",
-    "vite-tsconfig-paths": "^4.2.0",
-    "@rollup/plugin-typescript": "^11.1.1"
+    "vite-plugin-dts": "^2.3.0",
+    "vite-tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
+    "@pb33f/saddlebag": "^0.1.0",
     "@shoelace-style/shoelace": "^2.4.0",
     "@stomp/stompjs": "^7.0.0",
     "lit": "^2.7.3",

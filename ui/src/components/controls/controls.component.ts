@@ -7,7 +7,7 @@ import {Bus, BusCallback, Channel, CommandResponse, GetBus, Message, Subscriptio
 import controlsComponentCss from "./controls.component.css";
 import {SlDrawer, SlInput} from "@shoelace-style/shoelace";
 import {RanchUtils} from "@/ranch/utils";
-import {CreateStoreManager, GetStoreManager, StoreManager} from "@/ranch/store.manager";
+import {CreateBagManager, GetBagManager, BagManager} from "@pb33f/saddlebag";
 import {WipeDataEvent} from "@/model/events";
 import sharedCss from "@/components/shared.css";
 import {
@@ -39,14 +39,14 @@ export class WiretapControlsComponent extends LitElement {
 
     private readonly _wiretapControlsSubscription: Subscription;
     private readonly _wiretapControlsChannel: Channel;
-    private readonly _storeManager: StoreManager;
+    private readonly _storeManager: BagManager;
 
     constructor() {
         super();
 
         // get bus.
         this._bus = GetBus();
-        this._storeManager = GetStoreManager();
+        this._storeManager = GetBagManager();
         this._wiretapControlsChannel = this._bus.getChannel(WiretapControlsChannel);
         this._wiretapControlsSubscription = this._wiretapControlsChannel.subscribe(this.controlUpdateHandler());
 

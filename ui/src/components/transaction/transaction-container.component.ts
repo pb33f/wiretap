@@ -1,6 +1,6 @@
 import {customElement, state, query} from "lit/decorators.js";
 import {html, LitElement} from "lit";
-import {Store} from "@/ranch/store";
+import {Bag} from "@pb33f/saddlebag";
 import {BuildLiveTransactionFromState, HttpTransaction} from '@/model/http_transaction';
 import {HttpTransactionItemComponent} from "./transaction-item.component";
 import localforage from "localforage";
@@ -15,9 +15,9 @@ export class HttpTransactionContainerComponent extends LitElement {
 
     static styles = transactionContainerComponentCss;
 
-    private _allTransactionStore: Store<HttpTransaction>;
-    private _selectedTransactionStore: Store<HttpTransaction>;
-    private _specStore: Store<String>;
+    private _allTransactionStore: Bag<HttpTransaction>;
+    private _selectedTransactionStore: Bag<HttpTransaction>;
+    private _specStore: Bag<String>;
     private _transactionComponents: HttpTransactionItemComponent[] = [];
 
     @state()
@@ -32,9 +32,9 @@ export class HttpTransactionContainerComponent extends LitElement {
     @query('spec-editor')
     private _specEditor: SpecEditor;
 
-    constructor(allTransactionStore: Store<HttpTransaction>,
-                selectedTransactionStore: Store<HttpTransaction>,
-                specStore: Store<String>) {
+    constructor(allTransactionStore: Bag<HttpTransaction>,
+                selectedTransactionStore: Bag<HttpTransaction>,
+                specStore: Bag<String>) {
         super()
         this._allTransactionStore = allTransactionStore
         this._selectedTransactionStore = selectedTransactionStore

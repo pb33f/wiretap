@@ -1,8 +1,7 @@
 import {customElement, property, query} from "lit/decorators.js";
 import {html, LitElement} from "lit";
-import {CreateStoreManager, StoreManager} from "./ranch/store.manager";
 import {HttpRequest, HttpResponse, HttpTransaction} from "./model/http_transaction";
-import {Store} from "./ranch/store";
+import {Bag, BagManager, CreateBagManager} from "@pb33f/saddlebag";
 import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Subscription} from "./ranch/bus";
 import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container.component";
 import * as localforage from "localforage";
@@ -24,11 +23,11 @@ import {
 @customElement('wiretap-application')
 export class WiretapComponent extends LitElement {
 
-    private readonly _storeManager: StoreManager;
-    private readonly _httpTransactionStore: Store<HttpTransaction>;
-    private readonly _selectedTransactionStore: Store<HttpTransaction>;
-    private readonly _controlsStore: Store<WiretapControls>;
-    private readonly _specStore: Store<string>;
+    private readonly _storeManager: BagManager;
+    private readonly _httpTransactionStore: Bag<HttpTransaction>;
+    private readonly _selectedTransactionStore: Bag<HttpTransaction>;
+    private readonly _controlsStore: Bag<WiretapControls>;
+    private readonly _specStore: Bag<string>;
 
     private readonly _bus: Bus;
     private readonly _wiretapChannel: Channel;
@@ -72,21 +71,21 @@ export class WiretapComponent extends LitElement {
 
         // set up bus and stores
         this._bus = CreateBus();
-        this._storeManager = CreateStoreManager();
+        this._storeManager = CreateBagManager();
 
         // create transaction store
         this._httpTransactionStore =
-            this._storeManager.CreateStore<HttpTransaction>(WiretapHttpTransactionStore);
+            this._storeManager.createBag<HttpTransaction>(WiretapHttpTransactionStore);
 
         // create selected transaction store
         this._selectedTransactionStore =
-            this._storeManager.CreateStore<HttpTransaction>(WiretapSelectedTransactionStore);
+            this._storeManager.createBag<HttpTransaction>(WiretapSelectedTransactionStore);
 
         // spec store
-        this._specStore = this._storeManager.CreateStore<string>(WiretapSpecStore);
+        this._specStore = this._storeManager.createBag<string>(WiretapSpecStore);
 
         // controls store
-        this._controlsStore = this._storeManager.CreateStore<WiretapControls>(WiretapSpecStore);
+        this._controlsStore = this._storeManager.createBag<WiretapControls>(WiretapSpecStore);
 
         // set up wiretap channels
         this._wiretapChannel = this._bus.createChannel(WiretapChannel);
@@ -234,7 +233,7 @@ export class WiretapComponent extends LitElement {
 
 
     wipeData(e: CustomEvent) {
-        const store = this._storeManager.GetStore(e.detail)
+        const store = this._storeManager.getBag(e.detail)
         if (store) {
             store.reset();
         }
