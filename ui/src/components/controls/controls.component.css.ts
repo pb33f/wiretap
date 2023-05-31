@@ -2,13 +2,23 @@
 import {css} from "lit";
 
 export default css`
-  sl-button {
-   margin:5px auto
-
+  sl-button.gear {
+   margin:5px auto;
   }
+
+  sl-button.report {
+   
+  }
+  
   sl-icon.gear {
     font-size: 1.7rem;
     padding-top:6px;
+  }
+
+  sl-icon.report  {
+    font-size: 1.4rem;
+    display: inline-block;
+    //padding-top:6px;
   }
   
   label {

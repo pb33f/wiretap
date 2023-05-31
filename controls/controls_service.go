@@ -29,9 +29,8 @@ type ControlResponse struct {
 }
 
 func NewControlsService() *ControlService {
-	ebus := bus.GetBus()
-	storeManager := ebus.GetStoreManager()
-	controlsStore := storeManager.GetStore(ControlServiceChan)
+	storeManager := bus.GetBus().GetStoreManager()
+	controlsStore := storeManager.CreateStore(ControlServiceChan)
 	return &ControlService{
 		controlsStore: controlsStore,
 	}

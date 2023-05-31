@@ -21,20 +21,20 @@ const (
 )
 
 type WiretapService struct {
-	transport     *http.Transport
-	document      libopenapi.Document
-	docModel      *v3.Document
-	serviceCore   service.FabricServiceCore
-	broadcastChan *bus.Channel
-	bus           bus.EventBus
-	controlsStore bus.BusStore
+	transport        *http.Transport
+	document         libopenapi.Document
+	docModel         *v3.Document
+	serviceCore      service.FabricServiceCore
+	broadcastChan    *bus.Channel
+	bus              bus.EventBus
+	controlsStore    bus.BusStore
+	transactionStore bus.BusStore
 }
 
 func NewWiretapService(document libopenapi.Document) *WiretapService {
-
-	ebus := bus.GetBus()
-	storeManager := ebus.GetStoreManager()
-	controlsStore := storeManager.GetStore(controls.ControlServiceChan)
+	storeManager := bus.GetBus().GetStoreManager()
+	controlsStore := storeManager.CreateStore(controls.ControlServiceChan)
+	transactionStore := storeManager.CreateStore(WiretapServiceChan)
 
 	tr := &http.Transport{
 		MaxIdleConns:    20,
@@ -42,10 +42,11 @@ func NewWiretapService(document libopenapi.Document) *WiretapService {
 	}
 	m, _ := document.BuildV3Model()
 	return &WiretapService{
-		document:      document,
-		docModel:      &m.Model,
-		transport:     tr,
-		controlsStore: controlsStore,
+		document:         document,
+		docModel:         &m.Model,
+		transport:        tr,
+		controlsStore:    controlsStore,
+		transactionStore: transactionStore,
 	}
 }
 

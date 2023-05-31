@@ -28,6 +28,12 @@ func (ws *WiretapService) validateResponse(
 		}
 	}
 
+	transaction := buildResponse(request, returnedResponse)
+	if len(cleanedErrors) > 0 {
+		transaction.ResponseValidation = cleanedErrors
+	}
+	ws.transactionStore.Put(request.Id.String(), transaction, nil)
+
 	if len(cleanedErrors) > 0 {
 		ws.broadcastResponseValidationErrors(request, returnedResponse, cleanedErrors)
 	} else {
@@ -78,6 +84,13 @@ func (ws *WiretapService) validateRequest(
 			cleanedErrors = append(cleanedErrors, validationErrors[i])
 		}
 	}
+
+	// record results
+	transaction := buildRequest(request)
+	if len(cleanedErrors) > 0 {
+		transaction.RequestValidation = cleanedErrors
+	}
+	ws.transactionStore.Put(request.Id.String(), transaction, nil)
 
 	// broadcast what we found.
 	if len(cleanedErrors) > 0 {

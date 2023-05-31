@@ -14,7 +14,7 @@ import {
     WiretapControlsChannel, WiretapControlsKey, WiretapControlsStore,
     WiretapCurrentSpec,
     WiretapHttpTransactionStore,
-    WiretapLocalStorage,
+    WiretapLocalStorage, WiretapReportChannel,
     WiretapSelectedTransactionStore,
     WiretapSpecStore
 } from "@/model/constants";
@@ -33,6 +33,7 @@ export class WiretapComponent extends LitElement {
     private readonly _wiretapChannel: Channel;
     private readonly _specChannel: Channel;
     private readonly _wiretapControlsChannel: Channel;
+    private readonly _wiretapReportChannel: Channel;
 
     private _transactionChannelSubscription: Subscription;
     private _specChannelSubscription: Subscription;
@@ -91,6 +92,8 @@ export class WiretapComponent extends LitElement {
         this._wiretapChannel = this._bus.createChannel(WiretapChannel);
         this._specChannel = this._bus.createChannel(SpecChannel);
         this._wiretapControlsChannel = this._bus.createChannel(WiretapControlsChannel);
+        this._wiretapReportChannel = this._bus.createChannel(WiretapReportChannel);
+
 
         // load previous transactions from local storage.
         this.loadHistoryFromLocalStorage().then((previousTransactions: Map<string, HttpTransaction>) => {
@@ -124,6 +127,7 @@ export class WiretapComponent extends LitElement {
         this._bus.mapChannelToBrokerDestination("/topic/" + WiretapChannel, WiretapChannel)
         this._bus.mapChannelToBrokerDestination("/queue/" + SpecChannel, SpecChannel)
         this._bus.mapChannelToBrokerDestination("/queue/" + WiretapControlsChannel, WiretapControlsChannel)
+        this._bus.mapChannelToBrokerDestination("/queue/" + WiretapReportChannel, WiretapReportChannel)
 
         this._bus.connectToBroker(config);
     }

@@ -14,6 +14,7 @@ import (
 	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/wiretap/controls"
 	"github.com/pb33f/wiretap/daemon"
+	"github.com/pb33f/wiretap/report"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
 	"github.com/pterm/pterm"
@@ -115,8 +116,6 @@ func runWiretapService(config *shared.WiretapConfiguration) (server.PlatformServ
 		}
 		fs := http.FileServer(http.FS(htmlContent))
 
-		//fs := http.FileServer(http.FS(staticUI))
-
 		http.Handle("/", fs)
 
 		log.Print("Monitor UI booting on 9091...")
@@ -136,17 +135,26 @@ func runWiretapService(config *shared.WiretapConfiguration) (server.PlatformServ
 	platformServer := server.NewPlatformServer(serverConfig)
 
 	// register wiretap service
-	if err = platformServer.RegisterService(daemon.NewWiretapService(doc), daemon.WiretapServiceChan); err != nil {
+	if err = platformServer.RegisterService(
+		daemon.NewWiretapService(doc), daemon.WiretapServiceChan); err != nil {
 		panic(err)
 	}
 
 	// register spec service
-	if err = platformServer.RegisterService(specs.NewSpecService(doc), specs.SpecServiceChan); err != nil {
+	if err = platformServer.RegisterService(
+		specs.NewSpecService(doc), specs.SpecServiceChan); err != nil {
 		panic(err)
 	}
 
 	// register control service
-	if err = platformServer.RegisterService(controls.NewControlsService(), controls.ControlServiceChan); err != nil {
+	if err = platformServer.RegisterService(
+		controls.NewControlsService(), controls.ControlServiceChan); err != nil {
+		panic(err)
+	}
+
+	// register report service
+	if err = platformServer.RegisterService(
+		report.NewReportService(), report.ReportServiceChan); err != nil {
 		panic(err)
 	}
 
