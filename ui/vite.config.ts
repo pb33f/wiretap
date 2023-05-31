@@ -23,11 +23,7 @@ export default defineConfig({
             external: [
                 /^node:.*/,
             ],
-            output: {
-                inlineDynamicImports: true,
-                entryFileNames: '[name].js',   // currently does not work for the legacy bundle
-                assetFileNames: '[name].[ext]', // currently does not work for images
-            },
+
             plugins: [copy({
                     targets: [
                         {
