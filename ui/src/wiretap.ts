@@ -2,7 +2,7 @@ import {customElement, property, query} from "lit/decorators.js";
 import {html, LitElement} from "lit";
 import {HttpRequest, HttpResponse, HttpTransaction} from "./model/http_transaction";
 import {Bag, BagManager, CreateBagManager} from "@pb33f/saddlebag";
-import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Subscription} from "./ranch/bus";
+import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Subscription} from "@pb33f/ranch";
 import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container.component";
 import * as localforage from "localforage";
 import {HeaderComponent} from "@/components/wiretap-header/header.component";
@@ -11,7 +11,7 @@ import {
     GetCurrentSpecCommand,
     SpecChannel,
     WiretapChannel,
-    WiretapControlsChannel,
+    WiretapControlsChannel, WiretapControlsKey, WiretapControlsStore,
     WiretapCurrentSpec,
     WiretapHttpTransactionStore,
     WiretapLocalStorage,
@@ -85,7 +85,7 @@ export class WiretapComponent extends LitElement {
         this._specStore = this._storeManager.createBag<string>(WiretapSpecStore);
 
         // controls store
-        this._controlsStore = this._storeManager.createBag<WiretapControls>(WiretapSpecStore);
+        this._controlsStore = this._storeManager.createBag<WiretapControls>(WiretapControlsStore);
 
         // set up wiretap channels
         this._wiretapChannel = this._bus.createChannel(WiretapChannel);
@@ -183,11 +183,18 @@ export class WiretapComponent extends LitElement {
     wireTransactionHandler(): BusCallback {
         return (msg) => {
             const wiretapMessage = msg.payload as HttpTransaction
+
             const httpTransaction: HttpTransaction = {
                 httpRequest: Object.assign(new HttpRequest(), wiretapMessage.httpRequest),
                 id: wiretapMessage.id,
                 requestValidation: wiretapMessage.requestValidation,
                 responseValidation: wiretapMessage.responseValidation,
+            }
+
+            // get global delay
+            const controls = this._controlsStore.get(WiretapControlsKey)
+            if (controls.globalDelay > 0) {
+                httpTransaction.delay = controls.globalDelay;
             }
 
             if (wiretapMessage.requestValidation && wiretapMessage.requestValidation.length > 0) {

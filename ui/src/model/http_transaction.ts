@@ -90,6 +90,7 @@ export class HttpResponse {
 
 export interface HttpTransaction {
     timestamp?: number;
+    delay?: number;
     httpRequest?: HttpRequest;
     requestValidation?: ValidationError[];
     httpResponse?: HttpResponse;
@@ -99,6 +100,7 @@ export interface HttpTransaction {
 
 export function BuildLiveTransactionFromState(httpTransaction: HttpTransaction): HttpTransaction {
     return {
+        delay: httpTransaction.delay,
         timestamp: httpTransaction.timestamp,
         httpRequest: Object.assign(new HttpRequest(), httpTransaction.httpRequest),
         httpResponse: Object.assign(new HttpResponse(), httpTransaction.httpResponse),

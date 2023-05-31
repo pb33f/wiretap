@@ -3,16 +3,16 @@ import {LitElement} from "lit";
 import {html} from "lit";
 import {ControlsResponse, WiretapConfig, WiretapControls} from "@/model/controls";
 import localforage from "localforage";
-import {Bus, BusCallback, Channel, CommandResponse, GetBus, Message, Subscription} from "@/ranch/bus";
+import {Bus, BusCallback, Channel, CommandResponse, GetBus, Message, Subscription} from "@pb33f/ranch";
 import controlsComponentCss from "./controls.component.css";
 import {SlDrawer, SlInput} from "@shoelace-style/shoelace";
-import {RanchUtils} from "@/ranch/utils";
-import {CreateBagManager, GetBagManager, BagManager} from "@pb33f/saddlebag";
+import {RanchUtils} from "@pb33f/ranch";
+import {GetBagManager, BagManager, Bag} from "@pb33f/saddlebag";
 import {WipeDataEvent} from "@/model/events";
 import sharedCss from "@/components/shared.css";
 import {
     ChangeDelayCommand,
-    WiretapControlsChannel,
+    WiretapControlsChannel, WiretapControlsKey,
     WiretapControlsStore,
     WiretapHttpTransactionStore
 } from "@/model/constants";
@@ -21,7 +21,6 @@ import {
 export class WiretapControlsComponent extends LitElement {
 
     static styles = [sharedCss, controlsComponentCss]
-
 
     @state()
     private _controls: WiretapControls;
@@ -40,6 +39,7 @@ export class WiretapControlsComponent extends LitElement {
     private readonly _wiretapControlsSubscription: Subscription;
     private readonly _wiretapControlsChannel: Channel;
     private readonly _storeManager: BagManager;
+    private readonly _controlsStore: Bag<WiretapControls>;
 
     constructor() {
         super();
@@ -47,9 +47,9 @@ export class WiretapControlsComponent extends LitElement {
         // get bus.
         this._bus = GetBus();
         this._storeManager = GetBagManager();
+        this._controlsStore = this._storeManager.getBag(WiretapControlsStore);
         this._wiretapControlsChannel = this._bus.getChannel(WiretapControlsChannel);
         this._wiretapControlsSubscription = this._wiretapControlsChannel.subscribe(this.controlUpdateHandler());
-
 
         this.loadControlStateFromStorage().then((controls: WiretapControls) => {
             if (!controls) {
@@ -81,6 +81,9 @@ export class WiretapControlsComponent extends LitElement {
             if (delay != undefined && delay !== existingDelay) {
                 this._controls.globalDelay = delay;
             }
+
+            // update the store
+            this._controlsStore.set(WiretapControlsKey, this._controls)
             localforage.setItem<WiretapControls>(WiretapControlsStore, this._controls);
         }
     }

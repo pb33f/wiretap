@@ -10,6 +10,10 @@ export default css`
     justify-content: space-between;
   }
   
+  header {
+    flex-grow: 5;
+  }
+  
   .transaction:hover{
     background: var(--transaction-background-color-hover);
     cursor: pointer;
@@ -79,6 +83,17 @@ export default css`
   sl-tag {
     width: 80px;
     text-align: center;
+  }
+  
+  .delay {
+    width: 70px;
+    margin: 5px 10px 0 10px;
+    color: var(--secondary-color);
+  }
+  .delay sl-icon {
+    vertical-align: bottom;
+    font-size: 21px;
+    color: var(--dark-font-color);
   }
   
 `

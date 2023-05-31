@@ -1,5 +1,5 @@
 import {customElement, state} from "lit/decorators.js";
-import {html, LitElement} from "lit";
+import {html, LitElement, TemplateResult} from "lit";
 import {HttpTransaction} from "@/model/http_transaction";
 import transactionComponentCss from "@/components/transaction/transaction-item.component.css";
 import Prism from 'prismjs'
@@ -105,12 +105,19 @@ export class HttpTransactionItemComponent extends LitElement {
             }
         }
 
+        let delay: TemplateResult
+        console.log(this._httpTransaction)
+        if (this._httpTransaction.delay > 0) {
+            delay = html`<div class="delay"><sl-icon name="hourglass-split" ></sl-icon>${this._httpTransaction.delay}ms</div>`
+        }
+
         return html`
             <div class="${tClass}" @click="${this.setActive}">
                 <header>
                     <sl-tag variant="${exchangeMethod(req.method)}" class="method">${req.method}</sl-tag>
                     ${decodeURI(req.url)}
                 </header>
+               ${delay}
                 <div class="transaction-status">
                     ${statusIcon}
                 </div>

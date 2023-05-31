@@ -30,7 +30,6 @@ import './components/wiretap-header/metrics.component';
 import './components/wiretap-header/metric.component';
 import './components/controls/controls.component';
 
-import './ranch/bus';
 import './model/http_transaction';
 import './wiretap';
 

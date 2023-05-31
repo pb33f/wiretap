@@ -19,6 +19,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"net/url"
@@ -107,7 +108,15 @@ func runWiretapService(config *shared.WiretapConfiguration) (server.PlatformServ
 
 	/* serve monitor */
 	go func() {
-		fs := http.FileServer(http.Dir("ui/dist/"))
+		var staticFS = fs.FS(config.FS)
+		htmlContent, er := fs.Sub(staticFS, "ui/dist")
+		if er != nil {
+			log.Fatal(err)
+		}
+		fs := http.FileServer(http.FS(htmlContent))
+
+		//fs := http.FileServer(http.FS(staticUI))
+
 		http.Handle("/", fs)
 
 		log.Print("Monitor UI booting on 9091...")

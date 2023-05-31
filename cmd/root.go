@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"embed"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
@@ -14,6 +15,7 @@ var (
 	Version string
 	Commit  string
 	Date    string
+	FS      embed.FS
 
 	rootCmd = &cobra.Command{
 		SilenceUsage:  true,
@@ -48,6 +50,7 @@ var (
 				RedirectHost: host,
 				Port:         port,
 				MonitorPort:  mport,
+				FS:           FS,
 			}
 
 			_, _ = runWiretapService(&config)
@@ -57,10 +60,11 @@ var (
 	}
 )
 
-func Execute(version, commit, date string) {
+func Execute(version, commit, date string, fs embed.FS) {
 	Version = version
 	Commit = commit
 	Date = date
+	FS = fs
 	rootCmd.PersistentFlags().StringP("server", "s", "", "override the host in the OpenAPI specification")
 
 	if err := rootCmd.Execute(); err != nil {

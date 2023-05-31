@@ -16,13 +16,18 @@ const vitePath = `${paths[mode]}`
 export default defineConfig({
     plugins: [tsconfigPaths()],
     build: {
-        //manifest: true,
         minify: true,
+        cssCodeSplit: false,
         outDir: './dist',
         rollupOptions: {
             external: [
                 /^node:.*/,
             ],
+            output: {
+                inlineDynamicImports: true,
+                entryFileNames: '[name].js',   // currently does not work for the legacy bundle
+                assetFileNames: '[name].[ext]', // currently does not work for images
+            },
             plugins: [copy({
                     targets: [
                         {
@@ -32,11 +37,6 @@ export default defineConfig({
                     ],
                 hook: 'writeBundle',
                 }),
-                // typescript({
-                //     sourceMap: false,
-                //     declaration: true,
-                //     outDir: "dist",
-                // }),
             ],
         }
     }

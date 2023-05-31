@@ -219,6 +219,13 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@pb33f/ranch@^0.0.0":
+  version "0.3.1"
+  resolved "https://registry.yarnpkg.com/@pb33f/ranch/-/ranch-0.3.1.tgz#86277fd0250ddbd3ebe5dc8a10a130ce880218bd"
+  integrity sha512-lzyzS0IzURpU3KDJvMfwG7DZ5X5wXT6NESMthQM+bUHmtNQe1WCW9OLT8HCNuXaKD7wg2a8TFArgfoVwYzL1QA==
+  dependencies:
+    "@stomp/stompjs" "^7.0.0"
+
 "@pb33f/saddlebag@^0.1.0":
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/@pb33f/saddlebag/-/saddlebag-0.1.0.tgz#41a022a60d7781c73a591780ffdbad68cd08c47c"

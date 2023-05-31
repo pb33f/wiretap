@@ -21,6 +21,7 @@ export default css`
   
   .value {
     font-size: 1.3rem;
+    font-weight: bold;
   }
   
   .error {

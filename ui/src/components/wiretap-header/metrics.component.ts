@@ -24,10 +24,10 @@ export class HeaderMetricsComponent extends LitElement {
 
     render() {
         return html`
+            <wiretap-metric title="Compliance" value="${this.compliance}" postfix="%" end colorizeValue></wiretap-metric>
             <wiretap-metric title="Requests" value="${this.requests}"></wiretap-metric>
             <wiretap-metric title="Responses" value="${this.responses}"></wiretap-metric>
             <wiretap-metric title="Violations" value="${this.violations}"></wiretap-metric>
-            <wiretap-metric title="Compliance" value="${this.compliance}" postfix="%" end colorizeValue></wiretap-metric>
         `
     }
 }
