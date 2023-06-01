@@ -18,51 +18,52 @@ func serveMonitor(wiretapConfig *shared.WiretapConfiguration) {
 	go func() {
 		var err error
 		var staticFS = fs.FS(wiretapConfig.FS)
-		htmlContent, er := fs.Sub(staticFS, "ui/dist")
+		htmlContent, er := fs.Sub(staticFS, shared.UILocation)
 		if er != nil {
 			log.Fatal(err)
 			return
 		}
-		assetContent, er := fs.Sub(staticFS, "ui/dist/assets")
+		assetContent, er := fs.Sub(staticFS, shared.UIAssetsLocation)
 		if er != nil {
 			log.Fatal(err)
 			return
 		}
 
 		// read in the index
-		index, ierr := htmlContent.Open("index.html")
-		if ierr != nil {
-			log.Fatal(ierr)
+		index, iErr := htmlContent.Open(shared.IndexFile)
+		if iErr != nil {
+			log.Fatal(iErr)
 			return
 		}
 		indexReader := bufio.NewReader(index)
-		bytes, berr := io.ReadAll(indexReader)
-		if berr != nil {
-			log.Fatal(berr)
+		bytes, bErr := io.ReadAll(indexReader)
+		if bErr != nil {
+			log.Fatal(bErr)
 			return
 		}
+
+		indexString := string(bytes)
+
+		// replace the port in the index.html file and serve it.
+		indexString = strings.ReplaceAll(indexString, shared.WiretapPortPlaceholder, wiretapConfig.Port)
 
 		// handle index will serve a modified index.html from the embedded filesystem.
 		// this is so the monitor can connect to the websocket on the correct port.
 		handleIndex := func(w http.ResponseWriter, r *http.Request) {
-			indexString := string(bytes)
-
-			// replace the port in the index.html file and serve it.
-			indexString = strings.ReplaceAll(indexString, "%WIRETAP_PORT%", wiretapConfig.Port)
-			io.WriteString(w, indexString)
+			_, _ = io.WriteString(w, indexString)
 		}
 
 		// create a new mux.
 		mux := http.NewServeMux()
 
-		// create a new fileserver for the assets.
-		fs := http.FileServer(http.FS(assetContent))
+		// create a new file server for the assets.
+		fileServer := http.FileServer(http.FS(assetContent))
 
 		// handle the index
 		mux.HandleFunc("/", handleIndex)
 
 		// handle the assets
-		mux.Handle("/assets/", http.StripPrefix("/assets", fs))
+		mux.Handle("/assets/", http.StripPrefix("/assets", fileServer))
 
 		log.Printf("Monitor UI booting on port %s...", wiretapConfig.MonitorPort)
 		err = http.ListenAndServe(fmt.Sprintf(":%s", wiretapConfig.MonitorPort), mux)

@@ -15,3 +15,7 @@ type WiretapConfiguration struct {
 }
 
 const ConfigKey = "config"
+const WiretapPortPlaceholder = "%WIRETAP_PORT%"
+const IndexFile = "index.html"
+const UILocation = "ui/dist"
+const UIAssetsLocation = "ui/dist/assets"
