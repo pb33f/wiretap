@@ -5,83 +5,49 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"github.com/google/uuid"
-	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/plank/pkg/server"
 	"github.com/pb33f/ranch/service"
+	"github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/controls"
 	"github.com/pb33f/wiretap/daemon"
 	"github.com/pb33f/wiretap/report"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
-	"github.com/pterm/pterm"
-	"github.com/sirupsen/logrus"
-	"io"
-	"io/fs"
-	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
-func loadOpenAPISpec(contract string) (libopenapi.Document, error) {
-	var specBytes []byte
+func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.PlatformServer, error) {
 
-	if strings.HasPrefix(contract, "http://") || strings.HasPrefix(contract, "https://") {
-		if docUrl, err := url.Parse(contract); err == nil {
-			logrus.Infof("Fetching OpenAPI Specification from URL: %s", docUrl.String())
-			resp, er := http.Get(docUrl.String())
-			if er != nil {
-				return nil, er
-			}
-			respBody, e := io.ReadAll(resp.Body)
-			if e != nil {
-				return nil, e
-			}
-			if len(respBody) > 0 {
-				specBytes = respBody
-			}
-		}
-	} else {
-
-		// not an URL, is it a file?
-		var er error
-		if _, er = os.Stat(contract); er != nil {
-			return nil, er
-		}
-		specBytes, er = os.ReadFile(contract)
-		if er != nil {
-			return nil, er
-		}
-	}
-	if len(specBytes) <= 0 {
-		return nil, fmt.Errorf("no bytes in OpenAPI Specification")
-	}
-	return libopenapi.NewDocument(specBytes)
-}
-
-func runWiretapService(config *shared.WiretapConfiguration) (server.PlatformServer, error) {
-
-	doc, err := loadOpenAPISpec(config.Contract)
+	// load the openapi spec
+	doc, err := loadOpenAPISpec(wiretapConfig.Contract)
 	if err != nil {
 		return nil, err
 	}
+
+	// build a model
 	_, errs := doc.BuildV3Model()
 	if len(errs) > 0 {
 		return nil, errors.Join(errs...)
 	}
 
-	serverConfig, _ := server.CreateServerConfig()
-	serverConfig.Port, _ = strconv.Atoi(config.Port)
-	serverConfig.FabricConfig.EndpointConfig.Heartbeat = 0
+	// create a store and put the wiretapConfig in it.
+	storeManager := bus.GetBus().GetStoreManager()
+	controlsStore := storeManager.CreateStoreWithType(controls.ControlServiceChan, reflect.TypeOf(wiretapConfig))
+	controlsStore.Put(shared.ConfigKey, wiretapConfig, nil)
 
-	serverConfig.FabricConfig = &server.FabricBrokerConfig{
+	// create a new ranch config.
+	ranchConfig, _ := server.CreateServerConfig()
+	ranchConfig.Port, _ = strconv.Atoi(wiretapConfig.Port)
+	ranchConfig.FabricConfig.EndpointConfig.Heartbeat = 0
+
+	// create an application fabric configuration for the ranch server.
+	ranchConfig.FabricConfig = &server.FabricBrokerConfig{
 		FabricEndpoint: "/ranch",
 		EndpointConfig: &bus.EndpointConfig{
 			Heartbeat:             0,
@@ -107,32 +73,8 @@ func runWiretapService(config *shared.WiretapConfiguration) (server.PlatformServ
 		},
 	}
 
-	/* serve monitor */
-	go func() {
-		var staticFS = fs.FS(config.FS)
-		htmlContent, er := fs.Sub(staticFS, "ui/dist")
-		if er != nil {
-			log.Fatal(err)
-		}
-		fs := http.FileServer(http.FS(htmlContent))
-
-		http.Handle("/", fs)
-
-		log.Print("Monitor UI booting on 9091...")
-		err = http.ListenAndServe(":9091", nil)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	// create a store and put the config in it.
-	ebus := bus.GetBus()
-	storeManager := ebus.GetStoreManager()
-	controlsStore := storeManager.CreateStoreWithType(controls.ControlServiceChan, reflect.TypeOf(config))
-	controlsStore.Put(shared.ConfigKey, config, nil)
-
 	// create an instance of ranch
-	platformServer := server.NewPlatformServer(serverConfig)
+	platformServer := server.NewPlatformServer(ranchConfig)
 
 	// register wiretap service
 	if err = platformServer.RegisterService(
@@ -158,29 +100,25 @@ func runWiretapService(config *shared.WiretapConfiguration) (server.PlatformServ
 		panic(err)
 	}
 
+	// register wiretapConfig service
+	if err = platformServer.RegisterService(
+		config.NewConfigurationService(), config.ConfigurationServiceChan); err != nil {
+		panic(err)
+	}
+
 	// create a new catchall endpoint and listen for all traffic
 	platformServer.SetHttpPathPrefixChannelBridge(rbc)
 
-	// start the ranch.
+	// create a new chan and listen for interrupt signals
 	sysChan := make(chan os.Signal, 1)
 
-	go func() {
-		handler, _ := bus.GetBus().ListenStream(server.RANCH_SERVER_ONLINE_CHANNEL)
-		seen := false
-		handler.Handle(func(message *model.Message) {
-			if !seen {
-				seen = true
-				pterm.Println()
-				pterm.Info.Println("Wiretap Service is ready.")
-				pterm.Println()
-				pterm.Info.Printf("API Gateway: http://localhost:%s\n", config.Port)
-				pterm.Info.Printf("Monitor: http://localhost:%s\n", config.MonitorPort)
-				pterm.Println()
+	// hook in booted message
+	bootedMessage(wiretapConfig)
 
-			}
-		}, nil)
-	}()
+	// boot the monitor
+	serveMonitor(wiretapConfig)
 
+	// boot wiretap
 	platformServer.StartServer(sysChan)
 	return platformServer, nil
 }

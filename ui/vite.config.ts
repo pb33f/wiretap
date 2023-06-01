@@ -8,7 +8,7 @@ import * as path from "path"
 const mode = process.env.NODE_ENV || "production"
 
 const paths = {
-    production: `dist/shoelace`,
+    production: `dist/assets/shoelace`,
     development: `shoelace`,
 }
 const vitePath = `${paths[mode]}`

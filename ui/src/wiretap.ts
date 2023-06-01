@@ -8,9 +8,9 @@ import * as localforage from "localforage";
 import {HeaderComponent} from "@/components/wiretap-header/header.component";
 import {WiretapControls} from "@/model/controls";
 import {
-    GetCurrentSpecCommand,
-    SpecChannel,
-    WiretapChannel,
+    GetCurrentSpecCommand, QueuePrefix,
+    SpecChannel, TopicPrefix,
+    WiretapChannel, WiretapConfigurationChannel,
     WiretapControlsChannel, WiretapControlsKey, WiretapControlsStore,
     WiretapCurrentSpec,
     WiretapHttpTransactionStore,
@@ -18,6 +18,11 @@ import {
     WiretapSelectedTransactionStore,
     WiretapSpecStore
 } from "@/model/constants";
+
+declare global {
+    interface Window { wiretapPort: any; }
+}
+
 
 
 @customElement('wiretap-application')
@@ -28,17 +33,16 @@ export class WiretapComponent extends LitElement {
     private readonly _selectedTransactionStore: Bag<HttpTransaction>;
     private readonly _controlsStore: Bag<WiretapControls>;
     private readonly _specStore: Bag<string>;
-
     private readonly _bus: Bus;
     private readonly _wiretapChannel: Channel;
-    private readonly _specChannel: Channel;
+    private readonly _wiretapSpecChannel: Channel;
     private readonly _wiretapControlsChannel: Channel;
     private readonly _wiretapReportChannel: Channel;
-
+    private readonly _wiretapConfigChannel: Channel;
+    private readonly _wiretapPort: string;
     private _transactionChannelSubscription: Subscription;
     private _specChannelSubscription: Subscription;
-    private _wiretapControlsSubscription: Subscription;
-
+    private _configChannelSubscription: Subscription;
     private _transactionContainer: HttpTransactionContainerComponent;
 
     @query("wiretap-header")
@@ -59,16 +63,17 @@ export class WiretapComponent extends LitElement {
     @property({type: Number})
     complianceLevel: number = 100.0;
 
-
     constructor() {
         super();
-
         //configure local storage
         localforage.config({
             name: 'pb33f-wiretap',
             version: 1.0,
             storeName: 'wiretap',
         });
+
+        // extract port from session storage.
+        this._wiretapPort = sessionStorage.getItem("wiretapPort");
 
         // set up bus and stores
         this._bus = CreateBus();
@@ -90,45 +95,49 @@ export class WiretapComponent extends LitElement {
 
         // set up wiretap channels
         this._wiretapChannel = this._bus.createChannel(WiretapChannel);
-        this._specChannel = this._bus.createChannel(SpecChannel);
+        this._wiretapSpecChannel = this._bus.createChannel(SpecChannel);
         this._wiretapControlsChannel = this._bus.createChannel(WiretapControlsChannel);
         this._wiretapReportChannel = this._bus.createChannel(WiretapReportChannel);
+        this._wiretapConfigChannel = this._bus.createChannel(WiretapConfigurationChannel);
 
+        // map local bus channels to broker destinations.
+        this._bus.mapChannelToBrokerDestination(TopicPrefix + WiretapChannel, WiretapChannel);
+        this._bus.mapChannelToBrokerDestination(QueuePrefix + SpecChannel, SpecChannel);
+        this._bus.mapChannelToBrokerDestination(QueuePrefix + WiretapControlsChannel, WiretapControlsChannel);
+        this._bus.mapChannelToBrokerDestination(QueuePrefix + WiretapReportChannel, WiretapReportChannel);
+        this._bus.mapChannelToBrokerDestination(QueuePrefix + WiretapConfigurationChannel, WiretapConfigurationChannel);
+
+        // handle incoming messages on different channels.
+        this._transactionChannelSubscription = this._wiretapChannel.subscribe(this.wireTransactionHandler());
+        this._specChannelSubscription = this._wiretapSpecChannel.subscribe(this.specHandler());
+        this._configChannelSubscription = this._wiretapConfigChannel.subscribe(this.configHandler());
 
         // load previous transactions from local storage.
         this.loadHistoryFromLocalStorage().then((previousTransactions: Map<string, HttpTransaction>) => {
+
+            // populate store with previous transactions.
             this._httpTransactionStore.populate(previousTransactions)
 
             // calculate counts from stored state.
             this.calculateMetricsFromState(previousTransactions);
         });
 
+        // load specification from local storage.
         this.loadSpecFromLocalStorage().then((spec: string) => {
             if (!spec || spec.length <= 0) {
-                // nothing in local storage, request from server.
+                // nothing in local storage, request from spec service.
                 this.requestSpec()
             } else {
                 this._specStore.set(WiretapCurrentSpec, spec);
             }
         });
 
-        // handle incoming messages on different channels.
-        this._transactionChannelSubscription = this._wiretapChannel.subscribe(this.wireTransactionHandler());
-        this._specChannelSubscription = this._specChannel.subscribe(this.specHandler());
-
-
-        // configure broker.
+        // configure wiretap broker.
         const config = {
-            brokerURL: 'ws://localhost:9090/ranch',
+            brokerURL: 'ws://localhost:' + this._wiretapPort + '/ranch',
             heartbeatIncoming: 0,
             heartbeatOutgoing: 0,
         }
-        // map and connect.
-        this._bus.mapChannelToBrokerDestination("/topic/" + WiretapChannel, WiretapChannel)
-        this._bus.mapChannelToBrokerDestination("/queue/" + SpecChannel, SpecChannel)
-        this._bus.mapChannelToBrokerDestination("/queue/" + WiretapControlsChannel, WiretapControlsChannel)
-        this._bus.mapChannelToBrokerDestination("/queue/" + WiretapReportChannel, WiretapReportChannel)
-
         this._bus.connectToBroker(config);
     }
 
@@ -156,12 +165,10 @@ export class WiretapComponent extends LitElement {
         this.violationsCount = violations;
         this.violatedTransactions = violated;
         this.calcComplianceLevel();
-
-
     }
 
     requestSpec() {
-        this._bus.getClient().publish({
+        this._bus.publish({
             destination: "/pub/queue/specs",
             body: JSON.stringify({requestCommand: GetCurrentSpecCommand}),
         })
@@ -177,15 +184,23 @@ export class WiretapComponent extends LitElement {
     }
 
     specHandler(): BusCallback<CommandResponse> {
-        return (msg) => {
+        return (msg: CommandResponse) => {
             const decoded = atob(msg.payload.payload);
             this._specStore.set(WiretapCurrentSpec, decoded)
             localforage.setItem(WiretapCurrentSpec, decoded);
         }
     }
 
+
+    configHandler(): BusCallback<CommandResponse> {
+        return (msg: CommandResponse) => {
+            console.log("config handler", msg.payload)
+        }
+    }
+
+
     wireTransactionHandler(): BusCallback {
-        return (msg) => {
+        return (msg: CommandResponse) => {
             const wiretapMessage = msg.payload as HttpTransaction
 
             const httpTransaction: HttpTransaction = {

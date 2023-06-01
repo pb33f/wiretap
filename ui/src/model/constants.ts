@@ -4,6 +4,8 @@ export const WiretapControlsChannel = "controls";
 
 export const WiretapReportChannel = "report";
 
+export const WiretapConfigurationChannel = "configuration";
+
 export const WiretapHttpTransactionStore = "http-transaction-store";
 export const WiretapSelectedTransactionStore = "selected-transaction-store";
 export const WiretapSpecStore = "wiretap-spec-store";
@@ -16,3 +18,6 @@ export const ChangeDelayCommand = "change-delay-request";
 export const RequestReportCommand = "generate-report-request";
 
 export const WiretapLocalStorage = "wiretap-transactions";
+
+export const TopicPrefix = "/topic/";
+export const QueuePrefix = "/queue/";

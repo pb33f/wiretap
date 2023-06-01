@@ -105,8 +105,8 @@ export class HttpTransactionItemComponent extends LitElement {
             }
         }
 
-        let delay: TemplateResult
-        console.log(this._httpTransaction)
+        let delay: TemplateResult;
+
         if (this._httpTransaction.delay > 0) {
             delay = html`<div class="delay"><sl-icon name="hourglass-split" ></sl-icon>${this._httpTransaction.delay}ms</div>`
         }
@@ -123,6 +123,4 @@ export class HttpTransactionItemComponent extends LitElement {
                 </div>
             </div>`
     }
-
-
 }

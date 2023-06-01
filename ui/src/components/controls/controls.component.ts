@@ -107,7 +107,7 @@ export class WiretapControlsComponent extends LitElement {
     }
 
     changeGlobalDelay(delay: number) {
-        this._bus.getClient().publish({
+        this._bus.publish({
             destination: "/pub/queue/controls",
             body: JSON.stringify(
                 {
@@ -126,7 +126,7 @@ export class WiretapControlsComponent extends LitElement {
     }
 
     sendReportRequest() {
-        this._bus.getClient().publish({
+        this._bus.publish({
             destination: "/pub/queue/report",
             body: JSON.stringify(
                 {
