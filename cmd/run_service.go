@@ -6,6 +6,7 @@ package cmd
 import (
 	"errors"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/plank/pkg/server"
@@ -108,6 +109,10 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 
 	// create a new catchall endpoint and listen for all traffic
 	platformServer.SetHttpPathPrefixChannelBridge(rbc)
+
+	// add global CORS middleware
+	middlewareManager := platformServer.GetMiddlewareManager()
+	_ = middlewareManager.SetGlobalMiddleware([]mux.MiddlewareFunc{daemon.CORSMiddleware()})
 
 	// create a new chan and listen for interrupt signals
 	sysChan := make(chan os.Signal, 1)

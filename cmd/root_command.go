@@ -8,6 +8,8 @@ import (
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"net/url"
 	"os"
 )
 
@@ -27,30 +29,106 @@ var (
 
 			PrintBanner()
 
-			if len(args) == 0 {
-				pterm.Error.Println("Supply at least a single argument, pointing to an OpenAPI file to load...")
+			configFlag, _ := cmd.Flags().GetString("config")
+			viper.SetConfigFile(configFlag)
+			_ = viper.ReadInConfig()
+
+			var spec string
+			var port string
+			var monitorPort string
+			var redirectHost string
+			var redirectPort string
+			var redirectScheme string
+			var redirectBasePath string
+			var redirectURL string
+			var globalAPIDelay int
+
+			// extract from wiretap environment variables.
+			if viper.IsSet("PORT") {
+				port = viper.GetString("PORT")
+			}
+
+			if viper.IsSet("SPEC") {
+				spec = viper.GetString("SPEC")
+			}
+
+			if viper.IsSet("MONITOR_PORT") {
+				monitorPort = viper.GetString("MONITOR_PORT")
+			}
+
+			if viper.IsSet("REDIRECT_URL") {
+				redirectURL = viper.GetString("REDIRECT_URL")
+			}
+
+			if viper.IsSet("GLOBAL_API_DELAY") {
+				globalAPIDelay = viper.GetInt("GLOBAL_API_DELAY")
+			}
+
+			portFlag, _ := cmd.Flags().GetString("port")
+			if portFlag != "" {
+				port = portFlag
+			}
+
+			specFlag, _ := cmd.Flags().GetString("spec")
+			if specFlag != "" {
+				spec = specFlag
+			}
+
+			monitorPortFlag, _ := cmd.Flags().GetString("monitor-port")
+			if monitorPortFlag != "" {
+				monitorPort = monitorPortFlag
+			}
+
+			redirectURLFlag, _ := cmd.Flags().GetString("url")
+			if redirectURLFlag != "" {
+				redirectURL = redirectURLFlag
+			}
+
+			globalAPIDelayFlag, _ := cmd.Flags().GetInt("delay")
+			if globalAPIDelayFlag > 0 {
+				globalAPIDelay = globalAPIDelayFlag
+			}
+
+			if spec == "" {
+				pterm.Error.Println("No OpenAPI specification provided. " +
+					"Please provide a path to an OpenAPI specification using the --spec or -s flags.")
 				return nil
 			}
 
-			file := args[0]
-			host, _ := cmd.Flags().GetString("server")
-			// get port from environment.
-			port := os.Getenv("PORT")
-			if port == "" {
-				port = "9090" // default.
+			if redirectURL == "" {
+				pterm.Error.Println("No redirect URL provided. " +
+					"Please provide a URL to redirect API traffic to using the --url or -u flags.")
+				return nil
 			}
 
-			mport := os.Getenv("MONITOR_PORT")
-			if mport == "" {
-				mport = "9091" // default.
+			if redirectURL != "" {
+				parsedURL, e := url.Parse(redirectURL)
+				if e != nil {
+					pterm.Error.Printf("URL is not valid. "+
+						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
+					return nil
+				}
+				if parsedURL.Scheme == "" || parsedURL.Host == "" {
+					pterm.Error.Printf("URL is not valid. "+
+						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
+					return nil
+				}
+				redirectHost = parsedURL.Host
+				redirectPort = parsedURL.Port()
+				redirectScheme = parsedURL.Scheme
+				redirectBasePath = parsedURL.Path
 			}
 
 			config := shared.WiretapConfiguration{
-				Contract:     file,
-				RedirectHost: host,
-				Port:         port,
-				MonitorPort:  mport,
-				FS:           FS,
+				Contract:         spec,
+				RedirectHost:     redirectHost,
+				RedirectBasePath: redirectBasePath,
+				RedirectPort:     redirectPort,
+				RedirectProtocol: redirectScheme,
+				Port:             port,
+				MonitorPort:      monitorPort,
+				GlobalAPIDelay:   globalAPIDelay,
+				FS:               FS,
 			}
 
 			_, _ = runWiretapService(&config)
@@ -65,7 +143,14 @@ func Execute(version, commit, date string, fs embed.FS) {
 	Commit = commit
 	Date = date
 	FS = fs
-	rootCmd.PersistentFlags().StringP("server", "s", "", "override the host in the OpenAPI specification")
+
+	rootCmd.Flags().StringP("url", "u", "", "Set the redirect URL for wiretap to send traffic to")
+	rootCmd.Flags().IntP("delay", "d", 0, "Set a global delay for all API requests")
+	rootCmd.Flags().StringP("port", "p", "9090", "Set port on which to listen for API traffic")
+	rootCmd.Flags().StringP("monitor-port", "m", "9091", "Set post on which to serve the monitor UI")
+	rootCmd.Flags().StringP("spec", "s", "", "Set the path to the OpenAPI specification to use")
+	rootCmd.Flags().StringP("config", "c", ".wiretap",
+		"Location of wiretap configuration file to use (default is .wiretap in current directory)")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

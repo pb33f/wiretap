@@ -6,12 +6,15 @@ package shared
 import "embed"
 
 type WiretapConfiguration struct {
-	Contract       string   `json:"-"`
-	RedirectHost   string   `json:"redirectHost,omitempty"`
-	Port           string   `json:"port,omitempty"`
-	MonitorPort    string   `json:"monitorPort,omitempty"`
-	GlobalAPIDelay int      `json:"globalAPIDelay,omitempty"`
-	FS             embed.FS `json:"-"`
+	Contract         string   `json:"-"`
+	RedirectHost     string   `json:"redirectHost,omitempty"`
+	RedirectPort     string   `json:"redirectPort,omitempty"`
+	RedirectBasePath string   `json:"redirectBasePath,omitempty"`
+	RedirectProtocol string   `json:"redirectProtocol,omitempty"`
+	Port             string   `json:"port,omitempty"`
+	MonitorPort      string   `json:"monitorPort,omitempty"`
+	GlobalAPIDelay   int      `json:"globalAPIDelay,omitempty"`
+	FS               embed.FS `json:"-"`
 }
 
 const ConfigKey = "config"
