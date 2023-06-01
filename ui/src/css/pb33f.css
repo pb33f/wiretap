@@ -5,11 +5,13 @@ body {
     font-family: var(--font-stack);
     color: var(--font-color);
     padding: 0;
+    margin: 0;
     font-size: 14px;
     --sl-panel-background-color: var(--background-color);
     --sl-input-background-color: var(--background-color);
     --sl-input-border-color: var(--secondary-color);
-    margin: 0;
+    width: 100%;
+    height: 100vh;
 }
 
 a, a:visited, a:active {
