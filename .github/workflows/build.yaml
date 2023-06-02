@@ -51,8 +51,8 @@ jobs:
 
       - name: Install yarn
         run: yarn install
-        working-directory: html-report/ui
+        working-directory: ui
 
       - name: Build
         run: yarn build
-        working-directory: html-report/ui
+        working-directory: ui
