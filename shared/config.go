@@ -11,6 +11,7 @@ type WiretapConfiguration struct {
 	RedirectPort     string   `json:"redirectPort,omitempty"`
 	RedirectBasePath string   `json:"redirectBasePath,omitempty"`
 	RedirectProtocol string   `json:"redirectProtocol,omitempty"`
+	RedirectURL      string   `json:"redirectURL,omitempty"`
 	Port             string   `json:"port,omitempty"`
 	MonitorPort      string   `json:"monitorPort,omitempty"`
 	GlobalAPIDelay   int      `json:"globalAPIDelay,omitempty"`

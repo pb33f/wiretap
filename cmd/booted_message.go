@@ -36,6 +36,9 @@ func bootedMessage(wiretapConfig *shared.WiretapConfiguration) {
 					Println(panels)
 
 				pterm.Println()
+				pterm.Info.Printf("API Gateway is now proxying all traffic to '%s'\n",
+					pterm.LightMagenta(wiretapConfig.RedirectURL))
+				pterm.Println()
 			}
 		}, nil)
 	}()

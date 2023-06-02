@@ -117,6 +117,7 @@ var (
 			}
 
 			if spec == "" {
+				pterm.Println()
 				pterm.Error.Println("No OpenAPI specification provided. " +
 					"Please provide a path to an OpenAPI specification using the --spec or -s flags.")
 				pterm.Println()
@@ -124,6 +125,7 @@ var (
 			}
 
 			if redirectURL == "" {
+				pterm.Println()
 				pterm.Error.Println("No redirect URL provided. " +
 					"Please provide a URL to redirect API traffic to using the --url or -u flags.")
 				pterm.Println()
@@ -133,13 +135,17 @@ var (
 			if redirectURL != "" {
 				parsedURL, e := url.Parse(redirectURL)
 				if e != nil {
+					pterm.Println()
 					pterm.Error.Printf("URL is not valid. "+
 						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
+					pterm.Println()
 					return nil
 				}
 				if parsedURL.Scheme == "" || parsedURL.Host == "" {
+					pterm.Println()
 					pterm.Error.Printf("URL is not valid. "+
 						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
+					pterm.Println()
 					return nil
 				}
 				redirectHost = parsedURL.Host
@@ -150,6 +156,7 @@ var (
 
 			config := shared.WiretapConfiguration{
 				Contract:         spec,
+				RedirectURL:      redirectURL,
 				RedirectHost:     redirectHost,
 				RedirectBasePath: redirectBasePath,
 				RedirectPort:     redirectPort,
@@ -161,7 +168,14 @@ var (
 			}
 
 			// ready to boot, let's go!
-			_, _ = runWiretapService(&config)
+			_, pErr := runWiretapService(&config)
+
+			if pErr != nil {
+				pterm.Println()
+				pterm.Error.Printf("Cannot start wiretap: %s\n", pErr.Error())
+				pterm.Println()
+				return nil
+			}
 
 			return nil
 		},

@@ -10,6 +10,7 @@ import (
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/plank/pkg/server"
+	"github.com/pb33f/ranch/plank/utils"
 	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/controls"
@@ -17,6 +18,7 @@ import (
 	"github.com/pb33f/wiretap/report"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
+	"github.com/pterm/pterm"
 	"net/http"
 	"os"
 	"reflect"
@@ -37,6 +39,8 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 		return nil, errors.Join(errs...)
 	}
 
+	pterm.Info.Printf("OpenAPI Specification: '%s' parsed and read\n", wiretapConfig.Contract)
+
 	// create a store and put the wiretapConfig in it.
 	storeManager := bus.GetBus().GetStoreManager()
 	controlsStore := storeManager.CreateStoreWithType(controls.ControlServiceChan, reflect.TypeOf(wiretapConfig))
@@ -46,6 +50,9 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 	ranchConfig, _ := server.CreateServerConfig()
 	ranchConfig.Port, _ = strconv.Atoi(wiretapConfig.Port)
 	ranchConfig.FabricConfig.EndpointConfig.Heartbeat = 0
+	ranchConfig.LogConfig.FormatOptions = &utils.LogFormatOption{
+		DisableTimestamp: true,
+	}
 
 	// create an application fabric configuration for the ranch server.
 	ranchConfig.FabricConfig = &server.FabricBrokerConfig{

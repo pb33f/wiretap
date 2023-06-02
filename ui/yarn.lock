@@ -220,9 +220,9 @@
     fastq "^1.6.0"
 
 "@pb33f/ranch@^0.0.0":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@pb33f/ranch/-/ranch-0.3.1.tgz#86277fd0250ddbd3ebe5dc8a10a130ce880218bd"
-  integrity sha512-lzyzS0IzURpU3KDJvMfwG7DZ5X5wXT6NESMthQM+bUHmtNQe1WCW9OLT8HCNuXaKD7wg2a8TFArgfoVwYzL1QA==
+  version "0.3.3"
+  resolved "https://registry.yarnpkg.com/@pb33f/ranch/-/ranch-0.3.3.tgz#16bc31641d18c629ad9012b5db94a3cbdc152bb1"
+  integrity sha512-81TfsMkf3i8B9mfRBgLcbHiyZEEzU1EGmWhxm3p2I0G8ZYb5l4o31zwgclzNWPVNdcvdSdE9V1OIMPXmg7veKw==
   dependencies:
     "@stomp/stompjs" "^7.0.0"
 
