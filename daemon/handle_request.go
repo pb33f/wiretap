@@ -57,9 +57,7 @@ doneWaitingForResponse:
 	}
 
 	// send response back to client.
-
 	go func() {
-
 		config := ws.controlsStore.GetValue(shared.ConfigKey).(*shared.WiretapConfiguration)
 		if config.GlobalAPIDelay > 0 {
 			time.Sleep(time.Duration(config.GlobalAPIDelay) * time.Millisecond) // simulate a slow response.

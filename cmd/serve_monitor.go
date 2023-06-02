@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/pb33f/wiretap/shared"
+	"github.com/pterm/pterm"
 	"io"
 	"io/fs"
 	"log"
@@ -65,7 +66,8 @@ func serveMonitor(wiretapConfig *shared.WiretapConfiguration) {
 		// handle the assets
 		mux.Handle("/assets/", http.StripPrefix("/assets", fileServer))
 
-		log.Printf("Monitor UI booting on port %s...", wiretapConfig.MonitorPort)
+		pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("Monitor UI booting on port %s...", wiretapConfig.MonitorPort)))
+
 		err = http.ListenAndServe(fmt.Sprintf(":%s", wiretapConfig.MonitorPort), mux)
 		if err != nil {
 			log.Fatal(err)

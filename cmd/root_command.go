@@ -30,8 +30,27 @@ var (
 			PrintBanner()
 
 			configFlag, _ := cmd.Flags().GetString("config")
-			viper.SetConfigFile(configFlag)
-			_ = viper.ReadInConfig()
+
+			if configFlag == "" {
+				pterm.Info.Println("Attempting to locate wiretap configuration...")
+				viper.SetConfigFile(".wiretap")
+				viper.SetConfigType("env")
+				viper.AddConfigPath("$HOME/.wiretap")
+				viper.AddConfigPath(".")
+			} else {
+				viper.SetConfigFile(configFlag)
+			}
+
+			cerr := viper.ReadInConfig()
+			if cerr != nil && configFlag != "" {
+				pterm.Warning.Printf("No wiretap configuration located. Using defaults: %s\n", cerr.Error())
+			}
+			if cerr != nil && configFlag == "" {
+				pterm.Info.Println("No wiretap configuration located. Using defaults.")
+			}
+			if cerr == nil {
+				pterm.Info.Printf("Located configuration file at: %s\n", viper.ConfigFileUsed())
+			}
 
 			var spec string
 			var port string
@@ -67,6 +86,10 @@ var (
 			portFlag, _ := cmd.Flags().GetString("port")
 			if portFlag != "" {
 				port = portFlag
+			} else {
+				if port == "" {
+					port = "9090" // default
+				}
 			}
 
 			specFlag, _ := cmd.Flags().GetString("spec")
@@ -77,6 +100,10 @@ var (
 			monitorPortFlag, _ := cmd.Flags().GetString("monitor-port")
 			if monitorPortFlag != "" {
 				monitorPort = monitorPortFlag
+			} else {
+				if monitorPort == "" {
+					monitorPort = "9091" // default
+				}
 			}
 
 			redirectURLFlag, _ := cmd.Flags().GetString("url")
@@ -92,12 +119,14 @@ var (
 			if spec == "" {
 				pterm.Error.Println("No OpenAPI specification provided. " +
 					"Please provide a path to an OpenAPI specification using the --spec or -s flags.")
+				pterm.Println()
 				return nil
 			}
 
 			if redirectURL == "" {
 				pterm.Error.Println("No redirect URL provided. " +
 					"Please provide a URL to redirect API traffic to using the --url or -u flags.")
+				pterm.Println()
 				return nil
 			}
 
@@ -131,6 +160,7 @@ var (
 				FS:               FS,
 			}
 
+			// ready to boot, let's go!
 			_, _ = runWiretapService(&config)
 
 			return nil
@@ -146,10 +176,10 @@ func Execute(version, commit, date string, fs embed.FS) {
 
 	rootCmd.Flags().StringP("url", "u", "", "Set the redirect URL for wiretap to send traffic to")
 	rootCmd.Flags().IntP("delay", "d", 0, "Set a global delay for all API requests")
-	rootCmd.Flags().StringP("port", "p", "9090", "Set port on which to listen for API traffic")
-	rootCmd.Flags().StringP("monitor-port", "m", "9091", "Set post on which to serve the monitor UI")
+	rootCmd.Flags().StringP("port", "p", "", "Set port on which to listen for API traffic")
+	rootCmd.Flags().StringP("monitor-port", "m", "", "Set post on which to serve the monitor UI")
 	rootCmd.Flags().StringP("spec", "s", "", "Set the path to the OpenAPI specification to use")
-	rootCmd.Flags().StringP("config", "c", ".wiretap",
+	rootCmd.Flags().StringP("config", "c", "",
 		"Location of wiretap configuration file to use (default is .wiretap in current directory)")
 
 	if err := rootCmd.Execute(); err != nil {

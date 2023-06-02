@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/plank/pkg/server"
@@ -20,12 +21,21 @@ func bootedMessage(wiretapConfig *shared.WiretapConfiguration) {
 			if !seen {
 				seen = true
 				pterm.Println()
-				pterm.Info.Println("Wiretap Service is ready.")
-				pterm.Println()
-				pterm.Info.Printf("API Gateway: http://localhost:%s\n", wiretapConfig.Port)
-				pterm.Info.Printf("Monitor: http://localhost:%s\n", wiretapConfig.MonitorPort)
-				pterm.Println()
+				b1 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("API Gateway")).Sprint(fmt.Sprintf("http://localhost:%s", wiretapConfig.Port))
+				b2 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Monitor UI")).Sprint(fmt.Sprintf("http://localhost:%s", wiretapConfig.MonitorPort))
+				panels, _ := pterm.DefaultPanel.WithPanels(pterm.Panels{
+					{{Data: b1}, {Data: b2}},
+				}).Srender()
 
+				pterm.DefaultBox.WithTitle(pterm.LightCyan("wiretap is online!")).
+					WithTitleTopLeft().
+					WithRightPadding(3).
+					WithTopPadding(1).
+					WithLeftPadding(3).
+					WithBottomPadding(0).
+					Println(panels)
+
+				pterm.Println()
 			}
 		}, nil)
 	}()
