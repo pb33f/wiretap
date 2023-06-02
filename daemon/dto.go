@@ -51,33 +51,33 @@ type HttpTransaction struct {
 
 func buildResponse(r *model.Request, response *http.Response) *HttpTransaction {
 	code := 500
+	headers := make(map[string]any)
+	cookies := make(map[string]*HttpCookie)
+	var respBody []byte
+
 	if response != nil {
 		code = response.StatusCode
-	}
-
-	headers := make(map[string]any)
-	for k, v := range response.Header {
-		headers[k] = v[0]
-	}
-
-	cookies := make(map[string]*HttpCookie)
-	for _, c := range response.Cookies() {
-		cookies[c.Name] = &HttpCookie{
-			Value:    c.Value,
-			Path:     c.Path,
-			Domain:   c.Domain,
-			Expires:  c.RawExpires,
-			MaxAge:   c.MaxAge,
-			Secure:   c.Secure,
-			HttpOnly: c.HttpOnly,
+		for k, v := range response.Header {
+			headers[k] = v[0]
 		}
+
+		for _, c := range response.Cookies() {
+			cookies[c.Name] = &HttpCookie{
+				Value:    c.Value,
+				Path:     c.Path,
+				Domain:   c.Domain,
+				Expires:  c.RawExpires,
+				MaxAge:   c.MaxAge,
+				Secure:   c.Secure,
+				HttpOnly: c.HttpOnly,
+			}
+		}
+
+		// sniff and replace response body.
+		respBody, _ = io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		response.Body = io.NopCloser(bytes.NewBuffer(respBody))
 	}
-
-	// sniff and replace response body.
-	respBody, _ := io.ReadAll(response.Body)
-	_ = response.Body.Close()
-	response.Body = io.NopCloser(bytes.NewBuffer(respBody))
-
 	return &HttpTransaction{
 		Id: r.Id.String(),
 		Response: &HttpResponse{

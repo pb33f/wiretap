@@ -50,13 +50,21 @@ func cloneRequest(r *http.Request, protocol, host, port string) *http.Request {
 
 func cloneResponse(r *http.Response) *http.Response {
 	// sniff and replace body.
-	b, _ := io.ReadAll(r.Body)
-	_ = r.Body.Close()
-	r.Body = io.NopCloser(bytes.NewBuffer(b))
+	var b []byte
+	if r == nil {
+		return nil // something else went wrong, nothing to do.
+	}
+	if r.Body != nil {
+		b, _ = io.ReadAll(r.Body)
+		_ = r.Body.Close()
+		r.Body = io.NopCloser(bytes.NewBuffer(b))
+	}
 	resp := &http.Response{
 		StatusCode: r.StatusCode,
-		Body:       io.NopCloser(bytes.NewBuffer(b)),
 		Header:     r.Header,
+	}
+	if r.Body != nil {
+		resp.Body = io.NopCloser(bytes.NewBuffer(b))
 	}
 	return resp
 }
