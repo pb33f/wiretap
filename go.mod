@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/pb33f/libopenapi v0.8.5
 	github.com/pb33f/libopenapi-validator v0.0.7
-	github.com/pb33f/ranch v0.2.0
+	github.com/pb33f/ranch v0.2.2
 )
 
 require (
@@ -21,7 +21,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gookit/color v1.5.3 // indirect
 	github.com/gorilla/handlers v1.4.2 // indirect
-	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -43,7 +43,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.8.1 // indirect
+	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.8.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect

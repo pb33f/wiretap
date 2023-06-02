@@ -1,0 +1,38 @@
+project_name: wiretap
+before:
+  hooks:
+    - make build-ui
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+brews:
+  - tap:
+      owner: pb33f
+      name: homebrew-taps
+
+    commit_author:
+      name: goreleaserbot
+      email: goreleaser@pb33f.io
+
+    homepage: "https://pb33f.io/wiretap"
+    description: "The worlds coolest OpenAPI compliance dev HTTP proxy"
+
+    install: |
+      bin.install "wiretap"
+
+snapshot:
+  name_template: "{{ .Tag }}"

@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@pb33f/saddlebag": "^0.1.0",
-    "@pb33f/ranch": "^0.0.0",
+    "@pb33f/ranch": "^0.3.3",
     "@shoelace-style/shoelace": "^2.4.0",
     "@stomp/stompjs": "^7.0.0",
     "lit": "^2.7.3",
