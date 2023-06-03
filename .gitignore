@@ -1,0 +1,6 @@
+# Main build
+wiretap
+
+# UI build
+ui/dist
+ui/node_modules
