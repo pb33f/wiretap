@@ -5,12 +5,13 @@ package cmd
 
 import (
 	"embed"
+	"net/url"
+	"os"
+
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"net/url"
-	"os"
 )
 
 var (
@@ -148,7 +149,7 @@ var (
 					pterm.Println()
 					return nil
 				}
-				redirectHost = parsedURL.Host
+				redirectHost = parsedURL.Hostname()
 				redirectPort = parsedURL.Port()
 				redirectScheme = parsedURL.Scheme
 				redirectBasePath = parsedURL.Path
