@@ -15,7 +15,8 @@ FROM golang:1.20-alpine
 
 WORKDIR /work
 
-COPY --from=builder /wt_build/ui ./
+# copy ui build from previous stage
+COPY --from=builder /wt_build/ui ./ui
 
 COPY . ./
 

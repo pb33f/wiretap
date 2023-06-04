@@ -1,0 +1,33 @@
+{
+  "name": "@pb33f/wiretap",
+  "version": "0.0.0",
+  "description": "The world's coolest OpenAPI contract compliance API Proxy in the world.",
+  "type": "module",
+  "author": "Princess Beef Heavy Industries, LLC / Quobix",
+  "license": "GPL-3.0",
+  "homepage": "https://pb33f.io/wiretap",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pb33f/wiretap.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "postinstall": "node ./npm-install/postinstall.js"
+  },
+  "bin": {
+    "wiretap": "bin/wiretap"
+  },
+  "files": [
+    "npm-install"
+  ],
+  "dependencies": {
+    "node-fetch": "^3.3.1",
+    "tar": "^6.1.15"
+  },
+  "bugs": {
+    "url": "https://github.com/pb33f/wiretap/issues"
+  },
+  "main": "index.js"
+}
