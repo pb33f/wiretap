@@ -20,24 +20,14 @@ func extractHeaders(resp *http.Response) map[string]any {
 
 func reconstructURL(r *http.Request, protocol, host, port string) string {
 	url := fmt.Sprintf("%s://%s", protocol, host)
-	// pattern := "%s://%s:%s/%s?%s"
-	// urlString := fmt.Sprintf(pattern, protocol, host, port, r.URL.Path, r.URL.RawQuery)
 	if port != "" {
 		url += fmt.Sprintf(":%s", port)
-		// pattern = "%s://%s/%s?%s"
-		// urlString = fmt.Sprintf(pattern, protocol, host, r.URL.Path, r.URL.RawQuery)
 	}
 	if r.URL.Path != "" {
 		url += r.URL.Path
 	}
 	if r.URL.RawQuery != "" {
 		url += fmt.Sprintf("?%s", r.URL.RawQuery)
-		// pattern = "%s://%s:%s/%s"
-		// urlString = fmt.Sprintf(pattern, protocol, host, port, r.URL.Path)
-		// if port == "" {
-		// 	pattern = "%s://%s/%s"
-		// 	urlString = fmt.Sprintf(pattern, protocol, host, r.URL.Path)
-		// }
 	}
 	return url
 }
