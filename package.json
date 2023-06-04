@@ -17,7 +17,7 @@
     "postinstall": "node ./npm-install/postinstall.js"
   },
   "bin": {
-    "wiretap": "bin/wiretap.js"
+    "wiretap": "bin/wiretap"
   },
   "files": [
     "npm-install"
