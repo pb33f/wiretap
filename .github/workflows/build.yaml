@@ -29,6 +29,8 @@ jobs:
               curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
               dep ensure
           fi
+      - name: Test
+        run: go test ./...
       - name: Build
         run: make build
       - name: Clean modcache
@@ -39,7 +41,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        node-version: [ 20.x ]
+        node-version: [20.x]
     steps:
       - uses: actions/checkout@v3
         name: Checkout repository
