@@ -105,6 +105,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: pb33f/wiretap:${{ steps.meta.outputs.tags }}
+          tags: pb33f/wiretap:latest
           labels: ${{ steps.meta.outputs.labels }}
           file: ./Dockerfile
