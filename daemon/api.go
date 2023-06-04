@@ -4,9 +4,11 @@
 package daemon
 
 import (
-    "fmt"
-    "github.com/pb33f/wiretap/shared"
-    "net/http"
+	"crypto/tls"
+	"fmt"
+	"net/http"
+
+	"github.com/pb33f/wiretap/shared"
 )
 
 type wiretapTransport struct {
@@ -15,6 +17,8 @@ type wiretapTransport struct {
 }
 
 func newWiretapTransport() *wiretapTransport {
+    // Disable ssl cert checks
+    http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
     return &wiretapTransport{
         originalTransport: http.DefaultTransport,
     }
@@ -39,13 +43,21 @@ func (ws *WiretapService) callAPI(req *http.Request, responseChan chan *http.Res
     configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
 
     // create a new request from the original request, but replace the path
-
     config := configStore.(*shared.WiretapConfiguration)
-
-    resp, err := client.Do(cloneRequest(req,
+    newReq := cloneRequest(req,
         config.RedirectProtocol,
         config.RedirectHost,
-        config.RedirectPort))
+        config.RedirectPort)
+    // re-write referer
+    if (newReq.Header.Get("Referer") != "") {
+        // retain original referer for logging
+        newReq.Header.Set("X-Original-Referer", newReq.Header.Get("Referer"))
+        newReq.Header.Set("Referer", reconstructURL(req,
+            config.RedirectProtocol,
+            config.RedirectHost,
+            config.RedirectPort))
+    }
+    resp, err := client.Do(newReq)
 
     if err != nil {
         errorChan <- err
