@@ -5,13 +5,9 @@ package cmd
 
 import (
 	"errors"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/pb33f/ranch/bus"
-	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/plank/pkg/server"
 	"github.com/pb33f/ranch/plank/utils"
-	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/controls"
 	"github.com/pb33f/wiretap/daemon"
@@ -19,7 +15,6 @@ import (
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
 	"github.com/pterm/pterm"
-	"net/http"
 	"os"
 	"reflect"
 	"strconv"
@@ -48,7 +43,7 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 
 	// create a new ranch config.
 	ranchConfig, _ := server.CreateServerConfig()
-	ranchConfig.Port, _ = strconv.Atoi(wiretapConfig.Port)
+	ranchConfig.Port, _ = strconv.Atoi(wiretapConfig.WebSocketPort)
 	ranchConfig.FabricConfig.EndpointConfig.Heartbeat = 0
 	ranchConfig.LogConfig.FormatOptions = &utils.LogFormatOption{
 		DisableTimestamp: true,
@@ -66,27 +61,34 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 		},
 	}
 
-	// create a REST bridge configuration and set it for a prefix for all our requests off root.
-	rbc := &service.RESTBridgeConfig{
-		ServiceChannel: daemon.WiretapServiceChan,
-		Uri:            "/",
-		FabricRequestBuilder: func(w http.ResponseWriter, r *http.Request) model.Request {
-			id := uuid.New()
-			return model.Request{
-				Id:                 &id,
-				RequestCommand:     daemon.IncomingHttpRequest,
-				HttpRequest:        r,
-				HttpResponseWriter: w,
-			}
-		},
-	}
+	//// create a REST bridge configuration and set it for a prefix for all our requests off root.
+	//rbc := &service.RESTBridgeConfig{
+	//	ServiceChannel: daemon.WiretapServiceChan,
+	//	Uri:            "/",
+	//	FabricRequestBuilder: func(w http.ResponseWriter, r *http.Request) model.Request {
+	//		id := uuid.New()
+	//		return model.Request{
+	//			Id:                 &id,
+	//			RequestCommand:     daemon.IncomingHttpRequest,
+	//			HttpRequest:        r,
+	//			HttpResponseWriter: w,
+	//		}
+	//	},
+	//}
 
 	// create an instance of ranch
 	platformServer := server.NewPlatformServer(ranchConfig)
 
+	//platformServer.SetServerAvailability(&server.ServerAvailability{
+	//	Http:   false,
+	//	Fabric: true,
+	//})
+
+	// create wiretap service
+	wtService := daemon.NewWiretapService(doc)
+
 	// register wiretap service
-	if err = platformServer.RegisterService(
-		daemon.NewWiretapService(doc), daemon.WiretapServiceChan); err != nil {
+	if err = platformServer.RegisterService(wtService, daemon.WiretapServiceChan); err != nil {
 		panic(err)
 	}
 
@@ -115,17 +117,20 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 	}
 
 	// create a new catchall endpoint and listen for all traffic
-	platformServer.SetHttpPathPrefixChannelBridge(rbc)
+	//platformServer.SetHttpPathPrefixChannelBridge(rbc)
 
 	// add global CORS middleware
-	middlewareManager := platformServer.GetMiddlewareManager()
-	_ = middlewareManager.SetGlobalMiddleware([]mux.MiddlewareFunc{daemon.CORSMiddleware()})
+	//middlewareManager := platformServer.GetMiddlewareManager()
+	//_ = middlewareManager.SetGlobalMiddleware([]mux.MiddlewareFunc{daemon.CORSMiddleware()})
 
 	// create a new chan and listen for interrupt signals
 	sysChan := make(chan os.Signal, 1)
 
 	// hook in booted message
 	bootedMessage(wiretapConfig)
+
+	// boot the http handler
+	handleHttpTraffic(wiretapConfig, wtService)
 
 	// boot the monitor
 	serveMonitor(wiretapConfig)

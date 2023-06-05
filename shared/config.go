@@ -14,6 +14,7 @@ type WiretapConfiguration struct {
 	RedirectURL      string   `json:"redirectURL,omitempty"`
 	Port             string   `json:"port,omitempty"`
 	MonitorPort      string   `json:"monitorPort,omitempty"`
+	WebSocketPort    string   `json:"webSocketPort,omitempty"`
 	GlobalAPIDelay   int      `json:"globalAPIDelay,omitempty"`
 	FS               embed.FS `json:"-"`
 }

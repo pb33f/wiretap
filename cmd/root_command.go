@@ -56,6 +56,7 @@ var (
 			var spec string
 			var port string
 			var monitorPort string
+			var wsPort string
 			var redirectHost string
 			var redirectPort string
 			var redirectScheme string
@@ -74,6 +75,10 @@ var (
 
 			if viper.IsSet("MONITOR_PORT") {
 				monitorPort = viper.GetString("MONITOR_PORT")
+			}
+
+			if viper.IsSet("WEBSOCKET_PORT") {
+				wsPort = viper.GetString("WEBSOCKET_PORT")
 			}
 
 			if viper.IsSet("REDIRECT_URL") {
@@ -104,6 +109,15 @@ var (
 			} else {
 				if monitorPort == "" {
 					monitorPort = "9091" // default
+				}
+			}
+
+			wsPortFlag, _ := cmd.Flags().GetString("ws-port")
+			if wsPortFlag != "" {
+				wsPort = wsPortFlag
+			} else {
+				if wsPort == "" {
+					wsPort = "9092" // default
 				}
 			}
 
@@ -165,6 +179,7 @@ var (
 				Port:             port,
 				MonitorPort:      monitorPort,
 				GlobalAPIDelay:   globalAPIDelay,
+				WebSocketPort:    wsPort,
 				FS:               FS,
 			}
 
@@ -191,8 +206,9 @@ func Execute(version, commit, date string, fs embed.FS) {
 
 	rootCmd.Flags().StringP("url", "u", "", "Set the redirect URL for wiretap to send traffic to")
 	rootCmd.Flags().IntP("delay", "d", 0, "Set a global delay for all API requests")
-	rootCmd.Flags().StringP("port", "p", "", "Set port on which to listen for API traffic")
-	rootCmd.Flags().StringP("monitor-port", "m", "", "Set post on which to serve the monitor UI")
+	rootCmd.Flags().StringP("port", "p", "", "Set port on which to listen for API traffic (default is 9090")
+	rootCmd.Flags().StringP("monitor-port", "m", "", "Set port on which to serve the monitor UI (default is 9091)")
+	rootCmd.Flags().StringP("ws-port", "w", "", "Set port on which to serve the monitor UI websocket (default is 9092")
 	rootCmd.Flags().StringP("spec", "s", "", "Set the path to the OpenAPI specification to use")
 	rootCmd.Flags().StringP("config", "c", "",
 		"Location of wiretap configuration file to use (default is .wiretap in current directory)")

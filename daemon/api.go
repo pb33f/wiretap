@@ -12,66 +12,67 @@ import (
 )
 
 type wiretapTransport struct {
-    capturedCookieHeaders []string
-    originalTransport     http.RoundTripper
+	capturedCookieHeaders []string
+	originalTransport     http.RoundTripper
 }
 
 func newWiretapTransport() *wiretapTransport {
-    // Disable ssl cert checks
-    http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-    return &wiretapTransport{
-        originalTransport: http.DefaultTransport,
-    }
+	// Disable ssl cert checks
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	return &wiretapTransport{
+		originalTransport: http.DefaultTransport,
+	}
 }
 
 func (c *wiretapTransport) RoundTrip(r *http.Request) (*http.Response, error) {
-    resp, err := c.originalTransport.RoundTrip(r)
-    if resp != nil {
-        cookie := resp.Header.Get("Set-Cookie")
-        if cookie != "" {
-            c.capturedCookieHeaders = append(c.capturedCookieHeaders, cookie)
-        }
-    }
-    return resp, err
+	resp, err := c.originalTransport.RoundTrip(r)
+	if resp != nil {
+		cookie := resp.Header.Get("Set-Cookie")
+		if cookie != "" {
+			c.capturedCookieHeaders = append(c.capturedCookieHeaders, cookie)
+		}
+	}
+	return resp, err
 }
 
 func (ws *WiretapService) callAPI(req *http.Request, responseChan chan *http.Response, errorChan chan error) {
 
-    tr := newWiretapTransport()
-    client := &http.Client{Transport: tr}
+	tr := newWiretapTransport()
+	client := &http.Client{Transport: tr}
 
-    configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
+	configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
 
-    // create a new request from the original request, but replace the path
-    config := configStore.(*shared.WiretapConfiguration)
-    newReq := cloneRequest(req,
-        config.RedirectProtocol,
-        config.RedirectHost,
-        config.RedirectPort)
-    // re-write referer
-    if (newReq.Header.Get("Referer") != "") {
-        // retain original referer for logging
-        newReq.Header.Set("X-Original-Referer", newReq.Header.Get("Referer"))
-        newReq.Header.Set("Referer", reconstructURL(req,
-            config.RedirectProtocol,
-            config.RedirectHost,
-            config.RedirectPort))
-    }
-    resp, err := client.Do(newReq)
+	// create a new request from the original request, but replace the path
+	config := configStore.(*shared.WiretapConfiguration)
+	newReq := cloneRequest(req,
+		config.RedirectProtocol,
+		config.RedirectHost,
+		config.RedirectPort)
 
-    if err != nil {
-        errorChan <- err
-        close(errorChan)
-    }
+	// re-write referer
+	if newReq.Header.Get("Referer") != "" {
+		// retain original referer for logging
+		newReq.Header.Set("X-Original-Referer", newReq.Header.Get("Referer"))
+		newReq.Header.Set("Referer", reconstructURL(req,
+			config.RedirectProtocol,
+			config.RedirectHost,
+			config.RedirectPort))
+	}
+	resp, err := client.Do(newReq)
 
-    fmt.Print(tr.capturedCookieHeaders)
+	if err != nil {
+		errorChan <- err
+		close(errorChan)
+	}
 
-    if len(tr.capturedCookieHeaders) > 0 {
-        if resp.Header.Get("Set-Cookie") == "" {
-            resp.Header.Set("Set-Cookie", tr.capturedCookieHeaders[0])
-        }
-    }
+	fmt.Print(tr.capturedCookieHeaders)
 
-    responseChan <- resp
-    close(responseChan)
+	if len(tr.capturedCookieHeaders) > 0 {
+		if resp.Header.Get("Set-Cookie") == "" {
+			resp.Header.Set("Set-Cookie", tr.capturedCookieHeaders[0])
+		}
+	}
+
+	responseChan <- resp
+	close(responseChan)
 }
