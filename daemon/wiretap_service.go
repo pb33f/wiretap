@@ -53,8 +53,12 @@ func NewWiretapService(document libopenapi.Document) *WiretapService {
 func (ws *WiretapService) HandleServiceRequest(request *model.Request, core service.FabricServiceCore) {
 	switch request.RequestCommand {
 	case IncomingHttpRequest:
-		ws.handleHttpRequest(request, core)
+		ws.handleHttpRequest(request)
 	default:
 		core.HandleUnknownRequest(request)
 	}
+}
+
+func (ws *WiretapService) HandleHttpRequest(request *model.Request) {
+	ws.handleHttpRequest(request)
 }
