@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/google/uuid v1.3.0
 	github.com/pb33f/libopenapi v0.8.5
-	github.com/pb33f/libopenapi-validator v0.0.7
+	github.com/pb33f/libopenapi-validator v0.0.8
 	github.com/pb33f/ranch v0.2.2
 )
 
