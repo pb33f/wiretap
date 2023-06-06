@@ -35,7 +35,7 @@ func (c *wiretapTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func (ws *WiretapService) callAPI(req *http.Request, responseChan chan *http.Response, errorChan chan error) {
+func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 
 	tr := newWiretapTransport()
 	client := &http.Client{Transport: tr}
@@ -61,8 +61,7 @@ func (ws *WiretapService) callAPI(req *http.Request, responseChan chan *http.Res
 	resp, err := client.Do(newReq)
 
 	if err != nil {
-		errorChan <- err
-		close(errorChan)
+		return nil, err
 	}
 
 	fmt.Print(tr.capturedCookieHeaders)
@@ -72,7 +71,5 @@ func (ws *WiretapService) callAPI(req *http.Request, responseChan chan *http.Res
 			resp.Header.Set("Set-Cookie", tr.capturedCookieHeaders[0])
 		}
 	}
-
-	responseChan <- resp
-	close(responseChan)
+	return resp, nil
 }

@@ -18,8 +18,6 @@ import (
 
 func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 
-	lowResponseChan := make(chan *http.Response)
-	lowErrorChan := make(chan error)
 	var returnedResponse *http.Response
 	var returnedError error
 
@@ -32,21 +30,7 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	go ws.validateRequest(request, requestValidator, paramValidator, responseValidator)
 
 	// call the API being requested.
-	go ws.callAPI(request.HttpRequest, lowResponseChan, lowErrorChan)
-
-doneWaitingForResponse:
-	for {
-		select {
-		case resp, ok := <-lowResponseChan:
-			if ok {
-				returnedResponse = resp
-			}
-			break doneWaitingForResponse
-		case err := <-lowErrorChan:
-			returnedError = err
-			break doneWaitingForResponse
-		}
-	}
+	returnedResponse, returnedError = ws.callAPI(request.HttpRequest)
 
 	if returnedResponse == nil && returnedError != nil {
 		utils.Log.Infof("[wiretap] request %s: Failed (%d)", request.HttpRequest.URL.String(), 500)
@@ -61,7 +45,6 @@ doneWaitingForResponse:
 	}
 
 	// send response back to client.
-	//go func() {
 	config := ws.controlsStore.GetValue(shared.ConfigKey).(*shared.WiretapConfiguration)
 	if config.GlobalAPIDelay > 0 {
 		time.Sleep(time.Duration(config.GlobalAPIDelay) * time.Millisecond) // simulate a slow response.
