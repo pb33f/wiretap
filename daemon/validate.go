@@ -42,7 +42,8 @@ func (ws *WiretapService) validateResponse(
 }
 
 func (ws *WiretapService) validateRequest(
-	request *model.Request,
+	modelRequest *model.Request,
+	httpRequest *http.Request,
 	requestValidator requests.RequestBodyValidator,
 	paramValidator parameters.ParameterValidator,
 	responseValidator responses.ResponseBodyValidator) {
@@ -50,7 +51,7 @@ func (ws *WiretapService) validateRequest(
 	var validationErrors, cleanedErrors []*errors.ValidationError
 
 	// find path and populate validators.
-	path, pathErrors, pv := paths.FindPath(request.HttpRequest, ws.docModel)
+	path, pathErrors, pv := paths.FindPath(httpRequest, ws.docModel)
 	requestValidator.SetPathItem(path, pv)
 	paramValidator.SetPathItem(path, pv)
 	responseValidator.SetPathItem(path, pv)
@@ -59,18 +60,18 @@ func (ws *WiretapService) validateRequest(
 	validationErrors = append(validationErrors, pathErrors...)
 
 	// validate params
-	_, queryParams := paramValidator.ValidateQueryParams(request.HttpRequest)
-	_, headerParams := paramValidator.ValidateHeaderParams(request.HttpRequest)
-	_, cookieParams := paramValidator.ValidateCookieParams(request.HttpRequest)
-	_, pathParams := paramValidator.ValidatePathParams(request.HttpRequest)
+	_, queryParams := paramValidator.ValidateQueryParams(httpRequest)
+	_, headerParams := paramValidator.ValidateHeaderParams(httpRequest)
+	_, cookieParams := paramValidator.ValidateCookieParams(httpRequest)
+	_, pathParams := paramValidator.ValidatePathParams(httpRequest)
 
 	validationErrors = append(validationErrors, queryParams...)
 	validationErrors = append(validationErrors, headerParams...)
 	validationErrors = append(validationErrors, cookieParams...)
 	validationErrors = append(validationErrors, pathParams...)
 
-	// validate request
-	_, requestErrors := requestValidator.ValidateRequestBody(request.HttpRequest)
+	// validate modelRequest
+	_, requestErrors := requestValidator.ValidateRequestBody(httpRequest)
 	validationErrors = append(validationErrors, requestErrors...)
 
 	pm := false
@@ -84,18 +85,17 @@ func (ws *WiretapService) validateRequest(
 			cleanedErrors = append(cleanedErrors, validationErrors[i])
 		}
 	}
-
 	// record results
-	transaction := buildRequest(request)
+	transaction := buildRequest(modelRequest)
 	if len(cleanedErrors) > 0 {
 		transaction.RequestValidation = cleanedErrors
 	}
-	ws.transactionStore.Put(request.Id.String(), transaction, nil)
+	ws.transactionStore.Put(modelRequest.Id.String(), modelRequest, nil)
 
 	// broadcast what we found.
 	if len(cleanedErrors) > 0 {
-		ws.broadcastRequestValidationErrors(request, cleanedErrors)
+		ws.broadcastRequestValidationErrors(modelRequest, cleanedErrors)
 	} else {
-		ws.broadcastRequest(request)
+		ws.broadcastRequest(modelRequest)
 	}
 }

@@ -61,4 +61,9 @@ export default css`
     font-size: 1.2em;
   }
   
+  .contentType {
+    display: block;
+    margin-bottom: 20px;
+  }
+  
 `

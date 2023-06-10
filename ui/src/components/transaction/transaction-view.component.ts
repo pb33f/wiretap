@@ -4,7 +4,7 @@ import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {map} from "lit/directives/map.js";
 import {LitElement, TemplateResult} from "lit";
 
-import {HttpTransaction} from "@/model/http_transaction";
+import {HttpRequest, HttpResponse, HttpTransaction} from "@/model/http_transaction";
 import transactionViewComponentCss from "./transaction-view.component.css";
 import {KVViewComponent} from "@/components/kv-view/kv-view.component";
 
@@ -16,11 +16,20 @@ import 'prismjs/themes/prism-okaidia.css';
 import sharedCss from "@/components/shared.css";
 import {SlTab} from "@shoelace-style/shoelace";
 import {
+    ContentTypeFormEncoded,
+    ContentTypeHtml,
+    ContentTypeJSON,
+    ContentTypeMultipartForm,
+    ContentTypeOctetStream,
+    ContentTypeXML,
     ExtractContentTypeFromRequest,
     ExtractContentTypeFromResponse,
-    IsHtmlContentType, IsOctectStreamContentType, IsXmlContentType
+    IsHtmlContentType,
+    IsOctectStreamContentType,
+    IsXmlContentType, FormDataEntry, FormPart
 } from "@/model/extract_content_type";
 import {ExtractHTTPCodeDefinition, ExtractStatusStyleFromCode} from "@/model/extract_status";
+import {Property, PropertyViewComponent} from "@/components/property-view/property-view.component";
 
 @customElement('http-transaction-view')
 export class HttpTransactionViewComponent extends LitElement {
@@ -86,22 +95,25 @@ export class HttpTransactionViewComponent extends LitElement {
                 ${map(this._httpTransaction.requestValidation, (i) => {
                     return html`
                         <wiretap-violation-view .violation="${i}"></wiretap-violation-view>
-                    `})}`;
+                    `
+                })}`;
 
             const responseViolations: TemplateResult = html`
                 ${this._httpTransaction?.responseValidation?.length > 0 ? html`<h3>Response Violations</h3>` : html``}
                 ${map(this._httpTransaction.responseValidation, (i) => {
                     return html`
                         <wiretap-violation-view .violation="${i}"></wiretap-violation-view>
-                    `})}`;
-
+                    `
+                })}`;
 
 
             const binaryData: TemplateResult = html`
                 <div class="empty-data">
-                    <sl-icon name="file-binary" class="binary-icon"></sl-icon><br/>
+                    <sl-icon name="file-binary" class="binary-icon"></sl-icon>
+                    <br/>
                     [ binary data will not be rendered ]
                 </div>`;
+
 
             let isRequestBinary = false;
             let isResponseBinary = false;
@@ -146,11 +158,13 @@ export class HttpTransactionViewComponent extends LitElement {
                 if (this._httpTransaction?.responseValidation?.length > 0) {
                     total += this._httpTransaction.responseValidation.length;
                 }
-                violations = html`Violations <sl-badge variant="warning" class="violation-badge">${total}</sl-badge>`;
+                violations = html`Violations
+                <sl-badge variant="warning" class="violation-badge">${total}</sl-badge>`;
             }
             const noData: TemplateResult = html`
                 <div class="empty-data ok">
-                    <sl-icon name="patch-check" class="ok-icon"></sl-icon><br/>
+                    <sl-icon name="patch-check" class="ok-icon"></sl-icon>
+                    <br/>
                     API call is compliant
                 </div>`;
 
@@ -162,8 +176,9 @@ export class HttpTransactionViewComponent extends LitElement {
                     <sl-tab-panel name="violations" class="tab-panel">
                         ${total <= 0 ? noData : null}
                         ${requestViolations}
-                        ${(this._httpTransaction?.requestValidation?.length > 0 
-                                && this._httpTransaction?.responseValidation?.length > 0) ? html`<hr/>` : null}
+                        ${(this._httpTransaction?.requestValidation?.length > 0
+                                && this._httpTransaction?.responseValidation?.length > 0) ? html`
+                            <hr/>` : null}
                         ${responseViolations}
                     </sl-tab-panel>
                     <sl-tab-panel name="request">
@@ -179,7 +194,7 @@ export class HttpTransactionViewComponent extends LitElement {
                                 ${this._requestCookiesView}
                             </sl-tab-panel>
                             <sl-tab-panel name="request-body">
-                                ${isRequestBinary ? binaryData : html`<pre><code>${unsafeHTML(requestHighlight)}</code></pre>`}
+                                ${this.renderRequestBody(req)}
                             </sl-tab-panel>
                             <sl-tab-panel name="request-query">
                                 ${this._requestQueryView}
@@ -203,7 +218,7 @@ export class HttpTransactionViewComponent extends LitElement {
                                 ${this._responseCookiesView}
                             </sl-tab-panel>
                             <sl-tab-panel name="response-body">
-                                ${isResponseBinary ? binaryData : html`<pre><code>${unsafeHTML(responseHighlight)}</code></pre>`}
+                                ${this.renderResponseBody(resp)}
                             </sl-tab-panel>
                         </sl-tab-group>
                     </sl-tab-panel>
@@ -219,6 +234,116 @@ export class HttpTransactionViewComponent extends LitElement {
                     Select an API call to explore...
                 </div>`
         }
+    }
+
+
+    parseFormEncodedData(data: string): Map<string, string> {
+        const map = new Map<string, string>();
+        const pairs = data.split('&');
+        for (const pair of pairs) {
+            const [key, value] = pair.split('=');
+            map.set(decodeURI(key), decodeURI(value));
+        }
+        return map;
+    }
+
+
+    renderRequestBody(req: HttpRequest): TemplateResult {
+
+        const exct = ExtractContentTypeFromRequest(req)
+        const ct = html` <span class="contentType">
+            Content Type: <strong>${exct}</strong>
+        </span>`;
+
+        switch (exct) {
+            case ContentTypeJSON:
+                return html`${ct}
+                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(req.requestBody), null, 2),
+                            Prism.languages.json, 'json'))}</code></pre>`;
+
+            case ContentTypeXML:
+                return html`${ct}
+                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(req.requestBody), null, 2),
+                            Prism.languages.xml, 'xml'))}</code></pre>`;
+
+            case ContentTypeOctetStream:
+                return html`${ct}
+                    <div class="empty-data">
+                        <sl-icon name="file-binary" class="binary-icon"></sl-icon>
+                        <br/>
+                        [ binary data will not be rendered ]
+                    </div>`;
+            case ContentTypeHtml:
+                return html`${ct}
+                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(req.requestBody), null, 2),
+                            Prism.languages.xml, 'xml'))}</code></pre>`;
+
+            case ContentTypeFormEncoded:
+                const kv = new KVViewComponent();
+                kv.keyLabel = "Form Key";
+                kv.data = this.parseFormEncodedData(req.requestBody);
+                return html`${ct}${kv}`
+
+            case ContentTypeMultipartForm:
+                const formProps = new PropertyViewComponent()
+                formProps.propertyLabel = "Form Key";
+                formProps.typeLabel = "Type";
+
+                // extract pre-rendered form data from wiretap
+                const parts: FormPart[] = JSON.parse(req.requestBody) as FormPart[];
+                for (const part of parts) {
+                    if (part.value?.length > 0) {
+                        part.type = 'field';
+                    }
+                    if (part.files?.length > 0) {
+                        part.type = 'file';
+                    }
+                }
+
+                formProps.data = parts;
+
+                return html`${ct}${formProps}`
+
+            default:
+                return html`${ct}
+                <pre>${req.requestBody}</pre>`
+        }
+
+    }
+
+    renderResponseBody(resp: HttpResponse): TemplateResult {
+
+        const exct = ExtractContentTypeFromResponse(resp)
+        const ct = html` <span class="contentType">
+            Content Type: <strong>${exct}</strong>
+        </span>`;
+
+        switch (exct) {
+            case ContentTypeJSON:
+                return html`${ct}
+                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(resp.responseBody), null, 2),
+                            Prism.languages.json, 'json'))}</code></pre>`;
+            case ContentTypeXML:
+                return html`
+                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(resp.responseBody), null, 2),
+                            Prism.languages.xml, 'xml'))}</code></pre>`;
+            case ContentTypeOctetStream:
+                return html`${ct}
+                    <div class="empty-data">
+                        <sl-icon name="file-binary" class="binary-icon"></sl-icon>
+                        <br/>
+                        [ binary data will not be rendered ]
+                    </div>`;
+            case ContentTypeHtml:
+                return html`${ct}
+                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(resp.responseBody), null, 2),
+                            Prism.languages.xml, 'xml'))}</code></pre>`;
+
+            default:
+                return html`${ct}
+                    <pre>${resp.responseBody}</pre>`
+        }
+
     }
 
 

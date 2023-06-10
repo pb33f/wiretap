@@ -6,6 +6,7 @@ package daemon
 import (
 	"bytes"
 	"fmt"
+	"github.com/pterm/pterm"
 	"io"
 	"net/http"
 )
@@ -40,6 +41,10 @@ func cloneRequest(r *http.Request, protocol, host, port string) *http.Request {
 	b, _ := io.ReadAll(r.Body)
 	_ = r.Body.Close()
 	r.Body = io.NopCloser(bytes.NewBuffer(b))
+
+	if len(b) == 0 {
+		pterm.Error.Println("No bytes in request body")
+	}
 
 	// create cloned request
 	newURL := reconstructURL(r, protocol, host, port)
