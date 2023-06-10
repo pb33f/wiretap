@@ -44,21 +44,17 @@ func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 
 	// create a new request from the original request, but replace the path
 	config := configStore.(*shared.WiretapConfiguration)
-	newReq := cloneRequest(req,
-		config.RedirectProtocol,
-		config.RedirectHost,
-		config.RedirectPort)
 
 	// re-write referer
-	if newReq.Header.Get("Referer") != "" {
+	if req.Header.Get("Referer") != "" {
 		// retain original referer for logging
-		newReq.Header.Set("X-Original-Referer", newReq.Header.Get("Referer"))
-		newReq.Header.Set("Referer", reconstructURL(req,
+		req.Header.Set("X-Original-Referer", req.Header.Get("Referer"))
+		req.Header.Set("Referer", reconstructURL(req,
 			config.RedirectProtocol,
 			config.RedirectHost,
 			config.RedirectPort))
 	}
-	resp, err := client.Do(newReq)
+	resp, err := client.Do(req)
 
 	if err != nil {
 		return nil, err

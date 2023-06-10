@@ -26,11 +26,24 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	paramValidator := parameters.NewParameterValidator(ws.docModel)
 	responseValidator := responses.NewResponseBodyValidator(ws.docModel)
 
+	configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
+
+	config := configStore.(*shared.WiretapConfiguration)
+	newReq := cloneRequest(request.HttpRequest,
+		config.RedirectProtocol,
+		config.RedirectHost,
+		config.RedirectPort)
+
+	apiRequest := cloneRequest(request.HttpRequest,
+		config.RedirectProtocol,
+		config.RedirectHost,
+		config.RedirectPort)
+
 	// validate the request
-	go ws.validateRequest(request, requestValidator, paramValidator, responseValidator)
+	go ws.validateRequest(request, newReq, requestValidator, paramValidator, responseValidator)
 
 	// call the API being requested.
-	returnedResponse, returnedError = ws.callAPI(request.HttpRequest)
+	returnedResponse, returnedError = ws.callAPI(apiRequest)
 
 	if returnedResponse == nil && returnedError != nil {
 		utils.Log.Infof("[wiretap] request %s: Failed (%d)", request.HttpRequest.URL.String(), 500)
@@ -45,7 +58,7 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	}
 
 	// send response back to client.
-	config := ws.controlsStore.GetValue(shared.ConfigKey).(*shared.WiretapConfiguration)
+
 	if config.GlobalAPIDelay > 0 {
 		time.Sleep(time.Duration(config.GlobalAPIDelay) * time.Millisecond) // simulate a slow response.
 	}
