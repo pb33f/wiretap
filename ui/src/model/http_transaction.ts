@@ -1,4 +1,5 @@
 import {ExtractQueryString} from "@/model/extract_query";
+import {Filter, WiretapFilters} from "@/model/controls";
 
 export interface HttpCookie {
     value?:   string;
@@ -88,7 +89,7 @@ export class HttpResponse {
     }
 }
 
-export interface HttpTransaction {
+export class HttpTransaction {
     timestamp?: number;
     delay?: number;
     httpRequest?: HttpRequest;
@@ -96,16 +97,38 @@ export interface HttpTransaction {
     httpResponse?: HttpResponse;
     responseValidation?: ValidationError[];
     id?: string;
+
+    constructor(timestamp?: number,
+                delay?: number,
+                httpRequest?: HttpRequest,
+                httpResponse?: HttpResponse,
+                id?: string,
+                requestValidation?: ValidationError[],
+                responseValidation?: ValidationError[]) {
+        this.timestamp = timestamp;
+        this.delay = delay;
+        this.httpRequest = httpRequest;
+        this.httpResponse = httpResponse;
+        this.id = id;
+        this.requestValidation = requestValidation;
+        this.responseValidation = responseValidation;
+    }
+
+    matchesMethodFilter(filter: WiretapFilters): Filter | boolean {
+        if (filter?.filterMethod?.keyword.toLowerCase() === this.httpRequest.method.toLowerCase()) {
+            return filter.filterMethod;
+        }
+        return false;
+    }
 }
 
 export function BuildLiveTransactionFromState(httpTransaction: HttpTransaction): HttpTransaction {
-    return {
-        delay: httpTransaction.delay,
-        timestamp: httpTransaction.timestamp,
-        httpRequest: Object.assign(new HttpRequest(), httpTransaction.httpRequest),
-        httpResponse: Object.assign(new HttpResponse(), httpTransaction.httpResponse),
-        id: httpTransaction.id,
-        requestValidation: httpTransaction.requestValidation,
-        responseValidation: httpTransaction.responseValidation,
-    }
+    return new HttpTransaction(
+        httpTransaction.timestamp,
+        httpTransaction.delay,
+        Object.assign(new HttpRequest(), httpTransaction.httpRequest),
+        Object.assign(new HttpResponse(), httpTransaction.httpResponse),
+        httpTransaction.id,
+        httpTransaction.requestValidation,
+        httpTransaction.responseValidation);
 }

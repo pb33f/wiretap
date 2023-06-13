@@ -8,7 +8,8 @@ import transactionContainerComponentCss from "./transaction-container.component.
 import {HttpTransactionViewComponent} from "./transaction-view.component";
 import {SpecEditor} from "@/components/editor/editor.component";
 import {ViolationLocation} from "@/model/events";
-import {WiretapCurrentSpec, WiretapLocalStorage} from "@/model/constants";
+import {WiretapCurrentSpec, WiretapFiltersKey, WiretapLocalStorage} from "@/model/constants";
+import {AreFiltersActive, WiretapFilters} from "@/model/controls";
 
 @customElement('http-transaction-container')
 export class HttpTransactionContainerComponent extends LitElement {
@@ -19,6 +20,8 @@ export class HttpTransactionContainerComponent extends LitElement {
     private _selectedTransactionStore: Bag<HttpTransaction>;
     private _specStore: Bag<String>;
     private _transactionComponents: HttpTransactionItemComponent[] = [];
+    private _filteredTransactionComponents: HttpTransactionItemComponent[] = [];
+    private readonly _filtersStore: Bag<WiretapFilters>;
 
     @state()
     private _mappedHttpTransactions: Map<string, HttpTransactionContainer>
@@ -32,20 +35,34 @@ export class HttpTransactionContainerComponent extends LitElement {
     @query('spec-editor')
     private _specEditor: SpecEditor;
 
+    private _filters: WiretapFilters;
+
     constructor(allTransactionStore: Bag<HttpTransaction>,
                 selectedTransactionStore: Bag<HttpTransaction>,
-                specStore: Bag<String>) {
+                specStore: Bag<String>,
+                filtersStore: Bag<WiretapFilters>) {
         super()
         this._allTransactionStore = allTransactionStore
         this._selectedTransactionStore = selectedTransactionStore
         this._specStore = specStore;
         this._mappedHttpTransactions = new Map<string, HttpTransactionContainer>()
+        this._filtersStore = filtersStore;
+        this._filters = new WiretapFilters();
+
+        // filters store & subscribe to filter changes.
+        this._filtersStore.subscribe(WiretapFiltersKey, this.filtersChanged.bind(this))
+
+    }
+
+    filtersChanged(filters: WiretapFilters) {
+        this._filters = filters;
+        this.filterComponents()
+        this.requestUpdate();
     }
 
     reset(): void {
         this._selectedTransactionStore.reset()
     }
-
 
     connectedCallback() {
         super.connectedCallback();
@@ -53,8 +70,6 @@ export class HttpTransactionContainerComponent extends LitElement {
         // listen for changes to selected transaction.
         this._selectedTransactionStore.onAllChanges(this.handleSelectedTransactionChange.bind(this))
         this._specStore.subscribe(WiretapCurrentSpec, this.handleSpecChange.bind(this))
-
-
         this._allTransactionStore.onAllChanges(this.handleTransactionChange.bind(this))
         this._allTransactionStore.onPopulated((storeData: Map<string, HttpTransaction>) => {
             // rebuild our internal state
@@ -71,6 +86,7 @@ export class HttpTransactionContainerComponent extends LitElement {
             // save our internal state.
             this._mappedHttpTransactions = savedTransactions
 
+
             // extract state
             this._mappedHttpTransactions.forEach(
                 (v: HttpTransactionContainer) => {
@@ -78,6 +94,8 @@ export class HttpTransactionContainerComponent extends LitElement {
                     this._transactionComponents.push(comp)
                 }
             );
+
+            this.filterComponents()
         });
     }
 
@@ -133,7 +151,6 @@ export class HttpTransactionContainerComponent extends LitElement {
                 this._mappedHttpTransactions.set(value.id, container)
                 const comp: HttpTransactionItemComponent = new HttpTransactionItemComponent(value)
                 this._transactionComponents.push(comp)
-                this.requestUpdate();
             }
         } else {
             // remove it.
@@ -148,13 +165,33 @@ export class HttpTransactionContainerComponent extends LitElement {
                 });
             const index = this._transactionComponents.indexOf(comp);
             this._transactionComponents.splice(index, 1);
-            this.requestUpdate();
         }
+        if (this._filters) {
+            this.filterComponents()
+        }
+        this.requestUpdate();
     }
 
+    filterComponents() {
+        this._filteredTransactionComponents = this._transactionComponents.filter(
+            (v: HttpTransactionItemComponent) => {
+                const filter = v.httpTransaction.matchesMethodFilter(this._filters);
+                if (filter == false) {
+                    return false;
+                }
+                return true;
+            });
+        this.requestUpdate();
+    }
 
     render() {
-        const reversed = this._transactionComponents.sort(
+
+        let components = this._transactionComponents;
+        if (this._filters && AreFiltersActive(this._filters)) {
+            components = this._filteredTransactionComponents;
+        }
+
+        const reversed = components.sort(
             (a: HttpTransactionItemComponent, b: HttpTransactionItemComponent) => {
                 return b.httpTransaction.timestamp - a.httpTransaction.timestamp
             });
@@ -171,7 +208,8 @@ export class HttpTransactionContainerComponent extends LitElement {
                         <sl-split-panel class="editor-split" position="60">
                             <sl-icon slot="divider" name="grip-vertical" class="grip-vertical"></sl-icon>
                             <div slot="start" class="transaction-view-container">
-                                <http-transaction-view @violationLocationSelected="${this.locationSelected}"></http-transaction-view>
+                                <http-transaction-view
+                                        @violationLocationSelected="${this.locationSelected}"></http-transaction-view>
                             </div>
                             <div slot="end" class="transaction-view-container">
                                 <spec-editor id="spec-editor">

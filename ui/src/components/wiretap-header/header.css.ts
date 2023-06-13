@@ -12,7 +12,7 @@ export default css`
   }
   
   wiretap-controls {
-    width: 50px;
+    width: 100px;
     height: 55px;
     position: absolute;
     right: 2px
