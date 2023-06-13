@@ -6,24 +6,9 @@ export default css`
    margin:5px auto;
   }
 
-  sl-button.report {
-   
-  }
-  
   sl-icon.gear {
     font-size: 1.7rem;
     padding-top:6px;
-  }
-
-  sl-icon.report  {
-    font-size: 1.4rem;
-    display: inline-block;
-    //padding-top:6px;
-  }
-  
-  label {
-    display: block;
-    padding-bottom: 10px;
   }
   
   
@@ -45,9 +30,5 @@ export default css`
     font-family: var(--font-stack);
   }
   
-  hr {
-    margin-top: 30px;
-    margin-bottom: 30px;
-  }
   
 `

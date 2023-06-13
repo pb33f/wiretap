@@ -6,13 +6,13 @@ import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Subscription} fro
 import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container.component";
 import * as localforage from "localforage";
 import {HeaderComponent} from "@/components/wiretap-header/header.component";
-import {WiretapControls} from "@/model/controls";
+import {WiretapControls, WiretapFilters} from "@/model/controls";
 import {
     GetCurrentSpecCommand, QueuePrefix,
     SpecChannel, TopicPrefix,
     WiretapChannel, WiretapConfigurationChannel,
     WiretapControlsChannel, WiretapControlsKey, WiretapControlsStore,
-    WiretapCurrentSpec,
+    WiretapCurrentSpec, WiretapFiltersKey, WiretapFiltersStore,
     WiretapHttpTransactionStore,
     WiretapLocalStorage, WiretapReportChannel,
     WiretapSelectedTransactionStore,
@@ -20,9 +20,10 @@ import {
 } from "@/model/constants";
 
 declare global {
-    interface Window { wiretapPort: any; }
+    interface Window {
+        wiretapPort: any;
+    }
 }
-
 
 
 @customElement('wiretap-application')
@@ -31,6 +32,7 @@ export class WiretapComponent extends LitElement {
     private readonly _storeManager: BagManager;
     private readonly _httpTransactionStore: Bag<HttpTransaction>;
     private readonly _selectedTransactionStore: Bag<HttpTransaction>;
+    private readonly _filtersStore: Bag<WiretapFilters>;
     private readonly _controlsStore: Bag<WiretapControls>;
     private readonly _specStore: Bag<string>;
     private readonly _bus: Bus;
@@ -63,6 +65,7 @@ export class WiretapComponent extends LitElement {
     @property({type: Number})
     complianceLevel: number = 100.0;
 
+
     constructor() {
         super();
         //configure local storage
@@ -92,6 +95,9 @@ export class WiretapComponent extends LitElement {
 
         // controls store
         this._controlsStore = this._storeManager.createBag<WiretapControls>(WiretapControlsStore);
+
+        // filters store & subscribe to filter changes.
+        this._filtersStore = this._storeManager.createBag(WiretapFiltersStore);
 
         // set up wiretap channels
         this._wiretapChannel = this._bus.createChannel(WiretapChannel);
@@ -146,20 +152,22 @@ export class WiretapComponent extends LitElement {
         let responses = 0;
         let violations = 0;
         let violated = 0.0
-        previousTransactions.forEach((transaction: HttpTransaction) => {
-            requests++;
-            if (transaction.httpResponse) {
-                responses++;
-            }
-            if (transaction.requestValidation) {
-                violated += 0.5;
-                violations += transaction.requestValidation.length
-            }
-            if (transaction.responseValidation) {
-                violated += 0.5;
-                violations += transaction.responseValidation.length;
-            }
-        });
+        if (previousTransactions) {
+            previousTransactions.forEach((transaction: HttpTransaction) => {
+                requests++;
+                if (transaction.httpResponse) {
+                    responses++;
+                }
+                if (transaction.requestValidation) {
+                    violated += 0.5;
+                    violations += transaction.requestValidation.length
+                }
+                if (transaction.responseValidation) {
+                    violated += 0.5;
+                    violations += transaction.responseValidation.length;
+                }
+            });
+        }
         this.requestCount = requests;
         this.responseCount = responses;
         this.violationsCount = violations;
@@ -203,12 +211,13 @@ export class WiretapComponent extends LitElement {
         return (msg: CommandResponse) => {
             const wiretapMessage = msg.payload as HttpTransaction
 
-            const httpTransaction: HttpTransaction = {
-                httpRequest: Object.assign(new HttpRequest(), wiretapMessage.httpRequest),
-                id: wiretapMessage.id,
-                requestValidation: wiretapMessage.requestValidation,
-                responseValidation: wiretapMessage.responseValidation,
-            }
+
+            const httpTransaction: HttpTransaction = new HttpTransaction();
+            httpTransaction.httpRequest = Object.assign(new HttpRequest(), wiretapMessage.httpRequest);
+            httpTransaction.id = wiretapMessage.id;
+            httpTransaction.requestValidation = wiretapMessage.requestValidation;
+            httpTransaction.responseValidation = wiretapMessage.responseValidation;
+
 
             // get global delay
             const controls = this._controlsStore.get(WiretapControlsKey)
@@ -279,7 +288,8 @@ export class WiretapComponent extends LitElement {
             transaction = new HttpTransactionContainerComponent(
                 this._httpTransactionStore,
                 this._selectedTransactionStore,
-                this._specStore);
+                this._specStore,
+                this._filtersStore);
             this._transactionContainer = transaction;
         }
         return html`

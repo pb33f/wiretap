@@ -2,15 +2,19 @@ import {customElement, state} from "lit/decorators.js";
 import {html, LitElement, TemplateResult} from "lit";
 import {HttpTransaction} from "@/model/http_transaction";
 import transactionComponentCss from "@/components/transaction/transaction-item.component.css";
+import {ExchangeMethod} from "@/model/exchange_method";
 import Prism from 'prismjs'
-import 'prismjs/components/prism-javascript' // Language
+import 'prismjs/components/prism-javascript'
 import 'prismjs/themes/prism-okaidia.css'
-import {HttpTransactionSelectedEvent} from "@/model/events"; // Theme
+import {HttpTransactionSelectedEvent} from "@/model/events";
+import sharedCss from "@/components/shared.css";
+import {Filter, WiretapFilters} from "@/model/controls";
+
 
 @customElement('http-transaction-item')
 export class HttpTransactionItemComponent extends LitElement {
 
-    static styles = transactionComponentCss
+    static styles = [sharedCss, transactionComponentCss]
 
     @state()
     _httpTransaction: HttpTransaction
@@ -68,23 +72,6 @@ export class HttpTransactionItemComponent extends LitElement {
         const resp = this._httpTransaction?.httpResponse;
         this._processing = req && !resp;
 
-        const exchangeMethod = (method: string): string => {
-            switch (method) {
-                case 'GET':
-                    return 'success'
-                case 'POST':
-                    return 'primary'
-                case 'PUT':
-                    return 'primary'
-                case 'DELETE':
-                    return 'danger'
-                case 'PATCH':
-                    return 'warning'
-                default:
-                    return 'neutral'
-            }
-        }
-
         let tClass = "transaction";
         if (this._active) {
             tClass += " active";
@@ -114,7 +101,7 @@ export class HttpTransactionItemComponent extends LitElement {
         return html`
             <div class="${tClass}" @click="${this.setActive}">
                 <header>
-                    <sl-tag variant="${exchangeMethod(req.method)}" class="method">${req.method}</sl-tag>
+                    <sl-tag variant="${ExchangeMethod(req.method)}" class="method">${req.method}</sl-tag>
                     ${decodeURI(req.url)}
                 </header>
                ${delay}

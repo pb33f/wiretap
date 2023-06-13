@@ -56,4 +56,25 @@ export default css`
     margin-bottom: 20px;
     color: var(--primary-color);
   }
+
+  sl-tag.method {
+    width: 80px;
+    text-align: center;
+  }
+
+  .method::part(base) {
+    background: var(--background-color);
+    border-radius: 0;
+    text-align: center;
+    font-family: var(--font-stack);
+    width:100%;
+  }
+
+  .method::part(content) {
+    border-radius: 0;
+    text-align: center;
+    width: 100%;
+    display: inline-block;
+  }
+  
 `

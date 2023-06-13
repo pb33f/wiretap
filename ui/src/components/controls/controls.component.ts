@@ -1,7 +1,7 @@
 import {customElement, query, state} from "lit/decorators.js";
 import {LitElement} from "lit";
 import {html} from "lit";
-import {ControlsResponse, ReportResponse, WiretapConfig, WiretapControls} from "@/model/controls";
+import {ControlsResponse, ReportResponse, WiretapConfig, WiretapControls, WiretapFilters} from "@/model/controls";
 import localforage from "localforage";
 import {Bus, BusCallback, Channel, CommandResponse, GetBus, Message, Subscription} from "@pb33f/ranch";
 import controlsComponentCss from "./controls.component.css";
@@ -13,7 +13,7 @@ import sharedCss from "@/components/shared.css";
 import {
     ChangeDelayCommand, RequestReportCommand,
     WiretapControlsChannel, WiretapControlsKey,
-    WiretapControlsStore,
+    WiretapControlsStore, WiretapFiltersStore,
     WiretapHttpTransactionStore, WiretapReportChannel
 } from "@/model/constants";
 
@@ -27,8 +27,12 @@ export class WiretapControlsComponent extends LitElement {
 
     private readonly _bus: Bus;
 
-    @query('sl-drawer')
-    drawer: SlDrawer;
+    @query('#controls-drawer')
+    controlsDrawer: SlDrawer;
+
+    @query('#filters-drawer')
+    filtersDrawer: SlDrawer;
+
 
     @query("#global-delay")
     delayInput: SlInput;
@@ -45,6 +49,10 @@ export class WiretapControlsComponent extends LitElement {
     private readonly _wiretapReportChannel: Channel;
     private readonly _storeManager: BagManager;
     private readonly _controlsStore: Bag<WiretapControls>;
+    private readonly _filtersStore: Bag<WiretapFilters>;
+
+    @state()
+    private filters: WiretapFilters;
 
     constructor() {
         super();
@@ -53,11 +61,11 @@ export class WiretapControlsComponent extends LitElement {
         this._bus = GetBus();
         this._storeManager = GetBagManager();
         this._controlsStore = this._storeManager.getBag(WiretapControlsStore);
+        this._filtersStore = this._storeManager.getBag(WiretapFiltersStore);
         this._wiretapControlsChannel = this._bus.getChannel(WiretapControlsChannel);
         this._wiretapReportChannel = this._bus.getChannel(WiretapReportChannel);
         this._wiretapControlsSubscription = this._wiretapControlsChannel.subscribe(this.controlUpdateHandler());
         this._wiretapReportSubscription = this._wiretapReportChannel.subscribe(this.reportHandler());
-
 
         this.loadControlStateFromStorage().then((controls: WiretapControls) => {
             if (!controls) {
@@ -70,11 +78,17 @@ export class WiretapControlsComponent extends LitElement {
             // get the delay from the backend.
             this.changeGlobalDelay(-1) // -1 won't update anything, but will return the current delay
         });
+
+
     }
 
     async loadControlStateFromStorage(): Promise<WiretapControls> {
         return localforage.getItem<WiretapControls>(WiretapControlsStore);
     }
+
+
+
+
 
     controlUpdateHandler(): BusCallback<CommandResponse> {
         return (msg: Message<CommandResponse<ControlsResponse>>) => {
@@ -121,8 +135,12 @@ export class WiretapControlsComponent extends LitElement {
         });
     }
 
-    openControls() {
-        this.drawer.show();
+    openSettings() {
+        this.controlsDrawer.show();
+    }
+
+    openFilters() {
+        this.filtersDrawer.show();
     }
 
     sendReportRequest() {
@@ -139,7 +157,8 @@ export class WiretapControlsComponent extends LitElement {
     }
 
     closeControls() {
-        this.drawer.hide()
+        this.controlsDrawer.hide()
+        this.filtersDrawer.hide()
     }
 
     handleGlobalDelayChange(event) {
@@ -158,22 +177,24 @@ export class WiretapControlsComponent extends LitElement {
     render() {
 
         return html`
-            <sl-button @click=${this.openControls} variant="default" size="medium"  class="gear" circle outline>
+            <sl-button @click=${this.openFilters} variant="default" size="medium" class="gear" circle outline>
+                <sl-icon name="funnel" label="filters" class="gear"></sl-icon>
+            </sl-button>
+            <sl-button @click=${this.openSettings} variant="default" size="medium" class="gear" circle outline>
                 <sl-icon name="gear" label="controls" class="gear"></sl-icon>
             </sl-button>
-            <sl-drawer label="wiretap controls" class="drawer-focus">
-                <label>Global API Delay (MS)</label>
-                <sl-input @sl-change=${this.handleGlobalDelayChange} value=${this._controls?.globalDelay}
-                          placeholder="size" size="medium" type="number" id="global-delay">
-                    <sl-icon name="hourglass-split" slot="prefix"></sl-icon>
-                </sl-input>
-                <hr/>
-                <sl-button @click=${this.wipeData} variant="danger" outline>Reset State</sl-button>
-                <hr/>
-                <sl-button @click=${this.sendReportRequest}  outline>
-                    <sl-icon name="save" slot="prefix"></sl-icon>Download Session Data</sl-button>
+            <sl-drawer label="wiretap controls" class="drawer-focus" id="controls-drawer">
                 <a id="downloadReport" style="display:none"></a>
+                <wiretap-controls-settings globalDelay=${this._controls?.globalDelay}
+                    @globalDelayChanged=${this.handleGlobalDelayChange}
+                    @wipeData=${this.wipeData}
+                    @requestReport=${this.sendReportRequest}></wiretap-controls-settings>
                 <sl-button @click=${this.closeControls} slot="footer" variant="primary" outline>Close</sl-button>
+            </sl-drawer>
+            
+              <sl-drawer label="wiretap filters" class="drawer-focus" id="filters-drawer">
+                   <wiretap-controls-filters filters=${this.filters}></wiretap-controls-filters>
+                  <sl-button @click=${this.closeControls} slot="footer" variant="primary" outline>Close</sl-button>
             </sl-drawer>
         `
     }

@@ -17,7 +17,7 @@
     "vite-tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
-    "@pb33f/ranch": "^0.3.3",
+    "@pb33f/ranch": "^0.3.4",
     "@pb33f/saddlebag": "^0.1.0",
     "@shoelace-style/shoelace": "^2.4.0",
     "@stomp/stompjs": "^7.0.0",

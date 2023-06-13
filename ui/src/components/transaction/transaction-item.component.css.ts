@@ -36,19 +36,7 @@ export default css`
     color: var(--primary-color);
   }
   
-  .method::part(base) {
-    background: var(--background-color);
-    border-radius: 0;
-    text-align: center;
-    width:100%;
-  }
 
-  .method::part(content) {
-    border-radius: 0;
-    text-align: center;
-    width: 100%;
-    display: inline-block;
-  }
 
   .tab::part(base) {
     font: var(--font-stack);
@@ -80,10 +68,7 @@ export default css`
     margin-right: 12px;
   }
   
-  sl-tag {
-    width: 80px;
-    text-align: center;
-  }
+
   
   .delay {
     width: 70px;
