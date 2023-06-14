@@ -3,9 +3,9 @@ import {html, LitElement} from "lit";
 import {HttpRequest, HttpResponse, HttpTransaction} from "./model/http_transaction";
 import {Bag, BagManager, CreateBagManager} from "@pb33f/saddlebag";
 import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Subscription} from "@pb33f/ranch";
-import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container.component";
+import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container";
 import * as localforage from "localforage";
-import {HeaderComponent} from "@/components/wiretap-header/header.component";
+import {HeaderComponent} from "@/components/wiretap-header/header";
 import {WiretapControls, WiretapFilters} from "@/model/controls";
 import {
     GetCurrentSpecCommand, QueuePrefix,

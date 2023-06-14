@@ -1,7 +1,7 @@
 import {customElement, state} from "lit/decorators.js";
 import {html, LitElement, TemplateResult} from "lit";
 import {HttpTransaction} from "@/model/http_transaction";
-import transactionComponentCss from "@/components/transaction/transaction-item.component.css";
+import transactionComponentCss from "@/components/transaction/transaction-item.css";
 import {ExchangeMethod} from "@/model/exchange_method";
 import Prism from 'prismjs'
 import 'prismjs/components/prism-javascript'

@@ -27,15 +27,15 @@ import './css/pb33f.css'
 import './css/header.css'
 import './css/syntax.css'
 
-import './components/wiretap-header/header.component';
-import './components/transaction/transaction-container.component';
-import './components/transaction/transaction-view.component';
-import './components/violation/violation.component';
-import './components/kv-view/kv-view.component';
-import './components/editor/editor.component';
-import './components/wiretap-header/metrics.component';
-import './components/wiretap-header/metric.component';
-import './components/controls/controls.component';
+import './components/wiretap-header/header';
+import './components/transaction/transaction-container';
+import './components/transaction/transaction-view';
+import './components/violation/violation';
+import './components/kv-view/kv-view';
+import './components/editor/editor';
+import './components/wiretap-header/metrics';
+import './components/wiretap-header/metric';
+import './components/controls/controls';
 import './components/controls/settings.component';
 import './components/controls/filters.component';
 

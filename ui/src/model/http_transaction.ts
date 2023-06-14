@@ -120,6 +120,43 @@ export class HttpTransaction {
         }
         return false;
     }
+
+    matchesKeywordFilter(filter: WiretapFilters): Filter | boolean {
+        if (filter?.filterKeywords?.length > 0) {
+            for (let i = 0; i < filter.filterKeywords.length; i++) {
+                const keywordFilter = filter.filterKeywords[i];
+                // check if the keyword filter is in the url.
+                if (this.httpRequest.url.toLowerCase().includes(keywordFilter.keyword.toLowerCase())) {
+                    return keywordFilter;
+                }
+
+                // check if the keyword filter is in the query string.
+                if (this.httpRequest.query?.toLowerCase().includes(keywordFilter.keyword.toLowerCase())) {
+                    return keywordFilter;
+                }
+
+                // check if the keyword filter is in the request body.
+                if (this.httpRequest.requestBody?.toLowerCase().includes(keywordFilter.keyword.toLowerCase())) {
+                    return keywordFilter;
+                }
+
+                // check if the keyword filter is in the response body.
+                if (this.httpResponse.responseBody?.toLowerCase().includes(keywordFilter.keyword.toLowerCase())) {
+                    return keywordFilter;
+                }
+
+                // check headers
+                const headers = this.httpRequest.extractHeaders()
+                headers.forEach((value) => {
+                    if (value.toLowerCase().includes(keywordFilter.keyword.toLowerCase())) {
+                        return keywordFilter;
+                    }
+                });
+            }
+        }
+        return false;
+    }
+
 }
 
 export function BuildLiveTransactionFromState(httpTransaction: HttpTransaction): HttpTransaction {

@@ -3,7 +3,7 @@ import {html, LitElement} from "lit";
 import {GlobalDelayChangedEvent, RequestReportEvent, WipeDataEvent} from "@/model/events";
 import {property} from "lit/decorators.js";
 import sharedCss from "@/components/shared.css";
-import settingsComponentCss from "@/components/controls/settings.component.css";
+import settingsComponentCss from "@/components/controls/settings.css";
 
 @customElement('wiretap-controls-settings')
 export class WiretapControlsSettingsComponent extends LitElement {

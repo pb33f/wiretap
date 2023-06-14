@@ -2,7 +2,7 @@ import {customElement, state, property} from "lit/decorators.js";
 import {html} from "lit";
 import {LitElement, TemplateResult} from "lit";
 
-import violationComponentCss from "@/components/violation/violation.component.css";
+import violationComponentCss from "@/components/violation/violation.css";
 import {ValidationError} from "@/model/http_transaction";
 import {ViolationLocation, ViolationLocationSelectionEvent} from "@/model/events";
 
