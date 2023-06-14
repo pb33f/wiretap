@@ -1,7 +1,7 @@
 import {customElement, state, query, property} from "lit/decorators.js";
 import {html, LitElement} from "lit";
 import sharedCss from "@/components/shared.css";
-import filtersComponentCss from "./filters.component.css";
+import filtersComponentCss from "./filters.css";
 import {ExchangeMethod} from "@/model/exchange_method";
 import {WiretapFilters} from "@/model/controls";
 import {GlobalDelayChangedEvent} from "@/model/events";
@@ -99,8 +99,35 @@ export class WiretapControlsFiltersComponent extends LitElement {
 
     render() {
 
+        // not ready yet, needs a little more UX thinking.
+        const requestChainsFeature = html`
+            <hr/>
+        <h3>Request Chains</h3>
+        <p>
+            Link related requests together using query parameter keys.
+        </p>
+
+        <sl-input @sl-change=${this.handleChainInput} class="label-on-left chain-input" type="text" label="Parameter"
+                  help-text="Press enter to add" id="chain-input"></sl-input>
+
+        <div class="chains">
+            ${this.filters?.filterChain?.map((filter) => {
+                return html`
+                        <sl-tag @sl-remove=${(event) => {
+                    const tag = event.target;
+                    tag.style.opacity = '0';
+                    setTimeout(() => {
+                        (tag.style.opacity = '1');
+                        this.removeChain(filter.id)
+                    }, 200);
+
+                }} class="chain" size="small" removable>${filter.keyword}
+                        </sl-tag>`
+            })}
+        </div>`
+
         return html`
-            <sl-select class="label-on-left" label="Method" @sl-change=${(change) =>{ this.methodFilterChanged(change.target.value)} } clearable>
+            <sl-select value="${this.filters?.filterMethod.keyword}" class="label-on-left" label="Method" @sl-change=${(change) =>{ this.methodFilterChanged(change.target.value)} } clearable>
                 ${this._methods.map((method) => {
                     return html`
                         <sl-option  value="${method}">
@@ -117,7 +144,7 @@ export class WiretapControlsFiltersComponent extends LitElement {
             </p>
 
             <sl-input @sl-change=${this.handleKeywordInput} class="label-on-left" type="text" label="Keyword"
-                      help-text="Press enter to add" id="keyword-input"></sl-input>
+                      help-text="Press enter to add" id="keyword-input"  ></sl-input>
 
             <div class="keywords">
                 ${this.filters?.filterKeywords?.map((filter) => {
@@ -135,30 +162,7 @@ export class WiretapControlsFiltersComponent extends LitElement {
                 })}
             </div>
 
-            <hr/>
-            <h3>Request Chains</h3>
-            <p>
-                Link related requests together using query parameter keys. 
-            </p>
-            
-            <sl-input @sl-change=${this.handleChainInput} class="label-on-left chain-input" type="text" label="Parameter"
-                      help-text="Press enter to add" id="chain-input"></sl-input>
-            
-            <div class="chains">
-                ${this.filters?.filterChain?.map((filter) => {
-                    return html`
-                        <sl-tag @sl-remove=${(event) => {
-                        const tag = event.target;
-                        tag.style.opacity = '0';
-                        setTimeout(() => {
-                            (tag.style.opacity = '1');
-                            this.removeChain(filter.id)
-                        }, 200);
-
-                    }} class="chain" size="small" removable>${filter.keyword}
-                        </sl-tag>`
-                })}
-            </div>
+         
         `
     }
 }

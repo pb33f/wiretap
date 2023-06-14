@@ -3,7 +3,7 @@ import {map} from "lit/directives/map.js";
 
 import {LitElement, TemplateResult} from "lit";
 import {html} from "lit";
-import kvViewComponentCss from "./kv-view.component.css";
+import kvViewComponentCss from "./kv-view.css";
 
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';

@@ -4,7 +4,7 @@ import {html} from "lit";
 import {ControlsResponse, ReportResponse, WiretapConfig, WiretapControls, WiretapFilters} from "@/model/controls";
 import localforage from "localforage";
 import {Bus, BusCallback, Channel, CommandResponse, GetBus, Message, Subscription} from "@pb33f/ranch";
-import controlsComponentCss from "./controls.component.css";
+import controlsComponentCss from "./controls.css";
 import {SlDrawer, SlInput} from "@shoelace-style/shoelace";
 import {RanchUtils} from "@pb33f/ranch";
 import {GetBagManager, BagManager, Bag} from "@pb33f/saddlebag";

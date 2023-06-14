@@ -10,7 +10,7 @@ import 'prismjs/themes/prism-okaidia.css';
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import prismCss from "@/components/prism.css";
 import sharedCss from "@/components/shared.css";
-import propertyViewComponentCss from "./property-view.component.css";
+import propertyViewComponentCss from "./property-view.css";
 import {FormDataEntry, FormPart} from "@/model/extract_content_type";
 
 export interface Property extends FormPart {

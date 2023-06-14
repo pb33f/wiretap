@@ -2,11 +2,11 @@ import {customElement, state, query} from "lit/decorators.js";
 import {html, LitElement} from "lit";
 import {Bag} from "@pb33f/saddlebag";
 import {BuildLiveTransactionFromState, HttpTransaction} from '@/model/http_transaction';
-import {HttpTransactionItemComponent} from "./transaction-item.component";
+import {HttpTransactionItemComponent} from "./transaction-item";
 import localforage from "localforage";
-import transactionContainerComponentCss from "./transaction-container.component.css";
-import {HttpTransactionViewComponent} from "./transaction-view.component";
-import {SpecEditor} from "@/components/editor/editor.component";
+import transactionContainerComponentCss from "./transaction-container.css";
+import {HttpTransactionViewComponent} from "./transaction-view";
+import {SpecEditor} from "@/components/editor/editor";
 import {ViolationLocation} from "@/model/events";
 import {WiretapCurrentSpec, WiretapFiltersKey, WiretapLocalStorage} from "@/model/constants";
 import {AreFiltersActive, WiretapFilters} from "@/model/controls";
@@ -148,14 +148,14 @@ export class HttpTransactionContainerComponent extends LitElement {
                         )
                     }
                 }
-                this._mappedHttpTransactions.set(value.id, container)
-                const comp: HttpTransactionItemComponent = new HttpTransactionItemComponent(value)
-                this._transactionComponents.push(comp)
+                this._mappedHttpTransactions.set(value.id, container);
+                const comp: HttpTransactionItemComponent = new HttpTransactionItemComponent(value);
+                this._transactionComponents.push(comp);
             }
         } else {
             // remove it.
-            let allTransactions = this._allTransactionStore.export()
-            allTransactions.delete(key)
+            let allTransactions = this._allTransactionStore.export();
+            allTransactions.delete(key);
             localforage.setItem<Map<string, HttpTransaction>>(WiretapLocalStorage, allTransactions);
 
             // remove from components.
@@ -167,20 +167,36 @@ export class HttpTransactionContainerComponent extends LitElement {
             this._transactionComponents.splice(index, 1);
         }
         if (this._filters) {
-            this.filterComponents()
+            this.filterComponents();
         }
         this.requestUpdate();
     }
 
     filterComponents() {
-        this._filteredTransactionComponents = this._transactionComponents.filter(
-            (v: HttpTransactionItemComponent) => {
-                const filter = v.httpTransaction.matchesMethodFilter(this._filters);
-                if (filter == false) {
-                    return false;
-                }
-                return true;
-            });
+
+        let filtered: HttpTransactionItemComponent[] = this._transactionComponents;
+
+        // filter by method
+        if (this._filters.filterMethod.keyword.length > 0) {
+            filtered = this._transactionComponents.filter(
+                (v: HttpTransactionItemComponent) => {
+                    const filter = v.httpTransaction.matchesMethodFilter(this._filters);
+                    return filter != false;
+                });
+        }
+
+        // re-filter by keywords
+        if (this._filters.filterKeywords.length > 0) {
+
+           filtered = filtered.filter( (v: HttpTransactionItemComponent) => {
+                const filter = v.httpTransaction.matchesKeywordFilter(this._filters);
+                return filter != false;
+            })
+
+
+        }
+
+        this._filteredTransactionComponents = filtered;
         this.requestUpdate();
     }
 

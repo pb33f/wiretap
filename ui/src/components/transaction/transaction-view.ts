@@ -5,8 +5,8 @@ import {map} from "lit/directives/map.js";
 import {LitElement, TemplateResult} from "lit";
 
 import {HttpRequest, HttpResponse, HttpTransaction} from "@/model/http_transaction";
-import transactionViewComponentCss from "./transaction-view.component.css";
-import {KVViewComponent} from "@/components/kv-view/kv-view.component";
+import transactionViewComponentCss from "./transaction-view.css";
+import {KVViewComponent} from "@/components/kv-view/kv-view";
 
 import prismCss from "@/components/prism.css";
 import Prism from 'prismjs';
@@ -29,7 +29,7 @@ import {
     IsXmlContentType, FormDataEntry, FormPart
 } from "@/model/extract_content_type";
 import {ExtractHTTPCodeDefinition, ExtractStatusStyleFromCode} from "@/model/extract_status";
-import {Property, PropertyViewComponent} from "@/components/property-view/property-view.component";
+import {Property, PropertyViewComponent} from "@/components/property-view/property-view";
 
 @customElement('http-transaction-view')
 export class HttpTransactionViewComponent extends LitElement {
