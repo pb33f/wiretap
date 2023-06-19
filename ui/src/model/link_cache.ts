@@ -44,8 +44,6 @@ export class TransactionLinkCache {
         this._filters = this._filtersStore.get(WiretapFiltersKey);
         this._filtersStore.subscribe(WiretapFiltersKey, this.filtersChanged.bind(this))
 
-        console.log('noooooo')
-
         // load the link cache from storage
         this.loadLinkCacheFromStorage().then((linkCache) => {
             if (linkCache) {
@@ -63,8 +61,6 @@ export class TransactionLinkCache {
             this._filters.filterChain.forEach((chain) => {
                 this._state.set(chain.keyword, new Map<string, HttpTransactionLink[]>())
             });
-            console.log('state bootstrapped', this._state)
-
             this.update().then((result) => {
                 this.updated(result)
             }).catch((err) => {
@@ -78,7 +74,7 @@ export class TransactionLinkCache {
     }
 
     private saveLinkCacheToStorage() {
-        console.log('link cache updated', this._state);
+        //console.log('link cache updated', this._state);
         this._linkCacheStore.set(WiretapLinkCacheKey, this._state);
         localforage.setItem(WiretapLinkCacheStore, this._state);
     }
@@ -124,8 +120,6 @@ export class TransactionLinkCache {
             })
         })
 
-
-        // check if the keyword is in the cache
         return new Promise((resolve) => {
             this._linkCacheWorker.onmessage = (e) => {
                 resolve(e.data)
@@ -134,10 +128,32 @@ export class TransactionLinkCache {
                 throw new Error(e.message)
             }
 
-            console.log('updating link cache', this._state);
             this._linkCacheWorker.postMessage(
                 {linkStore: this._state, transactions: stripped})
         });
     }
 
+    findLinks(transaction: HttpTransaction): LinkMatch[] {
+        const results: LinkMatch[] = [];
+        this._state.forEach((value, parameter) => {
+            value.forEach((links, paramValue) => {
+                links.forEach((link) => {
+                    if (transaction.id === link.id) {
+                        results.push({
+                            parameter: parameter,
+                            value: paramValue,
+                            siblings: links
+                        });
+                    }
+                });
+            });
+        });
+        return results;
+    }
+}
+
+export interface LinkMatch {
+    parameter: string;
+    value: string;
+    siblings: HttpTransactionLink[]
 }
