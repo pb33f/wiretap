@@ -4,9 +4,11 @@
     <title>wiretap: Sniff your API traffic for OpenAPI compliance</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
     <script>
-        sessionStorage.setItem('wiretapPort', '%WIRETAP_PORT%')
+        //sessionStorage.setItem('wiretapPort', '%WIRETAP_PORT%')
+        sessionStorage.setItem('wiretapPort', '9092')
     </script>
     <script type="module" src="/src/index.ts"></script>
+    <script type="module" src="/src/workers/link_cache_worker.ts"></script>
 </head>
 <body>
     <!-- start wiretap. To learn more: https://pb33f.io/wiretap -->

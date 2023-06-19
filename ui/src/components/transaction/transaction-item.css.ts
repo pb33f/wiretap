@@ -80,5 +80,24 @@ export default css`
     font-size: 21px;
     color: var(--dark-font-color);
   }
+
+  .chain {
+    width: 20px;
+    margin: 5px 10px 0 10px;
+    color: var(--secondary-color);
+  }
+  .chain sl-icon {
+    vertical-align: bottom;
+    font-size: 21px;
+    color: var(--dark-font-color);
+  }
+
+  .chain sl-icon:hover {
+    color: var(--terminal-yellow);
+  }
+  
+  .transaction-status {
+    display: flex; 
+  }
   
 `

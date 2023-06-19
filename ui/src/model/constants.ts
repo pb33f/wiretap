@@ -13,6 +13,10 @@ export const WiretapControlsStore = "wiretap-controls-store";
 
 export const WiretapFiltersStore = "wiretap-filters-store";
 
+export const WiretapLinkCacheStore = "http-link-cache-store";
+
+export const WiretapLinkCacheKey = "http-link-cache";
+
 
 export const WiretapFiltersKey = "wiretap-filters";
 

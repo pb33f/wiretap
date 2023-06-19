@@ -10,6 +10,7 @@ import {SpecEditor} from "@/components/editor/editor";
 import {ViolationLocation} from "@/model/events";
 import {WiretapCurrentSpec, WiretapFiltersKey, WiretapLocalStorage} from "@/model/constants";
 import {AreFiltersActive, WiretapFilters} from "@/model/controls";
+import {TransactionLinkCache} from "@/model/link_cache";
 
 @customElement('http-transaction-container')
 export class HttpTransactionContainerComponent extends LitElement {
@@ -22,6 +23,7 @@ export class HttpTransactionContainerComponent extends LitElement {
     private _transactionComponents: HttpTransactionItemComponent[] = [];
     private _filteredTransactionComponents: HttpTransactionItemComponent[] = [];
     private readonly _filtersStore: Bag<WiretapFilters>;
+    private _transactionLinkCache: TransactionLinkCache;
 
     @state()
     private _mappedHttpTransactions: Map<string, HttpTransactionContainer>
@@ -52,6 +54,17 @@ export class HttpTransactionContainerComponent extends LitElement {
         // filters store & subscribe to filter changes.
         this._filtersStore.subscribe(WiretapFiltersKey, this.filtersChanged.bind(this))
 
+        // create a transaction link cache
+        // todo: come back and wire this up to state in indexeddb.
+
+
+
+
+
+
+
+
+
     }
 
     filtersChanged(filters: WiretapFilters) {
@@ -77,7 +90,7 @@ export class HttpTransactionContainerComponent extends LitElement {
             storeData.forEach((value: HttpTransaction, key: string) => {
                 const container: HttpTransactionContainer = {
                     Transaction: BuildLiveTransactionFromState(value),
-                    Listener: (update: HttpTransaction) => {
+                    Listener: () => {
                         this.requestUpdate();
                     }
                 }
@@ -85,7 +98,6 @@ export class HttpTransactionContainerComponent extends LitElement {
             });
             // save our internal state.
             this._mappedHttpTransactions = savedTransactions
-
 
             // extract state
             this._mappedHttpTransactions.forEach(
@@ -95,8 +107,12 @@ export class HttpTransactionContainerComponent extends LitElement {
                 }
             );
 
+            // perform filtering.
             this.filterComponents()
         });
+
+        this._transactionLinkCache = new TransactionLinkCache()
+
     }
 
     handleSelectedTransactionChange(key: string, transaction: HttpTransaction) {
@@ -170,6 +186,7 @@ export class HttpTransactionContainerComponent extends LitElement {
             this.filterComponents();
         }
         this.requestUpdate();
+        this._transactionLinkCache.sync();
     }
 
     filterComponents() {
@@ -187,13 +204,26 @@ export class HttpTransactionContainerComponent extends LitElement {
 
         // re-filter by keywords
         if (this._filters.filterKeywords.length > 0) {
-
            filtered = filtered.filter( (v: HttpTransactionItemComponent) => {
                 const filter = v.httpTransaction.matchesKeywordFilter(this._filters);
                 return filter != false;
             })
+        }
 
-
+        // re-filter by chains
+        if (this._filters.filterChain.length > 0) {
+            filtered = filtered.filter( (v: HttpTransactionItemComponent) => {
+                const filter = v.httpTransaction.containsActiveLink(this._filters);
+                v.httpTransaction.containsChainLink = (filter != false);
+                v.requestUpdate()
+                return true
+            })
+        } else {
+            // wipe out links, nothing to link.
+            filtered.forEach( (v: HttpTransactionItemComponent) => {
+                v.httpTransaction.containsChainLink = false;
+                v.requestUpdate()
+            })
         }
 
         this._filteredTransactionComponents = filtered;

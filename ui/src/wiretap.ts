@@ -1,6 +1,6 @@
 import {customElement, property, query} from "lit/decorators.js";
 import {html, LitElement} from "lit";
-import {HttpRequest, HttpResponse, HttpTransaction} from "./model/http_transaction";
+import {HttpRequest, HttpResponse, HttpTransaction, HttpTransactionBase} from "./model/http_transaction";
 import {Bag, BagManager, CreateBagManager} from "@pb33f/saddlebag";
 import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Subscription} from "@pb33f/ranch";
 import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container";
@@ -13,7 +13,7 @@ import {
     WiretapChannel, WiretapConfigurationChannel,
     WiretapControlsChannel, WiretapControlsKey, WiretapControlsStore,
     WiretapCurrentSpec, WiretapFiltersKey, WiretapFiltersStore,
-    WiretapHttpTransactionStore,
+    WiretapHttpTransactionStore, WiretapLinkCacheKey, WiretapLinkCacheStore,
     WiretapLocalStorage, WiretapReportChannel,
     WiretapSelectedTransactionStore,
     WiretapSpecStore
@@ -34,6 +34,7 @@ export class WiretapComponent extends LitElement {
     private readonly _selectedTransactionStore: Bag<HttpTransaction>;
     private readonly _filtersStore: Bag<WiretapFilters>;
     private readonly _controlsStore: Bag<WiretapControls>;
+    private readonly _linkCacheStore: Bag<Map<string, Map<string, HttpTransactionBase[]>>>;
     private readonly _specStore: Bag<string>;
     private readonly _bus: Bus;
     private readonly _wiretapChannel: Channel;
@@ -98,6 +99,10 @@ export class WiretapComponent extends LitElement {
 
         // filters store & subscribe to filter changes.
         this._filtersStore = this._storeManager.createBag(WiretapFiltersStore);
+
+        // link cache store
+        this._linkCacheStore =
+            this._storeManager.createBag<Map<string, Map<string, HttpTransactionBase[]>>>(WiretapLinkCacheStore);
 
         // set up wiretap channels
         this._wiretapChannel = this._bus.createChannel(WiretapChannel);
@@ -212,17 +217,28 @@ export class WiretapComponent extends LitElement {
             const wiretapMessage = msg.payload as HttpTransaction
 
 
-            const httpTransaction: HttpTransaction = new HttpTransaction();
-            httpTransaction.httpRequest = Object.assign(new HttpRequest(), wiretapMessage.httpRequest);
-            httpTransaction.id = wiretapMessage.id;
-            httpTransaction.requestValidation = wiretapMessage.requestValidation;
-            httpTransaction.responseValidation = wiretapMessage.responseValidation;
+            const constructedTransaction: HttpTransaction = new HttpTransaction();
+            constructedTransaction.httpRequest = Object.assign(new HttpRequest(), wiretapMessage.httpRequest);
+            constructedTransaction.id = wiretapMessage.id;
+            constructedTransaction.requestValidation = wiretapMessage.requestValidation;
+            constructedTransaction.responseValidation = wiretapMessage.responseValidation;
 
 
             // get global delay
             const controls = this._controlsStore.get(WiretapControlsKey)
             if (controls.globalDelay > 0) {
-                httpTransaction.delay = controls.globalDelay;
+                constructedTransaction.delay = controls.globalDelay;
+            }
+
+            // get chain link cache
+            const linkCache = this._linkCacheStore.get(WiretapLinkCacheKey);
+            if (linkCache) {
+                linkCache.forEach((value: Map<string, HttpTransactionBase[]>, key: string) => {
+                    // check if a link has been detected.
+                    if (constructedTransaction.httpRequest?.query?.includes(key)) {
+                        constructedTransaction.containsChainLink = true;
+                    }
+                });
             }
 
             if (wiretapMessage.requestValidation && wiretapMessage.requestValidation.length > 0) {
@@ -232,25 +248,25 @@ export class WiretapComponent extends LitElement {
 
             if (wiretapMessage.httpResponse) {
                 this.responseCount++;
-                httpTransaction.httpResponse = Object.assign(new HttpResponse(), wiretapMessage.httpResponse);
+                constructedTransaction.httpResponse = Object.assign(new HttpResponse(), wiretapMessage.httpResponse);
                 if (wiretapMessage.responseValidation && wiretapMessage.responseValidation.length > 0) {
                     this.violatedTransactions += 0.5;
                     this.violationsCount += wiretapMessage.responseValidation.length
                 }
             }
 
-            const existingTransaction: HttpTransaction = this._httpTransactionStore.get(httpTransaction.id)
+            const existingTransaction: HttpTransaction = this._httpTransactionStore.get(constructedTransaction.id)
 
             if (existingTransaction) {
-                if (httpTransaction.httpResponse) {
-                    existingTransaction.httpResponse = httpTransaction.httpResponse
-                    existingTransaction.responseValidation = httpTransaction.responseValidation
+                if (constructedTransaction.httpResponse) {
+                    existingTransaction.httpResponse = constructedTransaction.httpResponse
+                    existingTransaction.responseValidation = constructedTransaction.responseValidation
                     this._httpTransactionStore.set(existingTransaction.id, existingTransaction)
                 }
             } else {
                 this.requestCount++;
-                httpTransaction.timestamp = new Date().getTime();
-                this._httpTransactionStore.set(httpTransaction.id, httpTransaction)
+                constructedTransaction.timestamp = new Date().getTime();
+                this._httpTransactionStore.set(constructedTransaction.id, constructedTransaction)
             }
             this.calcComplianceLevel();
         }

@@ -98,6 +98,13 @@ export class HttpTransactionItemComponent extends LitElement {
             delay = html`<div class="delay"><sl-icon name="hourglass-split" ></sl-icon>${this._httpTransaction.delay}ms</div>`
         }
 
+
+        let chainLink: TemplateResult;
+
+        if (this._httpTransaction.containsChainLink) {
+            chainLink = html`<div class="chain"><sl-icon name="link-45deg"></sl-icon></div>`
+        }
+
         return html`
             <div class="${tClass}" @click="${this.setActive}">
                 <header>
@@ -106,6 +113,7 @@ export class HttpTransactionItemComponent extends LitElement {
                 </header>
                ${delay}
                 <div class="transaction-status">
+                    ${chainLink}
                     ${statusIcon}
                 </div>
             </div>`

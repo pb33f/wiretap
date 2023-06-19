@@ -1,4 +1,3 @@
-
 import '@shoelace-style/shoelace/dist/themes/light.css';
 import '@shoelace-style/shoelace/dist/themes/dark.css';
 import '@shoelace-style/shoelace/dist/components/tag/tag.js';
@@ -20,13 +19,13 @@ import '@shoelace-style/shoelace/dist/components/divider/divider.js';
 import '@shoelace-style/shoelace/dist/components/select/select.js';
 import '@shoelace-style/shoelace/dist/components/option/option.js';
 
-
-
+// css
 import './css/variables.css'
 import './css/pb33f.css'
 import './css/header.css'
 import './css/syntax.css'
 
+// wiretap components
 import './components/wiretap-header/header';
 import './components/transaction/transaction-container';
 import './components/transaction/transaction-view';
@@ -40,13 +39,22 @@ import './components/controls/settings.component';
 import './components/controls/filters.component';
 
 
+// models
 import './model/http_transaction';
+
+// boot.
 import './wiretap';
 
-
-// configure shoelace
-import {setBasePath} from '@shoelace-style/shoelace/dist/utilities/base-path.js';
-
 // Set the base path to the folder you copied Shoelace's assets to
-setBasePath('/assets/shoelace');
-//setBasePath('/shoelace');
+//setBasePath('/assets/shoelace');
+import {setBasePath} from '@shoelace-style/shoelace/dist/utilities/base-path.js';
+setBasePath('/shoelace');
+
+export const workerFactory = (workerScript: URL, workerOptions: WorkerOptions) => () =>
+    new Worker(workerScript, workerOptions);
+
+export const linkCacheFactory =  workerFactory(new URL('./workers/link_cache_worker.ts', import.meta.url), {
+    type: 'module',
+});
+
+
