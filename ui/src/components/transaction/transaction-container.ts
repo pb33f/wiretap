@@ -1,16 +1,17 @@
 import {customElement, state, query} from "lit/decorators.js";
 import {html, LitElement} from "lit";
 import {Bag} from "@pb33f/saddlebag";
-import {BuildLiveTransactionFromState, HttpTransaction} from '@/model/http_transaction';
+import {BuildLiveTransactionFromState, HttpTransaction, HttpTransactionLink} from '@/model/http_transaction';
 import {HttpTransactionItemComponent} from "./transaction-item";
 import localforage from "localforage";
 import transactionContainerComponentCss from "./transaction-container.css";
 import {HttpTransactionViewComponent} from "./transaction-view";
 import {SpecEditor} from "@/components/editor/editor";
 import {ViolationLocation} from "@/model/events";
-import {WiretapCurrentSpec, WiretapFiltersKey, WiretapLocalStorage} from "@/model/constants";
+import {WiretapCurrentSpec, WiretapFiltersKey, WiretapLinkCacheStore, WiretapLocalStorage} from "@/model/constants";
 import {AreFiltersActive, WiretapFilters} from "@/model/controls";
 import {TransactionLinkCache} from "@/model/link_cache";
+import {GetBagManager} from "@pb33f/saddlebag";
 
 @customElement('http-transaction-container')
 export class HttpTransactionContainerComponent extends LitElement {
@@ -24,6 +25,7 @@ export class HttpTransactionContainerComponent extends LitElement {
     private _filteredTransactionComponents: HttpTransactionItemComponent[] = [];
     private readonly _filtersStore: Bag<WiretapFilters>;
     private _transactionLinkCache: TransactionLinkCache;
+    private readonly _linkCacheStore: Bag<Map<string, Map<string, HttpTransactionLink[]>>>;
 
     @state()
     private _mappedHttpTransactions: Map<string, HttpTransactionContainer>
@@ -53,24 +55,19 @@ export class HttpTransactionContainerComponent extends LitElement {
 
         // filters store & subscribe to filter changes.
         this._filtersStore.subscribe(WiretapFiltersKey, this.filtersChanged.bind(this))
+        this._linkCacheStore =
+            GetBagManager().getBag<Map<string, Map<string, HttpTransactionLink[]>>>(WiretapLinkCacheStore);
 
-        // create a transaction link cache
-        // todo: come back and wire this up to state in indexeddb.
+        this._linkCacheStore.onAllChanges(this.cacheUpdated.bind(this));
+    }
 
-
-
-
-
-
-
-
-
+    cacheUpdated() {
+        this.filterComponents();
+        this.requestUpdate();
     }
 
     filtersChanged(filters: WiretapFilters) {
         this._filters = filters;
-        this.filterComponents()
-        this.requestUpdate();
     }
 
     reset(): void {
@@ -102,7 +99,7 @@ export class HttpTransactionContainerComponent extends LitElement {
             // extract state
             this._mappedHttpTransactions.forEach(
                 (v: HttpTransactionContainer) => {
-                    const comp = new HttpTransactionItemComponent(v.Transaction)
+                    const comp = new HttpTransactionItemComponent(v.Transaction, this._transactionLinkCache);
                     this._transactionComponents.push(comp)
                 }
             );
@@ -165,7 +162,7 @@ export class HttpTransactionContainerComponent extends LitElement {
                     }
                 }
                 this._mappedHttpTransactions.set(value.id, container);
-                const comp: HttpTransactionItemComponent = new HttpTransactionItemComponent(value);
+                const comp: HttpTransactionItemComponent = new HttpTransactionItemComponent(value, this._transactionLinkCache);
                 this._transactionComponents.push(comp);
             }
         } else {
@@ -215,6 +212,9 @@ export class HttpTransactionContainerComponent extends LitElement {
             filtered = filtered.filter( (v: HttpTransactionItemComponent) => {
                 const filter = v.httpTransaction.containsActiveLink(this._filters);
                 v.httpTransaction.containsChainLink = (filter != false);
+
+
+
                 v.requestUpdate()
                 return true
             })

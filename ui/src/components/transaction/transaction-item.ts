@@ -9,12 +9,15 @@ import 'prismjs/themes/prism-okaidia.css'
 import {HttpTransactionSelectedEvent} from "@/model/events";
 import sharedCss from "@/components/shared.css";
 import {Filter, WiretapFilters} from "@/model/controls";
+import {TransactionLinkCache} from "@/model/link_cache";
 
 
 @customElement('http-transaction-item')
 export class HttpTransactionItemComponent extends LitElement {
 
     static styles = [sharedCss, transactionComponentCss]
+
+    public _linkCache: TransactionLinkCache;
 
     @state()
     _httpTransaction: HttpTransaction
@@ -24,9 +27,25 @@ export class HttpTransactionItemComponent extends LitElement {
 
     private _processing = false;
 
-    constructor(httpTransaction: HttpTransaction) {
+    private _numLinks = 0;
+    private _matchingLinks = 0;
+
+    constructor(httpTransaction: HttpTransaction, linkCache: TransactionLinkCache) {
         super();
+        this._linkCache = linkCache;
         this._httpTransaction = httpTransaction
+    }
+
+    set linkCache(value: TransactionLinkCache) {
+        this._linkCache = value;
+    }
+
+    set numLinks(value: number) {
+        this._numLinks = value;
+    }
+
+    set matchingLinks(value: number) {
+        this._matchingLinks = value;
     }
 
     get transactionId(): string {
@@ -102,7 +121,23 @@ export class HttpTransactionItemComponent extends LitElement {
         let chainLink: TemplateResult;
 
         if (this._httpTransaction.containsChainLink) {
-            chainLink = html`<div class="chain"><sl-icon name="link-45deg"></sl-icon></div>`
+
+            const matches = this._linkCache.findLinks(this.httpTransaction);
+            let total = matches.length;
+            let totalMatches = 0;
+            matches.forEach((m) => {
+                totalMatches += m.siblings.length;
+            });
+
+            chainLink = html`
+                <sl-tooltip>
+                    <div slot="content">
+                        <strong>${total}</strong> parameter(s), <strong>${totalMatches}</strong>
+                        matching request(s)
+                    </div>
+                    <div class="chain"><sl-icon name="link-45deg"></sl-icon></div>
+                </sl-tooltip>
+               `
         }
 
         return html`
