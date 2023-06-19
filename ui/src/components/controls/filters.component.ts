@@ -161,7 +161,8 @@ export class WiretapControlsFiltersComponent extends LitElement {
                         </sl-tag>`
                 })}
             </div>
-
+            
+            ${requestChainsFeature}
          
         `
     }

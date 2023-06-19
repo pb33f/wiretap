@@ -1,5 +1,9 @@
 import {ExtractQueryString} from "@/model/extract_query";
-import {Filter, WiretapFilters} from "@/model/controls";
+import {Filter, WiretapControls, WiretapFilters} from "@/model/controls";
+import {Bag, CreateBagManager, GetBagManager} from "@pb33f/saddlebag";
+import {WiretapHttpTransactionStore} from "@/model/constants";
+import {linkCacheFactory} from "@/index";
+import {LinkCacheUpdate} from "@/workers/link_cache_worker";
 
 export interface HttpCookie {
     value?:   string;
@@ -89,14 +93,22 @@ export class HttpResponse {
     }
 }
 
-export class HttpTransaction {
+export class HttpTransactionBase {
+    id?: string;
     timestamp?: number;
+}
+
+export interface HttpTransactionLink extends HttpTransactionBase {
+    queryString?: string;
+}
+
+export class HttpTransaction extends HttpTransactionBase {
     delay?: number;
-    httpRequest?: HttpRequest;
     requestValidation?: ValidationError[];
     httpResponse?: HttpResponse;
     responseValidation?: ValidationError[];
-    id?: string;
+    containsChainLink?: boolean;
+    httpRequest?: HttpRequest;
 
     constructor(timestamp?: number,
                 delay?: number,
@@ -104,7 +116,9 @@ export class HttpTransaction {
                 httpResponse?: HttpResponse,
                 id?: string,
                 requestValidation?: ValidationError[],
-                responseValidation?: ValidationError[]) {
+                responseValidation?: ValidationError[],
+                containsChainLink?: boolean) {
+        super();
         this.timestamp = timestamp;
         this.delay = delay;
         this.httpRequest = httpRequest;
@@ -112,6 +126,7 @@ export class HttpTransaction {
         this.id = id;
         this.requestValidation = requestValidation;
         this.responseValidation = responseValidation;
+        this.containsChainLink = containsChainLink
     }
 
     matchesMethodFilter(filter: WiretapFilters): Filter | boolean {
@@ -157,7 +172,22 @@ export class HttpTransaction {
         return false;
     }
 
+    containsActiveLink(filter: WiretapFilters): Filter | boolean {
+        if (filter?.filterChain?.length > 0) {
+            for (let i = 0; i < filter.filterChain.length; i++) {
+                const chainFilter = filter.filterChain[i];
+                const rex = `(${chainFilter.keyword.toLowerCase()})=([\\w\\d]+)`
+                if (this.httpRequest.query?.toLowerCase().match(rex)) {
+                    return chainFilter;
+                }
+            }
+        }
+        return false;
+    }
+
 }
+
+
 
 export function BuildLiveTransactionFromState(httpTransaction: HttpTransaction): HttpTransaction {
     return new HttpTransaction(
@@ -167,5 +197,6 @@ export function BuildLiveTransactionFromState(httpTransaction: HttpTransaction):
         Object.assign(new HttpResponse(), httpTransaction.httpResponse),
         httpTransaction.id,
         httpTransaction.requestValidation,
-        httpTransaction.responseValidation);
+        httpTransaction.responseValidation,
+        httpTransaction.containsChainLink)
 }
