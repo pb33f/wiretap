@@ -135,19 +135,21 @@ export class TransactionLinkCache {
 
     findLinks(transaction: HttpTransaction): LinkMatch[] {
         const results: LinkMatch[] = [];
-        this._state.forEach((value, parameter) => {
-            value.forEach((links, paramValue) => {
-                links.forEach((link) => {
-                    if (transaction.id === link.id) {
-                        results.push({
-                            parameter: parameter,
-                            value: paramValue,
-                            siblings: links
-                        });
-                    }
+        if (transaction) {
+            this._state.forEach((value, parameter) => {
+                value.forEach((links, paramValue) => {
+                    links.forEach((link) => {
+                        if (transaction.id === link.id) {
+                            results.push({
+                                parameter: parameter,
+                                value: paramValue,
+                                siblings: links
+                            });
+                        }
+                    });
                 });
             });
-        });
+        }
         return results;
     }
 }

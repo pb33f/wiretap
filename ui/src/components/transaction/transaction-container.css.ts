@@ -1,6 +1,17 @@
 import {css} from "lit";
 
 export default css`
+  
+  :host {
+    position: relative;
+  }
+  
+  .bottom-panel {
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+  
   .transactions {
     padding: 20px;
   }

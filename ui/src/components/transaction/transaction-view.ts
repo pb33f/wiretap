@@ -1,10 +1,10 @@
-import {customElement, query, state} from "lit/decorators.js";
+import {customElement, property, query, state} from "lit/decorators.js";
 import {html} from "lit";
 import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {map} from "lit/directives/map.js";
 import {LitElement, TemplateResult} from "lit";
 
-import {HttpRequest, HttpResponse, HttpTransaction} from "@/model/http_transaction";
+import {BuildLiveTransactionFromState, HttpRequest, HttpResponse, HttpTransaction} from "@/model/http_transaction";
 import transactionViewComponentCss from "./transaction-view.css";
 import {KVViewComponent} from "@/components/kv-view/kv-view";
 
@@ -14,7 +14,7 @@ import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-xml-doc';
 import 'prismjs/themes/prism-okaidia.css';
 import sharedCss from "@/components/shared.css";
-import {SlTab} from "@shoelace-style/shoelace";
+import {SlTab, SlTabGroup} from "@shoelace-style/shoelace";
 import {
     ContentTypeFormEncoded,
     ContentTypeHtml,
@@ -26,10 +26,15 @@ import {
     ExtractContentTypeFromResponse,
     IsHtmlContentType,
     IsOctectStreamContentType,
-    IsXmlContentType, FormDataEntry, FormPart
+    IsXmlContentType, FormPart
 } from "@/model/extract_content_type";
 import {ExtractHTTPCodeDefinition, ExtractStatusStyleFromCode} from "@/model/extract_status";
 import {Property, PropertyViewComponent} from "@/components/property-view/property-view";
+import {LinkMatch, TransactionLinkCache} from "@/model/link_cache";
+import {HttpTransactionItemComponent} from "@/components/transaction/transaction-item";
+import {HttpTransactionSelectedEvent} from "@/model/events";
+import {Bag, GetBagManager} from "@pb33f/saddlebag";
+import {WiretapHttpTransactionStore} from "@/model/constants";
 
 @customElement('http-transaction-view')
 export class HttpTransactionViewComponent extends LitElement {
@@ -42,12 +47,27 @@ export class HttpTransactionViewComponent extends LitElement {
     @query('#violation-tab')
     private _violationTab: SlTab;
 
+    @query('#tabs')
+    private _tabs: SlTabGroup;
+
+    private _selectedTab: string;
+
+    @property({type: Boolean})
+    hideChain = false;
+
     private readonly _requestHeadersView: KVViewComponent;
     private readonly _responseHeadersView: KVViewComponent;
     private readonly _requestCookiesView: KVViewComponent;
     private readonly _responseCookiesView: KVViewComponent;
     private readonly _requestQueryView: KVViewComponent;
+    private _linkCache: TransactionLinkCache;
 
+    // into the matrix.
+    private _chainTransactionView: HttpTransactionViewComponent;
+    private readonly _httpTransactionStore: Bag<HttpTransaction>;
+
+    @state()
+    private _currentLinks: LinkMatch[];
 
     constructor() {
         super();
@@ -59,6 +79,18 @@ export class HttpTransactionViewComponent extends LitElement {
         this._responseCookiesView.keyLabel = 'Cookie Name';
         this._requestQueryView = new KVViewComponent();
         this._requestQueryView.keyLabel = 'Query Key';
+        this._httpTransactionStore =
+            GetBagManager().getBag<HttpTransaction>(WiretapHttpTransactionStore);
+    }
+
+    set linkCache(value: TransactionLinkCache) {
+        this._linkCache = value;
+        console.log('fappppppo', this._linkCache);
+        this.syncLinks();
+    }
+
+    get httpTransaction(): HttpTransaction {
+        return this._httpTransaction;
     }
 
     set httpTransaction(value: HttpTransaction) {
@@ -81,6 +113,13 @@ export class HttpTransactionViewComponent extends LitElement {
             this._responseCookiesView.data = null;
             this._responseHeadersView.data = null;
         }
+        this.syncLinks()
+    }
+
+    tabSelected(event: CustomEvent) {
+        console.log('tab selected');
+        this._selectedTab = event.detail.name;
+        //this.syncLinks();
     }
 
     render() {
@@ -107,47 +146,6 @@ export class HttpTransactionViewComponent extends LitElement {
                 })}`;
 
 
-            const binaryData: TemplateResult = html`
-                <div class="empty-data">
-                    <sl-icon name="file-binary" class="binary-icon"></sl-icon>
-                    <br/>
-                    [ binary data will not be rendered ]
-                </div>`;
-
-
-            let isRequestBinary = false;
-            let isResponseBinary = false;
-
-            let responseHighlight: string;
-            if (resp && resp.responseBody) {
-                let language = 'json';
-                if (IsHtmlContentType(ExtractContentTypeFromResponse(resp)) ||
-                    IsXmlContentType(ExtractContentTypeFromResponse(resp))) {
-                    language = 'xml';
-                }
-                if (IsOctectStreamContentType(ExtractContentTypeFromResponse(resp))) {
-                    responseHighlight = ""
-                    isResponseBinary = true;
-                } else {
-                    responseHighlight = Prism.highlight(resp.responseBody, Prism.languages[language], language)
-                }
-            }
-
-            let requestHighlight: string;
-            if (req && req.requestBody) {
-                let language = 'json';
-                if (IsHtmlContentType(ExtractContentTypeFromRequest(req)) ||
-                    IsXmlContentType(ExtractContentTypeFromRequest(req))) {
-                    language = 'xml';
-                }
-                if (IsOctectStreamContentType(ExtractContentTypeFromRequest(req))) {
-                    requestHighlight = "";
-                    isRequestBinary = true;
-                } else {
-                    requestHighlight = Prism.highlight(req.requestBody, Prism.languages[language], language)
-                }
-            }
-
             let total = 0;
             let violations: TemplateResult = html`Violations`;
             if (this._httpTransaction?.requestValidation?.length > 0 || this._httpTransaction?.responseValidation?.length > 0) {
@@ -169,10 +167,11 @@ export class HttpTransactionViewComponent extends LitElement {
                 </div>`;
 
             const tabGroup: TemplateResult = html`
-                <sl-tab-group>
+                <sl-tab-group id="tabs" @sl-tab-show=${this.tabSelected}>
                     <sl-tab slot="nav" panel="violations" id="violation-tab" class="tab">${violations}</sl-tab>
                     <sl-tab slot="nav" panel="request" class="tab">Request</sl-tab>
                     <sl-tab slot="nav" panel="response" class="tab">Response</sl-tab>
+                    ${this._currentLinks?.length > 0 ? html`<sl-tab slot="nav" panel="chain" class="tab">Chain</sl-tab>`: null}
                     <sl-tab-panel name="violations" class="tab-panel">
                         ${total <= 0 ? noData : null}
                         ${requestViolations}
@@ -222,6 +221,7 @@ export class HttpTransactionViewComponent extends LitElement {
                             </sl-tab-panel>
                         </sl-tab-group>
                     </sl-tab-panel>
+                    ${this._currentLinks?.length > 0 ? this.renderChainTabPanel() : null}
                 </sl-tab-group>`
 
             return html`${tabGroup}`
@@ -236,6 +236,68 @@ export class HttpTransactionViewComponent extends LitElement {
         }
     }
 
+    chainTransactionSelected(event: CustomEvent) {
+        if (!this._chainTransactionView) {
+            this._chainTransactionView = new HttpTransactionViewComponent()
+        }
+        this._chainTransactionView.httpTransaction = event.detail;
+        this._chainTransactionView.linkCache = this._linkCache;
+        this._chainTransactionView.hideChain = true;
+        this._chainTransactionView._currentLinks = [];
+        console.log('a nice meal', event.detail);
+        this.requestUpdate();
+    }
+
+    renderLinkMatch(linkMatch: LinkMatch, hideKv: boolean = false): TemplateResult {
+
+        const paramKVComponent: KVViewComponent = new KVViewComponent();
+        const paramData = new Map<string, string>();
+        paramData.set(linkMatch.parameter, linkMatch.value);
+        paramKVComponent.data = paramData;
+        paramKVComponent.keyLabel = "Query Parameter";
+        paramKVComponent.valueLabel = "Value";
+
+        const siblings: HttpTransactionItemComponent[] = [];
+        linkMatch.siblings.forEach((sibling) => {
+            const transaction = BuildLiveTransactionFromState(this._httpTransactionStore.get(sibling.id));
+            if (transaction.id !== this._httpTransaction.id) {
+                const siblingComponent = new HttpTransactionItemComponent(transaction, this._linkCache);
+                siblingComponent.hideControls = true;
+                if (this._chainTransactionView && this._chainTransactionView.httpTransaction?.id == transaction.id) {
+                    siblingComponent.setActive();
+                } else {
+                    siblingComponent.disable();
+                }
+                siblingComponent.addEventListener(HttpTransactionSelectedEvent, this.chainTransactionSelected.bind(this));
+                siblings.push(siblingComponent);
+            }
+        })
+        return html`${!hideKv? paramKVComponent: null }${siblings}${siblings.length <= 0 ? 'no more requests in chain...': null}`
+    }
+
+
+    renderChainTabPanel(): TemplateResult {
+        if (!this.hideChain) {
+
+            let selectOrBreadcrumb: TemplateResult;
+            //if (!this._chainTransactionView) {
+                selectOrBreadcrumb = html`${this._currentLinks.map((linkMatch) =>
+                            html`${this.renderLinkMatch.bind(this)(linkMatch)}`
+                    )}`
+            // } else {
+            //     selectOrBreadcrumb = html`NO`
+            // }
+
+
+            return html`
+                <sl-tab-panel name="chain">
+                    ${selectOrBreadcrumb}
+                    ${this._chainTransactionView}
+
+                </sl-tab-panel>`
+        }
+        return null;
+    }
 
     parseFormEncodedData(data: string): Map<string, string> {
         const map = new Map<string, string>();
@@ -247,6 +309,27 @@ export class HttpTransactionViewComponent extends LitElement {
         return map;
     }
 
+    private syncLinks() {
+        if (this._linkCache && this._httpTransaction) {
+            const foundLinks = this._linkCache.findLinks(this._httpTransaction);
+            if (foundLinks && foundLinks.length > 0) {
+
+                // look at each link match and filter out any that contain siblings with the current transaction.
+                foundLinks.forEach((linkMatch) => {
+                    linkMatch.siblings = linkMatch.siblings.filter((sibling) => {
+                        return sibling.id !== this._httpTransaction.id;
+                    });
+                })
+
+                this._currentLinks = foundLinks; // update state.
+            } else {
+                if (this._selectedTab === "chain") {
+                    this._tabs.show("violations");
+                }
+                this._currentLinks = [];
+            }
+        }
+    }
 
     renderRequestBody(req: HttpRequest): TemplateResult {
 

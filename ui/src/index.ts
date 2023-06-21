@@ -38,6 +38,7 @@ import './components/wiretap-header/metric';
 import './components/controls/controls';
 import './components/controls/settings.component';
 import './components/controls/filters.component';
+import './components/transaction/spec_controls';
 
 
 // models
