@@ -12,11 +12,13 @@ import {WiretapCurrentSpec, WiretapFiltersKey, WiretapLinkCacheStore, WiretapLoc
 import {AreFiltersActive, WiretapFilters} from "@/model/controls";
 import {TransactionLinkCache} from "@/model/link_cache";
 import {GetBagManager} from "@pb33f/saddlebag";
+import {ViolationViewComponent} from "@/components/violation/violation";
+import dividerCss from "@/components/divider.css";
 
 @customElement('http-transaction-container')
 export class HttpTransactionContainerComponent extends LitElement {
 
-    static styles = transactionContainerComponentCss;
+    static styles = [dividerCss, transactionContainerComponentCss];
 
     private _allTransactionStore: Bag<HttpTransaction>;
     private _selectedTransactionStore: Bag<HttpTransaction>;
@@ -37,7 +39,6 @@ export class HttpTransactionContainerComponent extends LitElement {
     @state()
     private _showSpec: boolean = false;
 
-    @query('http-transaction-view')
     private _transactionView: HttpTransactionViewComponent
 
     @query('spec-editor')
@@ -66,7 +67,9 @@ export class HttpTransactionContainerComponent extends LitElement {
     }
 
     cacheUpdated() {
-        this._transactionView.linkCache = this._transactionLinkCache; // make sure transaction view always has latest.
+        if (this._transactionView) {
+            this._transactionView.linkCache = this._transactionLinkCache; // make sure transaction view always has latest.
+        }
         this.filterComponents();
         this.requestUpdate();
     }
@@ -81,6 +84,7 @@ export class HttpTransactionContainerComponent extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
+
 
         // listen for changes to selected transaction.
         this._selectedTransactionStore.onAllChanges(this.handleSelectedTransactionChange.bind(this))
@@ -111,6 +115,7 @@ export class HttpTransactionContainerComponent extends LitElement {
 
             // perform filtering.
             this.filterComponents()
+            this._transactionView = new HttpTransactionViewComponent();
             this._transactionView.linkCache = this._transactionLinkCache;
         });
 
@@ -248,6 +253,8 @@ export class HttpTransactionContainerComponent extends LitElement {
                 return b.httpTransaction.timestamp - a.httpTransaction.timestamp
             });
 
+
+
         return html`
             <section class="split-panel-divider">
                 <sl-split-panel vertical position-in-pixels="300">
@@ -273,20 +280,17 @@ export class HttpTransactionContainerComponent extends LitElement {
                 <sl-split-panel class="editor-split" position="60">
                     <sl-icon slot="divider" name="grip-vertical" class="grip-vertical"></sl-icon>
                     <div slot="start" class="transaction-view-container">
-                        <http-transaction-view
-                                @violationLocationSelected="${this.locationSelected}"></http-transaction-view>
+                       ${this._transactionView}
                     </div>
                     <div slot="end" class="transaction-view-container">
                         <spec-editor id="spec-editor" code="${this._specValue}">
                         </spec-editor>
-
                     </div>
                 </sl-split-panel>`
         } else {
             return html`
                 <div slot="start" class="transaction-view-container">
-                    <http-transaction-view
-                            @violationLocationSelected=${this.locationSelected}></http-transaction-view>
+                    ${this._transactionView}
                 </div>`
         }
 

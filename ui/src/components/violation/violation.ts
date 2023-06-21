@@ -34,18 +34,18 @@ export class ViolationViewComponent extends LitElement {
     render() {
 
         let howToFix, specMeta: TemplateResult
-        if (this.violation.howToFix) {
+        if (this.violation?.howToFix) {
             howToFix = html`
                 <h3>How to fix this violation:</h3>
                 <p class="how-to-fix">${this.violation.howToFix}</p>`
         }
 
-        if (this.violation.specLine >= 0) {
+        if (this.violation?.specLine >= 0) {
             specMeta = html`
                 <div class="location-meta">
-                    Line: <span class="jump-spec" @click='${this.jumpToSpecLocation}'>${this.violation.specLine}</span>
+                    Line: <span class="jump-spec" @click='${this.jumpToSpecLocation}'>${this.violation?.specLine}</span>
                     Column: <span class="jump-spec"
-                                  @click='${this.jumpToSpecLocation}'>${this.violation.specColumn}</span>
+                                  @click='${this.jumpToSpecLocation}'>${this.violation?.specColumn}</span>
                 </div>`
         }
 
@@ -53,19 +53,19 @@ export class ViolationViewComponent extends LitElement {
             <sl-details class="violation">
                 <header slot="summary">
                     <sl-icon name="exclamation-square" class="error-icon"></sl-icon>
-                    <strong>${this.violation.message}</strong>
+                    <strong>${this.violation?.message}</strong>
                 </header>
                 <div class="violation-meta">
                     <div>
                         Type:
-                        <sl-tag size="small" class="validation-type">${this.violation.validationType}</sl-tag>
+                        <sl-tag size="small" class="validation-type">${this.violation?.validationType}</sl-tag>
                         /
-                        <sl-tag size="small" class="validation-subtype">${this.violation.validationSubType}</sl-tag>
+                        <sl-tag size="small" class="validation-subtype">${this.violation?.validationSubType}</sl-tag>
                     </div>
                     ${specMeta}
                 </div>
                 <hr/>
-                <p class="reason">${this.violation.reason}</p>
+                <p class="reason">${this.violation?.reason}</p>
                 ${howToFix}
             </sl-details>
         `

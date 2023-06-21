@@ -35,11 +35,12 @@ import {HttpTransactionItemComponent} from "@/components/transaction/transaction
 import {HttpTransactionSelectedEvent} from "@/model/events";
 import {Bag, GetBagManager} from "@pb33f/saddlebag";
 import {WiretapHttpTransactionStore} from "@/model/constants";
+import dividerCss from "@/components/divider.css";
 
 @customElement('http-transaction-view')
 export class HttpTransactionViewComponent extends LitElement {
 
-    static styles = [prismCss, sharedCss, transactionViewComponentCss];
+    static styles = [prismCss, sharedCss, dividerCss, transactionViewComponentCss];
 
     @state()
     private _httpTransaction: HttpTransaction
@@ -85,7 +86,6 @@ export class HttpTransactionViewComponent extends LitElement {
 
     set linkCache(value: TransactionLinkCache) {
         this._linkCache = value;
-        console.log('fappppppo', this._linkCache);
         this.syncLinks();
     }
 
@@ -114,6 +114,10 @@ export class HttpTransactionViewComponent extends LitElement {
             this._responseHeadersView.data = null;
         }
         this.syncLinks()
+        if (this._chainTransactionView) {
+            this._chainTransactionView = null
+        }
+
     }
 
     tabSelected(event: CustomEvent) {
@@ -278,22 +282,18 @@ export class HttpTransactionViewComponent extends LitElement {
 
     renderChainTabPanel(): TemplateResult {
         if (!this.hideChain) {
-
-            let selectOrBreadcrumb: TemplateResult;
-            //if (!this._chainTransactionView) {
-                selectOrBreadcrumb = html`${this._currentLinks.map((linkMatch) =>
-                            html`${this.renderLinkMatch.bind(this)(linkMatch)}`
-                    )}`
-            // } else {
-            //     selectOrBreadcrumb = html`NO`
-            // }
-
-
             return html`
                 <sl-tab-panel name="chain">
-                    ${selectOrBreadcrumb}
-                    ${this._chainTransactionView}
-
+                    <section class="chain-panel-divider">
+                        <div  class="chain-container">
+                            ${this._currentLinks.map((linkMatch) =>
+                                    html`${this.renderLinkMatch.bind(this)(linkMatch)}`
+                            )}
+                        </div>
+                        <div class="chain-view-container">
+                            ${this._chainTransactionView}
+                        </div>
+                    </section>
                 </sl-tab-panel>`
         }
         return null;
@@ -419,7 +419,7 @@ export class HttpTransactionViewComponent extends LitElement {
                     </div>`;
             case ContentTypeHtml:
                 return html`${ct}
-                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(resp.responseBody), null, 2),
+                    <pre><code>${unsafeHTML(Prism.highlight(resp.responseBody,
                             Prism.languages.xml, 'xml'))}</code></pre>`;
 
             default:
