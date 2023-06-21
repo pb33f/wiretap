@@ -115,11 +115,11 @@ export class HttpTransactionContainerComponent extends LitElement {
 
             // perform filtering.
             this.filterComponents()
-            this._transactionView = new HttpTransactionViewComponent();
-            this._transactionView.linkCache = this._transactionLinkCache;
         });
 
         this._transactionLinkCache = new TransactionLinkCache()
+        this._transactionView = new HttpTransactionViewComponent();
+        this._transactionView.linkCache = this._transactionLinkCache;
 
     }
 
