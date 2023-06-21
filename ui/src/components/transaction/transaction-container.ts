@@ -12,7 +12,6 @@ import {WiretapCurrentSpec, WiretapFiltersKey, WiretapLinkCacheStore, WiretapLoc
 import {AreFiltersActive, WiretapFilters} from "@/model/controls";
 import {TransactionLinkCache} from "@/model/link_cache";
 import {GetBagManager} from "@pb33f/saddlebag";
-import {ViolationViewComponent} from "@/components/violation/violation";
 import dividerCss from "@/components/divider.css";
 
 @customElement('http-transaction-container')

@@ -1,12 +1,13 @@
 import {Bag, GetBagManager} from "@pb33f/saddlebag";
-import {WiretapControls, WiretapFilters} from "@/model/controls";
-import {linkCacheFactory} from "@/index";
+// @ts-ignore
+import LinkCacheWorker from "@/workers/link_cache_worker?worker";
+import {WiretapFilters} from "@/model/controls";
+
 import {
     WiretapFiltersKey,
     WiretapFiltersStore,
     WiretapHttpTransactionStore, WiretapLinkCacheKey,
     WiretapLinkCacheStore,
-    WiretapLocalStorage
 } from "@/model/constants";
 import {HttpTransaction, HttpTransactionBase, HttpTransactionLink} from "@/model/http_transaction";
 import localforage from "localforage";
@@ -29,7 +30,7 @@ export class TransactionLinkCache {
         this._state = new Map<string, Map<string, HttpTransactionLink[]>>();
 
         // create a new linkCacheWorker
-        this._linkCacheWorker = linkCacheFactory();
+        this._linkCacheWorker = new LinkCacheWorker();
 
         // get transaction store
         this._httpTransactionStore =
