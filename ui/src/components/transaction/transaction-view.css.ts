@@ -2,6 +2,9 @@ import {css} from "lit";
 
 export default css`
   
+  :host {
+    height: 100%;
+  }
   
   .method::part(base) {
     background: var(--background-color);
@@ -27,6 +30,7 @@ export default css`
   
   .tab-panel {
     padding: 0 10px 0 10px;
+    height: 100%;
   }
   
   h3 {
@@ -65,5 +69,57 @@ export default css`
     display: block;
     margin-bottom: 20px;
   }
+  
+  pre {
+    max-width: calc(100vw - 135px);
+    overflow-x: auto;
+  }
+  .chain-panel-divider {
+    height: 100%
+  }
+
+
+  .chain-panel-divider sl-split-panel {
+    --min: 150px; --max: calc(100% - 150px);
+    
+  }
+  
+  .chain-container {
+    background: var(--secondary-color-very-lowalpha);
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .chain-container::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .chain-container::-webkit-scrollbar-track {
+    background-color: var(--invert-font-color);
+  }
+
+  .chain-container::-webkit-scrollbar-thumb {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+    background: var(--secondary-color-lowalpha);
+  }
+  
+  
+  .chain-view-container {
+    border-top: 1px solid var(--secondary-color);
+  }
+  
+  .chain-panel-divider sl-split-panel::part(divider):focus-visible {
+    background-color: var(--secondary-color);
+  }
+
+  .chain-panel-divider sl-split-panel:focus-within sl-icon {
+    background-color: var(--sl-color-primary-600);
+    color: var(--sl-color-neutral-0);
+  }
+  
+  sl-split-panel {
+    height: 100%;
+  }
+  
   
 `
