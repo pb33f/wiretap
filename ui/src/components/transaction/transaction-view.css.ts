@@ -85,7 +85,7 @@ export default css`
   }
   
   .chain-container {
-    background: var(--secondary-color-very-lowalpha);
+
     max-height: 300px;
     overflow-y: auto;
   }
@@ -103,7 +103,17 @@ export default css`
     background: var(--secondary-color-lowalpha);
   }
   
-  
+  .empty-data.no-chain {
+    margin-bottom: 20px;
+  }
+
+
+  .empty-data.select-chain {
+    margin-bottom: 20px;
+    color: var(--darker-font-color);
+  }
+
+
   .chain-view-container {
     border-top: 1px solid var(--secondary-color);
   }

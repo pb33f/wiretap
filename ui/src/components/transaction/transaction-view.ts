@@ -70,6 +70,8 @@ export class HttpTransactionViewComponent extends LitElement {
     @state()
     private _currentLinks: LinkMatch[];
 
+    private _siblings: HttpTransactionItemComponent[];
+
     constructor() {
         super();
         this._requestHeadersView = new KVViewComponent();
@@ -121,9 +123,7 @@ export class HttpTransactionViewComponent extends LitElement {
     }
 
     tabSelected(event: CustomEvent) {
-        console.log('tab selected');
         this._selectedTab = event.detail.name;
-        //this.syncLinks();
     }
 
     render() {
@@ -248,7 +248,6 @@ export class HttpTransactionViewComponent extends LitElement {
         this._chainTransactionView.linkCache = this._linkCache;
         this._chainTransactionView.hideChain = true;
         this._chainTransactionView._currentLinks = [];
-        console.log('a nice meal', event.detail);
         this.requestUpdate();
     }
 
@@ -276,11 +275,30 @@ export class HttpTransactionViewComponent extends LitElement {
                 siblings.push(siblingComponent);
             }
         })
-        return html`${!hideKv? paramKVComponent: null }${siblings}${siblings.length <= 0 ? 'no more requests in chain...': null}`
+        this._siblings = siblings;
+        return html`${!hideKv? paramKVComponent: null }${siblings}${siblings.length <= 0 ? this.noOtherLinks(): null}`
     }
 
+    noOtherLinks(): TemplateResult {
+        return html`<div class="empty-data no-chain"> <sl-icon name="link-45deg" class="binary-icon"></sl-icon>
+            <br/>
+            There are no other requests in this chain yet.</div>`
+    }
 
     renderChainTabPanel(): TemplateResult {
+
+        const selectChain = () =>{
+            if (this._siblings?.length > 0) {
+                return html`
+                    <div class="empty-data select-chain">
+                        <sl-icon name="link-45deg" class="binary-icon"></sl-icon>
+                        <br/>
+                        Select a request from the chain.
+                    </div>`
+            }
+            return null;
+        }
+
         if (!this.hideChain) {
             return html`
                 <sl-tab-panel name="chain">
@@ -291,7 +309,7 @@ export class HttpTransactionViewComponent extends LitElement {
                             )}
                         </div>
                         <div class="chain-view-container">
-                            ${this._chainTransactionView}
+                            ${this._chainTransactionView? this._chainTransactionView: selectChain()}
                         </div>
                     </section>
                 </sl-tab-panel>`
