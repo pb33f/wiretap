@@ -48,9 +48,9 @@ import './model/http_transaction';
 import './wiretap';
 
 // Set the base path to the folder you copied Shoelace's assets to
-//setBasePath('/assets/shoelace');
 import {setBasePath} from '@shoelace-style/shoelace/dist/utilities/base-path.js';
-setBasePath('/shoelace');
+//setBasePath('/shoelace');
+setBasePath('/assets/shoelace');
 
 export const workerFactory = (workerScript: URL, workerOptions: WorkerOptions) => () =>
     new Worker(workerScript, workerOptions);
