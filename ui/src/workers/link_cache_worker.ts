@@ -28,8 +28,8 @@ function update(keyword: string,
 
     // check transactions for keyword
     transactions.forEach((transaction) => {
-        const querySegments = transaction.queryString.split('&')
-        for (let i = 0; i < querySegments.length; i++) {
+        const querySegments = transaction.queryString?.split('&')
+        for (let i = 0; i < querySegments?.length; i++) {
             const segment = querySegments[i];
             const keyVal = segment.split('=')
             if (keyVal.length === 2) {

@@ -51,12 +51,3 @@ import './wiretap';
 import {setBasePath} from '@shoelace-style/shoelace/dist/utilities/base-path.js';
 //setBasePath('/shoelace');
 setBasePath('/assets/shoelace');
-
-export const workerFactory = (workerScript: URL, workerOptions: WorkerOptions) => () =>
-    new Worker(workerScript, workerOptions);
-
-export const linkCacheFactory =  workerFactory(new URL('./workers/link_cache_worker.ts', import.meta.url), {
-    type: 'module',
-});
-
-
