@@ -97,7 +97,7 @@ export function ExtractContentTypeFromResponse(response: HttpResponse): string {
         return contentType;
     }
     contentType = response.headers["Content-Type"];
-    if (contentType.indexOf(";") > 0) {
+    if (contentType && contentType.indexOf(";") > 0) {
         contentType = contentType.split(";")[0];
     }
     return contentType;
@@ -109,7 +109,7 @@ export function ExtractFullContentTypeFromResponse(response: HttpResponse): stri
         return contentType;
     }
     contentType = response.headers["Content-Type"];
-    if (contentType.indexOf(";") > 0) {
+    if (contentType && contentType.indexOf(";") > 0) {
         contentType = contentType.split(";")[0];
     }
     return contentType;

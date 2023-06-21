@@ -1,4 +1,4 @@
-import {customElement, state} from "lit/decorators.js";
+import {customElement, property, state} from "lit/decorators.js";
 import {html, LitElement, TemplateResult} from "lit";
 import {HttpTransaction} from "@/model/http_transaction";
 import transactionComponentCss from "@/components/transaction/transaction-item.css";
@@ -27,8 +27,8 @@ export class HttpTransactionItemComponent extends LitElement {
 
     private _processing = false;
 
-    private _numLinks = 0;
-    private _matchingLinks = 0;
+    @property({type: Boolean})
+    hideControls = false;
 
     constructor(httpTransaction: HttpTransaction, linkCache: TransactionLinkCache) {
         super();
@@ -36,17 +36,6 @@ export class HttpTransactionItemComponent extends LitElement {
         this._httpTransaction = httpTransaction
     }
 
-    set linkCache(value: TransactionLinkCache) {
-        this._linkCache = value;
-    }
-
-    set numLinks(value: number) {
-        this._numLinks = value;
-    }
-
-    set matchingLinks(value: number) {
-        this._matchingLinks = value;
-    }
 
     get transactionId(): string {
         return this._httpTransaction.id
@@ -121,7 +110,6 @@ export class HttpTransactionItemComponent extends LitElement {
         let chainLink: TemplateResult;
 
         if (this._httpTransaction.containsChainLink) {
-
             const matches = this._linkCache.findLinks(this.httpTransaction);
             let total = matches.length;
             let totalMatches = 0;
@@ -148,7 +136,7 @@ export class HttpTransactionItemComponent extends LitElement {
                 </header>
                ${delay}
                 <div class="transaction-status">
-                    ${chainLink}
+                    ${this.hideControls? '' : chainLink}
                     ${statusIcon}
                 </div>
             </div>`

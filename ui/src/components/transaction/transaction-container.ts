@@ -1,5 +1,5 @@
 import {customElement, state, query} from "lit/decorators.js";
-import {html, LitElement} from "lit";
+import {html, LitElement, TemplateResult} from "lit";
 import {Bag} from "@pb33f/saddlebag";
 import {BuildLiveTransactionFromState, HttpTransaction, HttpTransactionLink} from '@/model/http_transaction';
 import {HttpTransactionItemComponent} from "./transaction-item";
@@ -26,12 +26,16 @@ export class HttpTransactionContainerComponent extends LitElement {
     private readonly _filtersStore: Bag<WiretapFilters>;
     private _transactionLinkCache: TransactionLinkCache;
     private readonly _linkCacheStore: Bag<Map<string, Map<string, HttpTransactionLink[]>>>;
+    private _specValue: string;
 
     @state()
     private _mappedHttpTransactions: Map<string, HttpTransactionContainer>
 
     @state()
     private _selectedTransaction: HttpTransaction
+
+    @state()
+    private _showSpec: boolean = false;
 
     @query('http-transaction-view')
     private _transactionView: HttpTransactionViewComponent
@@ -62,6 +66,7 @@ export class HttpTransactionContainerComponent extends LitElement {
     }
 
     cacheUpdated() {
+        this._transactionView.linkCache = this._transactionLinkCache; // make sure transaction view always has latest.
         this.filterComponents();
         this.requestUpdate();
     }
@@ -106,6 +111,7 @@ export class HttpTransactionContainerComponent extends LitElement {
 
             // perform filtering.
             this.filterComponents()
+            this._transactionView.linkCache = this._transactionLinkCache;
         });
 
         this._transactionLinkCache = new TransactionLinkCache()
@@ -122,8 +128,11 @@ export class HttpTransactionContainerComponent extends LitElement {
         }
     }
 
-    handleSpecChange(key: string) {
-        this._specEditor.setValue(key)
+    handleSpecChange(value: string) {
+        this._specValue = value;
+        if (this, this._specEditor) {
+            this._specEditor.setValue(value)
+        }
     }
 
 
@@ -201,7 +210,7 @@ export class HttpTransactionContainerComponent extends LitElement {
 
         // re-filter by keywords
         if (this._filters.filterKeywords.length > 0) {
-           filtered = filtered.filter( (v: HttpTransactionItemComponent) => {
+            filtered = filtered.filter((v: HttpTransactionItemComponent) => {
                 const filter = v.httpTransaction.matchesKeywordFilter(this._filters);
                 return filter != false;
             })
@@ -209,18 +218,15 @@ export class HttpTransactionContainerComponent extends LitElement {
 
         // re-filter by chains
         if (this._filters.filterChain.length > 0) {
-            filtered = filtered.filter( (v: HttpTransactionItemComponent) => {
+            filtered = filtered.filter((v: HttpTransactionItemComponent) => {
                 const filter = v.httpTransaction.containsActiveLink(this._filters);
                 v.httpTransaction.containsChainLink = (filter != false);
-
-
-
                 v.requestUpdate()
                 return true
             })
         } else {
             // wipe out links, nothing to link.
-            filtered.forEach( (v: HttpTransactionItemComponent) => {
+            filtered.forEach((v: HttpTransactionItemComponent) => {
                 v.httpTransaction.containsChainLink = false;
                 v.requestUpdate()
             })
@@ -251,21 +257,44 @@ export class HttpTransactionContainerComponent extends LitElement {
                         ${reversed}
                     </div>
                     <div slot="end">
-                        <sl-split-panel class="editor-split" position="60">
-                            <sl-icon slot="divider" name="grip-vertical" class="grip-vertical"></sl-icon>
-                            <div slot="start" class="transaction-view-container">
-                                <http-transaction-view
-                                        @violationLocationSelected="${this.locationSelected}"></http-transaction-view>
-                            </div>
-                            <div slot="end" class="transaction-view-container">
-                                <spec-editor id="spec-editor">
-                                </spec-editor>
-                            </div>
-                        </sl-split-panel>
+                        <section class="bottom-panel">
+                            ${this.renderBottomPanel()}
+                            <spec-controls @toggleSpecification=${this.toggleSpec}></spec-controls>
+                        </section>
                     </div>
                 </sl-split-panel>
             </section>
         `
+    }
+
+    renderBottomPanel(): TemplateResult {
+        if (this._showSpec) {
+            return html`
+                <sl-split-panel class="editor-split" position="60">
+                    <sl-icon slot="divider" name="grip-vertical" class="grip-vertical"></sl-icon>
+                    <div slot="start" class="transaction-view-container">
+                        <http-transaction-view
+                                @violationLocationSelected="${this.locationSelected}"></http-transaction-view>
+                    </div>
+                    <div slot="end" class="transaction-view-container">
+                        <spec-editor id="spec-editor" code="${this._specValue}">
+                        </spec-editor>
+
+                    </div>
+                </sl-split-panel>`
+        } else {
+            return html`
+                <div slot="start" class="transaction-view-container">
+                    <http-transaction-view
+                            @violationLocationSelected=${this.locationSelected}></http-transaction-view>
+                </div>`
+        }
+
+    }
+
+    toggleSpec(e: CustomEvent<boolean>) {
+        this._showSpec = e.detail
+        this.requestUpdate();
     }
 
     locationSelected(e: CustomEvent<ViolationLocation>) {
