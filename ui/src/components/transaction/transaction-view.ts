@@ -36,6 +36,7 @@ import {HttpTransactionSelectedEvent} from "@/model/events";
 import {Bag, GetBagManager} from "@pb33f/saddlebag";
 import {WiretapHttpTransactionStore} from "@/model/constants";
 import dividerCss from "@/components/divider.css";
+import {TimelineItemComponent} from "@/components/timeline/timeline-item";
 
 @customElement('http-transaction-view')
 export class HttpTransactionViewComponent extends LitElement {
@@ -261,6 +262,10 @@ export class HttpTransactionViewComponent extends LitElement {
         paramKVComponent.valueLabel = "Value";
 
         const siblings: HttpTransactionItemComponent[] = [];
+        const timelineItems : TemplateResult[] = [];
+
+        let tsDiff = 0;
+        let tsTotal = 0;
         linkMatch.siblings.forEach((sibling) => {
             const transaction = BuildLiveTransactionFromState(this._httpTransactionStore.get(sibling.id));
             if (transaction.id !== this._httpTransaction.id) {
@@ -273,10 +278,54 @@ export class HttpTransactionViewComponent extends LitElement {
                 }
                 siblingComponent.addEventListener(HttpTransactionSelectedEvent, this.chainTransactionSelected.bind(this));
                 siblings.push(siblingComponent);
+
+                let tsFormat = "";
+                tsDiff = transaction.httpRequest.timestamp - tsDiff;
+                if (tsDiff != transaction.httpRequest.timestamp) {
+                    if (tsDiff > 1000) {
+                        tsFormat = "+" + (tsDiff/1000).toFixed(3) + "s";
+                    } else {
+                        tsFormat = "+" + tsDiff + "ms";
+                    }
+                    
+                    tsTotal = tsTotal + tsDiff + (transaction.httpResponse.timestamp - transaction.httpRequest.timestamp);
+                }
+
+                // create a timeline component for each sibling
+                const timelineItem = html`
+                    <wiretap-timeline-item>
+                        <span slot="time">${tsFormat}</span>
+                        <sl-icon name="link-45deg" slot="icon"></sl-icon>
+                        <div slot="content">${siblingComponent}</div>
+                    </wiretap-timeline-item>`
+
+               timelineItems.push(timelineItem);
+
             }
-        })
+        });
+        let tsTotalFormat = "";
+        if (tsTotal > 1000) {
+            tsTotalFormat = (tsTotal/1000).toFixed(3) + "s";
+        } else {
+            tsTotalFormat = tsTotal + "ms";
+        }
+
         this._siblings = siblings;
-        return html`${!hideKv? paramKVComponent: null }${siblings}${siblings.length <= 0 ? this.noOtherLinks(): null}`
+        return html`
+            <div class="kv-overview">
+                ${!hideKv? paramKVComponent: null }
+                <div class="empty-data chain-time">
+                    <div class="request-chain-time-title">Chain Total Time</div>
+                    <sl-icon name="stopwatch" class="chain-time-icon"></sl-icon>
+                    <span class="total-time"><span class="time-value">${tsTotalFormat}</span> seconds</span>
+                    
+                    
+                </div>
+            </div>
+            <wiretap-timeline>
+            ${timelineItems}
+            </wiretap-timeline>
+            <div>${siblings.length <= 0 ? this.noOtherLinks(): null}</div>`
     }
 
     noOtherLinks(): TemplateResult {
@@ -304,9 +353,12 @@ export class HttpTransactionViewComponent extends LitElement {
                 <sl-tab-panel name="chain">
                     <section class="chain-panel-divider">
                         <div  class="chain-container">
+
+                            
                             ${this._currentLinks.map((linkMatch) =>
                                     html`${this.renderLinkMatch.bind(this)(linkMatch)}`
                             )}
+                            
                         </div>
                         <div class="chain-view-container">
                             ${this._chainTransactionView? this._chainTransactionView: selectChain()}

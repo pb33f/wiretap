@@ -106,14 +106,12 @@ export default css`
   .empty-data.no-chain {
     margin-bottom: 20px;
   }
-
-
+  
   .empty-data.select-chain {
     margin-bottom: 20px;
     color: var(--darker-font-color);
   }
-
-
+  
   .chain-view-container {
     border-top: 1px solid var(--secondary-color);
   }
@@ -131,5 +129,42 @@ export default css`
     height: 100%;
   }
   
+  .kv-overview {
+    display: flex;
+  }
+  
+  http-kv-view {
+    flex-grow: 1;
+  }
+  
+  .chain-time {
+    text-align: left;
+    width: 50%;
+    padding-left: 20px;
+    margin-top: 0;
+    padding-top: 0;
+    border-left: 1px dashed var(--secondary-color-lowalpha)
+  }
+  
+  .chain-time-icon {
+    font-size: 30px;
+    vertical-align: baseline;
+    padding-right: 10px;
+    color: var(--secondary-color);
+  }
+
+  .request-chain-time-title {
+    font-size: 0.7rem;
+    color: var(--dark-font-color);
+    padding-bottom: 10px;
+  }
+  
+  .total-time {
+    font-size: 2rem;
+  }
+  
+  .time-value {
+    color: var(--primary-color);
+  }
   
 `

@@ -1,9 +1,5 @@
 import {ExtractQueryString} from "@/model/extract_query";
-import {Filter, WiretapControls, WiretapFilters} from "@/model/controls";
-import {Bag, CreateBagManager, GetBagManager} from "@pb33f/saddlebag";
-import {WiretapHttpTransactionStore} from "@/model/constants";
-import {linkCacheFactory} from "@/index";
-import {LinkCacheUpdate} from "@/workers/link_cache_worker";
+import {Filter, WiretapFilters} from "@/model/controls";
 
 export interface HttpCookie {
     value?:   string;
@@ -45,6 +41,7 @@ export class HttpRequest {
     headers?: any;
     cookies?: any;
     requestBody?: string;
+    timestamp?: number;
 
     constructor() {
         this.headers = {}
@@ -78,6 +75,7 @@ export class HttpResponse {
     cookies?: any;
     statusCode?: number;
     responseBody?: string;
+    timestamp?: number;
 
     constructor() {
         this.headers = {}

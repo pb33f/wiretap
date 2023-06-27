@@ -10,6 +10,7 @@ import {HttpTransactionSelectedEvent} from "@/model/events";
 import sharedCss from "@/components/shared.css";
 import {Filter, WiretapFilters} from "@/model/controls";
 import {TransactionLinkCache} from "@/model/link_cache";
+import moment from "moment";
 
 
 @customElement('http-transaction-item')
@@ -101,11 +102,9 @@ export class HttpTransactionItemComponent extends LitElement {
         }
 
         let delay: TemplateResult;
-
         if (this._httpTransaction.delay > 0) {
-            delay = html`<div class="delay"><sl-icon name="hourglass-split" ></sl-icon>${this._httpTransaction.delay}ms</div>`
+            delay = html`<div class="delay">${this._httpTransaction.delay}ms <sl-icon name="hourglass-split" ></sl-icon></div>`
         }
-
 
         let chainLink: TemplateResult;
 
@@ -128,13 +127,19 @@ export class HttpTransactionItemComponent extends LitElement {
                `
         }
 
+        const totalTime = resp.timestamp - req.timestamp;
+
         return html`
             <div class="${tClass}" @click="${this.setActive}">
                 <header>
                     <sl-tag variant="${ExchangeMethod(req.method)}" class="method">${req.method}</sl-tag>
                     ${decodeURI(req.url)}
+              
                 </header>
-               ${delay}
+                ${delay}
+                <div class="request-time">
+                    ${totalTime}ms <sl-icon name="arrow-left-right"></sl-icon>
+                </div>
                 <div class="transaction-status">
                     ${this.hideControls? '' : chainLink}
                     ${statusIcon}
