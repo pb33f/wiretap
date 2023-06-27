@@ -161,8 +161,8 @@ export class WiretapControlsComponent extends LitElement {
         this.filtersDrawer.hide()
     }
 
-    handleGlobalDelayChange(event) {
-        const delay = event.target.value;
+    handleGlobalDelayChange(event: CustomEvent) {
+        const delay = event.detail
         this.changeGlobalDelay(parseInt(delay));
     }
 

@@ -4,6 +4,7 @@ import {GlobalDelayChangedEvent, RequestReportEvent, WipeDataEvent} from "@/mode
 import {property} from "lit/decorators.js";
 import sharedCss from "@/components/shared.css";
 import settingsComponentCss from "@/components/controls/settings.css";
+import {SlInput} from "@shoelace-style/shoelace";
 
 @customElement('wiretap-controls-settings')
 export class WiretapControlsSettingsComponent extends LitElement {
@@ -13,9 +14,11 @@ export class WiretapControlsSettingsComponent extends LitElement {
     @property({type: Number})
     globalDelay: number;
 
-    handleGlobalDelayChange(event: CustomEvent) {
-        const delay = event.detail.value
-        this.dispatchEvent(new CustomEvent(GlobalDelayChangedEvent, {detail: delay}))
+    @query('#global-delay')
+    globalDelayInput: SlInput;
+
+    handleGlobalDelayChange() {
+        this.dispatchEvent(new CustomEvent(GlobalDelayChangedEvent, {detail: this.globalDelayInput.value}))
     }
 
     wipeData() {
@@ -29,7 +32,7 @@ export class WiretapControlsSettingsComponent extends LitElement {
     render() {
         return html`
             <label>Global API Delay (MS)</label>
-            <sl-input @sl-change=${this.handleGlobalDelayChange} value=${this.globalDelay}
+            <sl-input id="global-delay" @sl-change=${this.handleGlobalDelayChange} value=${this.globalDelay}
                       placeholder="size" size="medium" type="number" id="global-delay">
                 <sl-icon name="hourglass-split" slot="prefix"></sl-icon>
             </sl-input>

@@ -23,6 +23,7 @@
     "@stomp/stompjs": "^7.0.0",
     "lit": "^2.7.3",
     "localforage": "^1.10.0",
+    "moment": "^2.29.4",
     "monaco-editor": "^0.38.0",
     "prismjs": "^1.29.0"
   },

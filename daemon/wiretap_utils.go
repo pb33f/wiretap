@@ -43,7 +43,7 @@ func cloneRequest(r *http.Request, protocol, host, port string) *http.Request {
 	r.Body = io.NopCloser(bytes.NewBuffer(b))
 
 	if len(b) == 0 {
-		pterm.Error.Println("No bytes in request body")
+		pterm.Info.Printf("No bytes found in request body: '%s'\n", r.URL.String())
 	}
 
 	// create cloned request

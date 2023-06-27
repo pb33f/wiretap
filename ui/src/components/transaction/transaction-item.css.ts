@@ -68,16 +68,17 @@ export default css`
     margin-right: 12px;
   }
   
-
-  
   .delay {
-    width: 70px;
-    margin: 5px 10px 0 10px;
+    text-align: right;
+    min-width: 60px;
+    max-width: 70px;
+    font-size: 12px;
+    margin: 8px 10px 0 10px;
     color: var(--secondary-color);
   }
   .delay sl-icon {
     vertical-align: bottom;
-    font-size: 21px;
+    font-size: 15px;
     color: var(--dark-font-color);
   }
 
@@ -99,5 +100,22 @@ export default css`
   .transaction-status {
     display: flex; 
   }
+  
+  .request-time {
+    text-align: right;
+    min-width: 60px;
+    max-width: 70px;
+    font-size: 12px;
+    margin: 8px 10px 0 10px;
+    color: var(--secondary-color);
+  }
+
+  .request-time sl-icon {
+    vertical-align: bottom;
+    font-size: 15px;
+    color: var(--dark-font-color);
+  }
+  
+
   
 `
