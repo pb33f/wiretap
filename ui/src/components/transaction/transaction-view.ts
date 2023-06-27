@@ -287,7 +287,7 @@ export class HttpTransactionViewComponent extends LitElement {
                     } else {
                         tsFormat = "+" + tsDiff + "ms";
                     }
-                    
+
                     tsTotal = tsTotal + tsDiff + (transaction.httpResponse.timestamp - transaction.httpRequest.timestamp);
                 }
 
@@ -317,7 +317,7 @@ export class HttpTransactionViewComponent extends LitElement {
                 <div class="empty-data chain-time">
                     <div class="request-chain-time-title">Chain Total Time</div>
                     <sl-icon name="stopwatch" class="chain-time-icon"></sl-icon>
-                    <span class="total-time"><span class="time-value">${tsTotalFormat}</span> seconds</span>
+                    <span class="total-time"><span class="time-value">${tsTotalFormat}</span></span>
                     
                     
                 </div>
