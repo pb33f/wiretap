@@ -50,7 +50,7 @@ export default css`
     padding:0;
     font-size: 100px;
   }
-  
+
   .http200 {
     color: var(--ok-color)
   }
@@ -61,23 +61,14 @@ export default css`
     color: var(--error-color);
   }
   
-  .response-code {
-    font-size: 1.2em;
-  }
-  
-  .contentType {
-    display: block;
-    margin-bottom: 20px;
-  }
-  
   pre {
     max-width: calc(100vw - 135px);
     overflow-x: auto;
   }
+  
   .chain-panel-divider {
     height: 100%
   }
-
 
   .chain-panel-divider sl-split-panel {
     --min: 150px; --max: calc(100% - 150px);
