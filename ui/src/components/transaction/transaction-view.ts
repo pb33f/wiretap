@@ -1,47 +1,26 @@
 import {customElement, property, query, state} from "lit/decorators.js";
 import {html} from "lit";
-import {unsafeHTML} from "lit/directives/unsafe-html.js";
 import {map} from "lit/directives/map.js";
 import {LitElement, TemplateResult} from "lit";
-
-import {BuildLiveTransactionFromState, HttpRequest, HttpResponse, HttpTransaction} from "@/model/http_transaction";
+import {BuildLiveTransactionFromState, HttpTransaction} from "@/model/http_transaction";
 import transactionViewComponentCss from "./transaction-view.css";
 import {KVViewComponent} from "@/components/kv-view/kv-view";
-
-import prismCss from "@/components/prism.css";
-import Prism from 'prismjs';
-import 'prismjs/components/prism-json';
-import 'prismjs/components/prism-xml-doc';
-import 'prismjs/themes/prism-okaidia.css';
 import sharedCss from "@/components/shared.css";
 import {SlTab, SlTabGroup} from "@shoelace-style/shoelace";
-import {
-    ContentTypeFormEncoded,
-    ContentTypeHtml,
-    ContentTypeJSON,
-    ContentTypeMultipartForm,
-    ContentTypeOctetStream,
-    ContentTypeXML,
-    ExtractContentTypeFromRequest,
-    ExtractContentTypeFromResponse,
-    IsHtmlContentType,
-    IsOctectStreamContentType,
-    IsXmlContentType, FormPart
-} from "@/model/extract_content_type";
 import {ExtractHTTPCodeDefinition, ExtractStatusStyleFromCode} from "@/model/extract_status";
-import {Property, PropertyViewComponent} from "@/components/property-view/property-view";
 import {LinkMatch, TransactionLinkCache} from "@/model/link_cache";
 import {HttpTransactionItemComponent} from "@/components/transaction/transaction-item";
 import {HttpTransactionSelectedEvent} from "@/model/events";
 import {Bag, GetBagManager} from "@pb33f/saddlebag";
 import {WiretapHttpTransactionStore} from "@/model/constants";
 import dividerCss from "@/components/divider.css";
-import {TimelineItemComponent} from "@/components/timeline/timeline-item";
+import {ResponseBodyViewComponent} from "@/components/transaction/response-body";
+import {RequestBodyViewComponent} from "@/components/transaction/request-body";
 
 @customElement('http-transaction-view')
 export class HttpTransactionViewComponent extends LitElement {
 
-    static styles = [prismCss, sharedCss, dividerCss, transactionViewComponentCss];
+    static styles = [sharedCss, dividerCss, transactionViewComponentCss];
 
     @state()
     private _httpTransaction: HttpTransaction
@@ -171,6 +150,10 @@ export class HttpTransactionViewComponent extends LitElement {
                     API call is compliant
                 </div>`;
 
+
+            const responseBodyView = new ResponseBodyViewComponent(resp);
+            const requestBodyView = new RequestBodyViewComponent(req);
+
             const tabGroup: TemplateResult = html`
                 <sl-tab-group id="tabs" @sl-tab-show=${this.tabSelected}>
                     <sl-tab slot="nav" panel="violations" id="violation-tab" class="tab">${violations}</sl-tab>
@@ -198,7 +181,7 @@ export class HttpTransactionViewComponent extends LitElement {
                                 ${this._requestCookiesView}
                             </sl-tab-panel>
                             <sl-tab-panel name="request-body">
-                                ${this.renderRequestBody(req)}
+                                ${requestBodyView}
                             </sl-tab-panel>
                             <sl-tab-panel name="request-query">
                                 ${this._requestQueryView}
@@ -222,7 +205,8 @@ export class HttpTransactionViewComponent extends LitElement {
                                 ${this._responseCookiesView}
                             </sl-tab-panel>
                             <sl-tab-panel name="response-body">
-                                ${this.renderResponseBody(resp)}
+                                ${responseBodyView}
+                                
                             </sl-tab-panel>
                         </sl-tab-group>
                     </sl-tab-panel>
@@ -318,8 +302,6 @@ export class HttpTransactionViewComponent extends LitElement {
                     <div class="request-chain-time-title">Chain Total Time</div>
                     <sl-icon name="stopwatch" class="chain-time-icon"></sl-icon>
                     <span class="total-time"><span class="time-value">${tsTotalFormat}</span></span>
-                    
-                    
                 </div>
             </div>
             <wiretap-timeline>
@@ -353,12 +335,9 @@ export class HttpTransactionViewComponent extends LitElement {
                 <sl-tab-panel name="chain">
                     <section class="chain-panel-divider">
                         <div  class="chain-container">
-
-                            
                             ${this._currentLinks.map((linkMatch) =>
                                     html`${this.renderLinkMatch.bind(this)(linkMatch)}`
                             )}
-                            
                         </div>
                         <div class="chain-view-container">
                             ${this._chainTransactionView? this._chainTransactionView: selectChain()}
@@ -367,16 +346,6 @@ export class HttpTransactionViewComponent extends LitElement {
                 </sl-tab-panel>`
         }
         return null;
-    }
-
-    parseFormEncodedData(data: string): Map<string, string> {
-        const map = new Map<string, string>();
-        const pairs = data.split('&');
-        for (const pair of pairs) {
-            const [key, value] = pair.split('=');
-            map.set(decodeURI(key), decodeURI(value));
-        }
-        return map;
     }
 
     private syncLinks() {
@@ -400,104 +369,4 @@ export class HttpTransactionViewComponent extends LitElement {
             }
         }
     }
-
-    renderRequestBody(req: HttpRequest): TemplateResult {
-
-        const exct = ExtractContentTypeFromRequest(req)
-        const ct = html` <span class="contentType">
-            Content Type: <strong>${exct}</strong>
-        </span>`;
-
-        switch (exct) {
-            case ContentTypeJSON:
-                return html`${ct}
-                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(req.requestBody), null, 2),
-                            Prism.languages.json, 'json'))}</code></pre>`;
-
-            case ContentTypeXML:
-                return html`${ct}
-                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(req.requestBody), null, 2),
-                            Prism.languages.xml, 'xml'))}</code></pre>`;
-
-            case ContentTypeOctetStream:
-                return html`${ct}
-                    <div class="empty-data">
-                        <sl-icon name="file-binary" class="binary-icon"></sl-icon>
-                        <br/>
-                        [ binary data will not be rendered ]
-                    </div>`;
-            case ContentTypeHtml:
-                return html`${ct}
-                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(req.requestBody), null, 2),
-                            Prism.languages.xml, 'xml'))}</code></pre>`;
-
-            case ContentTypeFormEncoded:
-                const kv = new KVViewComponent();
-                kv.keyLabel = "Form Key";
-                kv.data = this.parseFormEncodedData(req.requestBody);
-                return html`${ct}${kv}`
-
-            case ContentTypeMultipartForm:
-                const formProps = new PropertyViewComponent()
-                formProps.propertyLabel = "Form Key";
-                formProps.typeLabel = "Type";
-
-                // extract pre-rendered form data from wiretap
-                const parts: FormPart[] = JSON.parse(req.requestBody) as FormPart[];
-                for (const part of parts) {
-                    if (part.value?.length > 0) {
-                        part.type = 'field';
-                    }
-                    if (part.files?.length > 0) {
-                        part.type = 'file';
-                    }
-                }
-
-                formProps.data = parts;
-
-                return html`${ct}${formProps}`
-
-            default:
-                return html`${ct}
-                <pre>${req.requestBody}</pre>`
-        }
-
-    }
-
-    renderResponseBody(resp: HttpResponse): TemplateResult {
-
-        const exct = ExtractContentTypeFromResponse(resp)
-        const ct = html` <span class="contentType">
-            Content Type: <strong>${exct}</strong>
-        </span>`;
-
-        switch (exct) {
-            case ContentTypeJSON:
-                return html`${ct}
-                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(resp.responseBody), null, 2),
-                            Prism.languages.json, 'json'))}</code></pre>`;
-            case ContentTypeXML:
-                return html`
-                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(resp.responseBody), null, 2),
-                            Prism.languages.xml, 'xml'))}</code></pre>`;
-            case ContentTypeOctetStream:
-                return html`${ct}
-                    <div class="empty-data">
-                        <sl-icon name="file-binary" class="binary-icon"></sl-icon>
-                        <br/>
-                        [ binary data will not be rendered ]
-                    </div>`;
-            case ContentTypeHtml:
-                return html`${ct}
-                    <pre><code>${unsafeHTML(Prism.highlight(resp.responseBody,
-                            Prism.languages.xml, 'xml'))}</code></pre>`;
-
-            default:
-                return html`${ct}
-                    <pre>${resp.responseBody}</pre>`
-        }
-
-    }
-
-
 }
