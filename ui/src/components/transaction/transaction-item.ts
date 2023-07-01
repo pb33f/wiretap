@@ -8,9 +8,7 @@ import 'prismjs/components/prism-javascript'
 import 'prismjs/themes/prism-okaidia.css'
 import {HttpTransactionSelectedEvent} from "@/model/events";
 import sharedCss from "@/components/shared.css";
-import {Filter, WiretapFilters} from "@/model/controls";
 import {TransactionLinkCache} from "@/model/link_cache";
-import moment from "moment";
 
 
 @customElement('http-transaction-item')
@@ -34,9 +32,8 @@ export class HttpTransactionItemComponent extends LitElement {
     constructor(httpTransaction: HttpTransaction, linkCache: TransactionLinkCache) {
         super();
         this._linkCache = linkCache;
-        this._httpTransaction = httpTransaction
+        this._httpTransaction = httpTransaction;
     }
-
 
     get transactionId(): string {
         return this._httpTransaction.id
@@ -127,7 +124,7 @@ export class HttpTransactionItemComponent extends LitElement {
                `
         }
 
-        const totalTime = resp.timestamp - req.timestamp;
+        const totalTime = resp?.timestamp - req.timestamp;
 
         return html`
             <div class="${tClass}" @click="${this.setActive}">

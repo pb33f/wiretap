@@ -18,7 +18,11 @@ func (ws *WiretapService) validateResponse(
 	responseValidator responses.ResponseBodyValidator,
 	returnedResponse *http.Response) {
 
-	_, validationErrors := responseValidator.ValidateResponseBody(request.HttpRequest, returnedResponse)
+	var validationErrors []*errors.ValidationError
+
+	if ws.document != nil && ws.docModel != nil {
+		_, validationErrors = responseValidator.ValidateResponseBody(request.HttpRequest, returnedResponse)
+	}
 
 	// wipe out any path not found errors, they are not relevant to the response.
 	var cleanedErrors []*errors.ValidationError
@@ -50,29 +54,33 @@ func (ws *WiretapService) validateRequest(
 
 	var validationErrors, cleanedErrors []*errors.ValidationError
 
-	// find path and populate validators.
-	path, pathErrors, pv := paths.FindPath(httpRequest, ws.docModel)
-	requestValidator.SetPathItem(path, pv)
-	paramValidator.SetPathItem(path, pv)
-	responseValidator.SetPathItem(path, pv)
+	if ws.document != nil && ws.docModel != nil {
 
-	// record any path errors.
-	validationErrors = append(validationErrors, pathErrors...)
+		// find path and populate validators.
+		path, pathErrors, pv := paths.FindPath(httpRequest, ws.docModel)
+		requestValidator.SetPathItem(path, pv)
+		paramValidator.SetPathItem(path, pv)
+		responseValidator.SetPathItem(path, pv)
 
-	// validate params
-	_, queryParams := paramValidator.ValidateQueryParams(httpRequest)
-	_, headerParams := paramValidator.ValidateHeaderParams(httpRequest)
-	_, cookieParams := paramValidator.ValidateCookieParams(httpRequest)
-	_, pathParams := paramValidator.ValidatePathParams(httpRequest)
+		// record any path errors.
+		validationErrors = append(validationErrors, pathErrors...)
 
-	validationErrors = append(validationErrors, queryParams...)
-	validationErrors = append(validationErrors, headerParams...)
-	validationErrors = append(validationErrors, cookieParams...)
-	validationErrors = append(validationErrors, pathParams...)
+		// validate params
+		_, queryParams := paramValidator.ValidateQueryParams(httpRequest)
+		_, headerParams := paramValidator.ValidateHeaderParams(httpRequest)
+		_, cookieParams := paramValidator.ValidateCookieParams(httpRequest)
+		_, pathParams := paramValidator.ValidatePathParams(httpRequest)
 
-	// validate modelRequest
-	_, requestErrors := requestValidator.ValidateRequestBody(httpRequest)
-	validationErrors = append(validationErrors, requestErrors...)
+		validationErrors = append(validationErrors, queryParams...)
+		validationErrors = append(validationErrors, headerParams...)
+		validationErrors = append(validationErrors, cookieParams...)
+		validationErrors = append(validationErrors, pathParams...)
+
+		// validate modelRequest
+		_, requestErrors := requestValidator.ValidateRequestBody(httpRequest)
+		validationErrors = append(validationErrors, requestErrors...)
+
+	}
 
 	pm := false
 	for i := range validationErrors {

@@ -29,6 +29,7 @@ export const RequestReportCommand = "generate-report-request";
 
 export const WiretapLocalStorage = "wiretap-transactions";
 
+export const NoSpec = "no-spec";
 
 
 export const TopicPrefix = "/topic/";

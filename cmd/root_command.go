@@ -133,10 +133,11 @@ var (
 
 			if spec == "" {
 				pterm.Println()
-				pterm.Error.Println("No OpenAPI specification provided. " +
+				pterm.Warning.Println("No OpenAPI specification provided. " +
 					"Please provide a path to an OpenAPI specification using the --spec or -s flags.")
+				pterm.Warning.Println("Without an OpenAPI specification, wiretap will not be able to validate " +
+					"requests and responses")
 				pterm.Println()
-				return nil
 			}
 
 			if redirectURL == "" {
