@@ -159,7 +159,8 @@ export class HttpTransactionViewComponent extends LitElement {
                     <sl-tab slot="nav" panel="violations" id="violation-tab" class="tab">${violations}</sl-tab>
                     <sl-tab slot="nav" panel="request" class="tab">Request</sl-tab>
                     <sl-tab slot="nav" panel="response" class="tab">Response</sl-tab>
-                    ${this._currentLinks?.length > 0 ? html`<sl-tab slot="nav" panel="chain" class="tab">Chain</sl-tab>`: null}
+                    ${this._currentLinks?.length > 0 ? html`
+                        <sl-tab slot="nav" panel="chain" class="tab">Chain</sl-tab>` : null}
                     <sl-tab-panel name="violations" class="tab-panel">
                         ${total <= 0 ? noData : null}
                         ${requestViolations}
@@ -206,7 +207,7 @@ export class HttpTransactionViewComponent extends LitElement {
                             </sl-tab-panel>
                             <sl-tab-panel name="response-body">
                                 ${responseBodyView}
-                                
+
                             </sl-tab-panel>
                         </sl-tab-group>
                     </sl-tab-panel>
@@ -246,13 +247,13 @@ export class HttpTransactionViewComponent extends LitElement {
         paramKVComponent.valueLabel = "Value";
 
         const siblings: HttpTransactionItemComponent[] = [];
-        const timelineItems : TemplateResult[] = [];
+        const timelineItems: TemplateResult[] = [];
 
         let tsDiff = 0;
         let tsTotal = 0;
         linkMatch.siblings.forEach((sibling) => {
             const transaction = BuildLiveTransactionFromState(this._httpTransactionStore.get(sibling.id));
-            if (transaction.id !== this._httpTransaction.id) {
+            //if (transaction.id !== this._httpTransaction.id) {
                 const siblingComponent = new HttpTransactionItemComponent(transaction, this._linkCache);
                 siblingComponent.hideControls = true;
                 if (this._chainTransactionView && this._chainTransactionView.httpTransaction?.id == transaction.id) {
@@ -264,40 +265,59 @@ export class HttpTransactionViewComponent extends LitElement {
                 siblings.push(siblingComponent);
 
                 let tsFormat = "";
-                tsDiff = transaction.httpRequest.timestamp - tsDiff;
-                if (tsDiff != transaction.httpRequest.timestamp) {
-                    if (tsDiff > 1000) {
-                        tsFormat = "+" + (tsDiff/1000).toFixed(3) + "s";
-                    } else {
-                        tsFormat = "+" + tsDiff + "ms";
+                let thisDiff = transaction.httpRequest.timestamp - tsDiff;
+                if (thisDiff != transaction.httpRequest.timestamp) {
+                    if (thisDiff > 1000) {
+                        tsFormat = "+" + (thisDiff / 1000).toFixed(3) + "s";
+                    }
+                    if (thisDiff > 60000) {
+                        tsFormat = "+" + ((thisDiff / 1000)/60).toFixed(2)+ "m";
+                    }
+                    if (thisDiff <=1000) {
+                        tsFormat = "+" + thisDiff + "ms";
                     }
 
-                    tsTotal = tsTotal + tsDiff + (transaction.httpResponse.timestamp - transaction.httpRequest.timestamp);
+                    tsTotal = tsTotal + thisDiff + (transaction.httpResponse?.timestamp - transaction.httpRequest.timestamp);
                 }
+
+                let linkIcon = 'link-45deg';
+                let linkCss = 'color: var(--dark-font-color);';
+                let tsCss = '';
+                if(this._httpTransaction.id == transaction.id) {
+                    linkIcon = 'arrow-right-square';
+                    linkCss = 'color: var(--primary-color);';
+                    tsCss = 'color: var(--primary-color); font-weight: bold;';
+                }
+
 
                 // create a timeline component for each sibling
                 const timelineItem = html`
                     <wiretap-timeline-item>
-                        <span slot="time">${tsFormat}</span>
-                        <sl-icon name="link-45deg" slot="icon"></sl-icon>
+                        <span slot="time" style="${tsCss}">${tsFormat}</span>
+                        <sl-icon name="${linkIcon}" slot="icon" style="${linkCss}"></sl-icon>
                         <div slot="content">${siblingComponent}</div>
                     </wiretap-timeline-item>`
 
-               timelineItems.push(timelineItem);
+                timelineItems.push(timelineItem);
 
-            }
+                tsDiff = transaction.httpResponse?.timestamp;
+            //}
         });
         let tsTotalFormat = "";
         if (tsTotal > 1000) {
-            tsTotalFormat = (tsTotal/1000).toFixed(3) + "s";
-        } else {
-            tsTotalFormat = tsTotal + "ms";
+            tsTotalFormat = (tsTotal / 1000).toFixed(3) + " seconds";
+        }
+        if (tsTotal > 60000) {
+            tsTotalFormat = ((tsTotal / 1000)/60).toFixed(2) + " minutes";
+        }
+        if (tsTotal <= 1000) {
+            tsTotalFormat = tsDiff.toFixed(3) + " ms";
         }
 
         this._siblings = siblings;
         return html`
             <div class="kv-overview">
-                ${!hideKv? paramKVComponent: null }
+                ${!hideKv ? paramKVComponent : null}
                 <div class="empty-data chain-time">
                     <div class="request-chain-time-title">Chain Total Time</div>
                     <sl-icon name="stopwatch" class="chain-time-icon"></sl-icon>
@@ -305,20 +325,23 @@ export class HttpTransactionViewComponent extends LitElement {
                 </div>
             </div>
             <wiretap-timeline>
-            ${timelineItems}
+                ${timelineItems.reverse()}
             </wiretap-timeline>
-            <div>${siblings.length <= 0 ? this.noOtherLinks(): null}</div>`
+            <div>${siblings.length <= 0 ? this.noOtherLinks() : null}</div>`
     }
 
     noOtherLinks(): TemplateResult {
-        return html`<div class="empty-data no-chain"> <sl-icon name="link-45deg" class="binary-icon"></sl-icon>
-            <br/>
-            There are no other requests in this chain yet.</div>`
+        return html`
+            <div class="empty-data no-chain">
+                <sl-icon name="link-45deg" class="binary-icon"></sl-icon>
+                <br/>
+                There are no other requests in this chain yet.
+            </div>`
     }
 
     renderChainTabPanel(): TemplateResult {
 
-        const selectChain = () =>{
+        const selectChain = () => {
             if (this._siblings?.length > 0) {
                 return html`
                     <div class="empty-data select-chain">
@@ -334,13 +357,13 @@ export class HttpTransactionViewComponent extends LitElement {
             return html`
                 <sl-tab-panel name="chain">
                     <section class="chain-panel-divider">
-                        <div  class="chain-container">
+                        <div class="chain-container">
                             ${this._currentLinks.map((linkMatch) =>
                                     html`${this.renderLinkMatch.bind(this)(linkMatch)}`
                             )}
                         </div>
                         <div class="chain-view-container">
-                            ${this._chainTransactionView? this._chainTransactionView: selectChain()}
+                            ${this._chainTransactionView ? this._chainTransactionView : selectChain()}
                         </div>
                     </section>
                 </sl-tab-panel>`
@@ -354,11 +377,11 @@ export class HttpTransactionViewComponent extends LitElement {
             if (foundLinks && foundLinks.length > 0) {
 
                 // look at each link match and filter out any that contain siblings with the current transaction.
-                foundLinks.forEach((linkMatch) => {
-                    linkMatch.siblings = linkMatch.siblings.filter((sibling) => {
-                        return sibling.id !== this._httpTransaction.id;
-                    });
-                })
+                // foundLinks.forEach((linkMatch) => {
+                //     linkMatch.siblings = linkMatch.siblings.filter((sibling) => {
+                //         return sibling.id !== this._httpTransaction.id;
+                //     });
+                // })
 
                 this._currentLinks = foundLinks; // update state.
             } else {

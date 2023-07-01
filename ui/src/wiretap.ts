@@ -8,7 +8,7 @@ import * as localforage from "localforage";
 import {HeaderComponent} from "@/components/wiretap-header/header";
 import {WiretapControls, WiretapFilters} from "@/model/controls";
 import {
-    GetCurrentSpecCommand, QueuePrefix,
+    GetCurrentSpecCommand, NoSpec, QueuePrefix,
     SpecChannel, TopicPrefix,
     WiretapChannel, WiretapConfigurationChannel,
     WiretapControlsChannel, WiretapControlsKey, WiretapControlsStore,
@@ -133,21 +133,14 @@ export class WiretapComponent extends LitElement {
             this.calculateMetricsFromState(previousTransactions);
         });
 
-        // load specification from local storage.
-        this.loadSpecFromLocalStorage().then((spec: string) => {
-            if (!spec || spec.length <= 0) {
-                // nothing in local storage, request from spec service.
-                this.requestSpec()
-            } else {
-                this._specStore.set(WiretapCurrentSpec, spec);
-            }
-        });
-
         // configure wiretap broker.
         const config = {
             brokerURL: 'ws://localhost:' + this._wiretapPort + '/ranch',
             heartbeatIncoming: 0,
             heartbeatOutgoing: 0,
+            onConnect: () => {
+                this.requestSpec();
+            }
         }
         this._bus.connectToBroker(config);
     }
@@ -187,11 +180,6 @@ export class WiretapComponent extends LitElement {
         })
     }
 
-
-    async loadSpecFromLocalStorage(): Promise<string> {
-        return localforage.getItem<string>(WiretapCurrentSpec);
-    }
-
     async loadHistoryFromLocalStorage(): Promise<Map<string, HttpTransaction>> {
         return localforage.getItem<Map<string, HttpTransaction>>(WiretapLocalStorage);
     }
@@ -201,13 +189,18 @@ export class WiretapComponent extends LitElement {
             const decoded = atob(msg.payload.payload);
             this._specStore.set(WiretapCurrentSpec, decoded)
             localforage.setItem(WiretapCurrentSpec, decoded);
+
+
+
+
+            this.requestUpdate();
         }
     }
 
 
     configHandler(): BusCallback<CommandResponse> {
         return (msg: CommandResponse) => {
-            console.log("config handler", msg.payload)
+           // todo: do something in here.
         }
     }
 
@@ -297,6 +290,8 @@ export class WiretapComponent extends LitElement {
 
     render() {
 
+
+
         let transaction: HttpTransactionContainerComponent
         if (this._transactionContainer) {
             transaction = this._transactionContainer;
@@ -307,6 +302,27 @@ export class WiretapComponent extends LitElement {
                 this._specStore,
                 this._filtersStore);
             this._transactionContainer = transaction;
+        }
+        let noSpec = false
+        if (this._specStore) {
+            const spec = this._specStore.get(WiretapCurrentSpec);
+            if (!spec || spec == NoSpec) {
+                noSpec = true
+            }
+        }
+
+        if (noSpec) {
+            return html`
+            <wiretap-header
+                    @wipeData=${this.wipeData}
+                    requests="${this.requestCount}"
+                    responses="${this.responseCount}"
+                    violations="${this.violationsCount}"
+                    violationsDelta="${this.violatedTransactions}"
+                    compliance="${this.complianceLevel}"
+                    noSpec>
+            </wiretap-header>
+            ${transaction}`
         }
         return html`
             <wiretap-header

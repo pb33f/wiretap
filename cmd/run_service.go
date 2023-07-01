@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"errors"
+	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/plank/pkg/server"
 	"github.com/pb33f/ranch/plank/utils"
@@ -22,19 +23,25 @@ import (
 
 func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.PlatformServer, error) {
 
+	var doc libopenapi.Document
+	var err error
 	// load the openapi spec
-	doc, err := loadOpenAPISpec(wiretapConfig.Contract)
-	if err != nil {
-		return nil, err
+	if wiretapConfig.Contract != "" {
+		doc, err = loadOpenAPISpec(wiretapConfig.Contract)
+		if err != nil {
+			return nil, err
+		}
+
+		// build a model
+		_, errs := doc.BuildV3Model()
+		if len(errs) > 0 {
+			return nil, errors.Join(errs...)
+		}
 	}
 
-	// build a model
-	_, errs := doc.BuildV3Model()
-	if len(errs) > 0 {
-		return nil, errors.Join(errs...)
+	if doc != nil {
+		pterm.Info.Printf("OpenAPI Specification: '%s' parsed and read\n", wiretapConfig.Contract)
 	}
-
-	pterm.Info.Printf("OpenAPI Specification: '%s' parsed and read\n", wiretapConfig.Contract)
 
 	// create a store and put the wiretapConfig in it.
 	storeManager := bus.GetBus().GetStoreManager()
@@ -61,28 +68,8 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 		},
 	}
 
-	//// create a REST bridge configuration and set it for a prefix for all our requests off root.
-	//rbc := &service.RESTBridgeConfig{
-	//	ServiceChannel: daemon.WiretapServiceChan,
-	//	Uri:            "/",
-	//	FabricRequestBuilder: func(w http.ResponseWriter, r *http.Request) model.Request {
-	//		id := uuid.New()
-	//		return model.Request{
-	//			Id:                 &id,
-	//			RequestCommand:     daemon.IncomingHttpRequest,
-	//			HttpRequest:        r,
-	//			HttpResponseWriter: w,
-	//		}
-	//	},
-	//}
-
 	// create an instance of ranch
 	platformServer := server.NewPlatformServer(ranchConfig)
-
-	//platformServer.SetServerAvailability(&server.ServerAvailability{
-	//	Http:   false,
-	//	Fabric: true,
-	//})
 
 	// create wiretap service
 	wtService := daemon.NewWiretapService(doc)

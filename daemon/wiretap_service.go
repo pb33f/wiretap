@@ -40,14 +40,20 @@ func NewWiretapService(document libopenapi.Document) *WiretapService {
 		MaxIdleConns:    20,
 		IdleConnTimeout: 30 * time.Second,
 	}
-	m, _ := document.BuildV3Model()
-	return &WiretapService{
-		document:         document,
-		docModel:         &m.Model,
+
+	wts := &WiretapService{
+
 		transport:        tr,
 		controlsStore:    controlsStore,
 		transactionStore: transactionStore,
 	}
+	if document != nil {
+		m, _ := document.BuildV3Model()
+		wts.document = document
+		wts.docModel = &m.Model
+	}
+	return wts
+
 }
 
 func (ws *WiretapService) HandleServiceRequest(request *model.Request, core service.FabricServiceCore) {

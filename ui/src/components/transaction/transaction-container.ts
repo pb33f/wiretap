@@ -8,7 +8,13 @@ import transactionContainerComponentCss from "./transaction-container.css";
 import {HttpTransactionViewComponent} from "./transaction-view";
 import {SpecEditor} from "@/components/editor/editor";
 import {ViolationLocation} from "@/model/events";
-import {WiretapCurrentSpec, WiretapFiltersKey, WiretapLinkCacheStore, WiretapLocalStorage} from "@/model/constants";
+import {
+    NoSpec,
+    WiretapCurrentSpec,
+    WiretapFiltersKey,
+    WiretapLinkCacheStore,
+    WiretapLocalStorage
+} from "@/model/constants";
 import {AreFiltersActive, WiretapFilters} from "@/model/controls";
 import {TransactionLinkCache} from "@/model/link_cache";
 import {GetBagManager} from "@pb33f/saddlebag";
@@ -253,6 +259,10 @@ export class HttpTransactionContainerComponent extends LitElement {
             });
 
 
+        let specControls: TemplateResult
+        if (this._specValue != NoSpec) {
+            specControls = html` <spec-controls @toggleSpecification=${this.toggleSpec} ></spec-controls>`
+        }
 
         return html`
             <section class="split-panel-divider">
@@ -265,7 +275,7 @@ export class HttpTransactionContainerComponent extends LitElement {
                     <div slot="end">
                         <section class="bottom-panel">
                             ${this.renderBottomPanel()}
-                            <spec-controls @toggleSpecification=${this.toggleSpec}></spec-controls>
+                            ${specControls}
                         </section>
                     </div>
                 </sl-split-panel>

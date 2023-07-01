@@ -7,11 +7,14 @@ export default css`
   }
 
   .icon {
-    width: 80px;
-    min-height: 60px;
+    width: 100px;
+    min-height: 80px;
     position: relative;
   }
 
+  .icon:first-child {
+    min-height: 20px;
+  }
   .icon > .timeline {
     width: 40px;
     height: 100%;
@@ -27,8 +30,7 @@ export default css`
     text-align: center;
     font-size: 20px;
     position: absolute;
-    top: 15px;
-    background: var(--secondary-color-very-lowalpha);
+    top: 10px;
   }
 
   .content {
@@ -39,6 +41,10 @@ export default css`
   .request-time {
     font-size: 0.7em;
     color: var(--dark-font-color);
+    position: absolute;
+    left: 50px;
+    top: 15px;
+    display: block;
   }
   
 `

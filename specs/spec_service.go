@@ -22,12 +22,13 @@ type SpecService struct {
 }
 
 func NewSpecService(document libopenapi.Document) *SpecService {
-	m, _ := document.BuildV3Model()
-	return &SpecService{
-
-		document: document,
-		docModel: &m.Model,
+	ss := &SpecService{}
+	if document != nil {
+		m, _ := document.BuildV3Model()
+		ss.document = document
+		ss.docModel = &m.Model
 	}
+	return ss
 }
 
 func (ss *SpecService) HandleServiceRequest(request *model.Request, core service.FabricServiceCore) {
@@ -40,5 +41,9 @@ func (ss *SpecService) HandleServiceRequest(request *model.Request, core service
 }
 
 func (ss *SpecService) handleGetCurrentSpec(request *model.Request, core service.FabricServiceCore) {
-	core.SendResponse(request, ss.document.GetSpecInfo().SpecBytes)
+	if ss.document != nil {
+		core.SendResponse(request, ss.document.GetSpecInfo().SpecBytes)
+	} else {
+		core.SendResponse(request, []byte("no-spec"))
+	}
 }

@@ -4,12 +4,12 @@
 package cmd
 
 import (
-    "fmt"
-    "github.com/pterm/pterm"
+	"fmt"
+	"github.com/pterm/pterm"
 )
 
 func PrintBanner() {
-    text := `
+	text := `
 @@@@@@@   @@@@@@@   @@@@@@   @@@@@@   @@@@@@@@
 @@@@@@@@  @@@@@@@@  @@@@@@@  @@@@@@@  @@@@@@@@
 @@!  @@@  @@!  @@@      @@@      @@@  @@!
@@ -20,8 +20,9 @@ func PrintBanner() {
 :!:       :!:  !:!      :!:      :!:  :!:
  ::        :: ::::  :: ::::  :: ::::   ::
  :        :: : ::    : : :    : : :    :`
-    pterm.DefaultBasicText.Println(pterm.LightMagenta(text))
-    pterm.Print(pterm.LightCyan(fmt.Sprintf("wiretap version: %s", Version)))
-    pterm.Println(pterm.LightMagenta(fmt.Sprintf(" | compiled: %s", Date)))
-    pterm.Println()
+	pterm.DefaultBasicText.Println(pterm.LightMagenta(text))
+	pterm.Print(pterm.LightCyan(fmt.Sprintf("wiretap version: %s", Version)))
+	pterm.Println(pterm.LightMagenta(fmt.Sprintf(" | compiled: %s", Date)))
+	pterm.Println(pterm.LightCyan("Designed and built by Princess Beef Heavy Industries: https://pb33f.io/wiretap"))
+	pterm.Println()
 }

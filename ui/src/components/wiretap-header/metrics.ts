@@ -22,12 +22,15 @@ export class HeaderMetricsComponent extends LitElement {
     @property({type: Number})
     compliance: number;
 
+    @property({type: Boolean})
+    noSpec: boolean;
+
     render() {
         return html`
             <wiretap-metric title="Compliance" value="${this.compliance}" postfix="%" end colorizeValue></wiretap-metric>
             <wiretap-metric title="Requests" value="${this.requests}"></wiretap-metric>
             <wiretap-metric title="Responses" value="${this.responses}"></wiretap-metric>
-            <wiretap-metric title="Violations" value="${this.violations}"></wiretap-metric>
+            ${this.noSpec ? null : html`<wiretap-metric title="Violations" value="${this.violations}"></wiretap-metric>`}
         `
     }
 }

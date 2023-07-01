@@ -1,5 +1,5 @@
 import {customElement, property} from "lit/decorators.js";
-import {html, LitElement} from "lit";
+import {html, LitElement, TemplateResult} from "lit";
 import headerCss from "./header.css";
 
 
@@ -22,7 +22,33 @@ export class HeaderComponent extends LitElement {
     @property({type: Number})
     compliance: number;
 
+    @property({type: Boolean})
+    noSpec: boolean;
+
     render() {
+
+        let headerMetrics: TemplateResult
+        if (this.noSpec) {
+            headerMetrics = html`
+                <wiretap-header-metrics
+                        requests="${this.requests}"
+                        responses="${this.responses}"
+                        violations="${this.violations}"
+                        violationsDelta="${this.violationsDelta}"
+                        compliance="${this.compliance}"
+                        noSpec>
+                </wiretap-header-metrics>`
+        } else {
+            headerMetrics = html`
+                <wiretap-header-metrics
+                        requests="${this.requests}"
+                        responses="${this.responses}"
+                        violations="${this.violations}"
+                        violationsDelta="${this.violationsDelta}"
+                        compliance="${this.compliance}">
+                </wiretap-header-metrics>`
+        }
+
         return html`
             <header class="site-header">
                 <div class="logo">
@@ -30,14 +56,7 @@ export class HeaderComponent extends LitElement {
                     <span class="name"><a href="https://pb33f.io?ref=wiretap-ui">wiretap</a></span>
                 </div>
                 <div class="header-space">
-                    <wiretap-header-metrics
-                            requests="${this.requests}"
-                            responses="${this.responses}"
-                            violations="${this.violations}"
-                            violationsDelta="${this.violationsDelta}"
-                            compliance="${this.compliance}">
-                    </wiretap-header-metrics>
-                   
+                    ${headerMetrics}
                 </div>
                 <wiretap-controls></wiretap-controls>
             </header>`
