@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"embed"
+	"github.com/mitchellh/mapstructure"
 	"net/url"
 	"os"
 
@@ -44,7 +45,7 @@ var (
 
 			cerr := viper.ReadInConfig()
 			if cerr != nil && configFlag != "" {
-				pterm.Warning.Printf("No wiretap configuration located. Using defaults: %s\n", cerr.Error())
+				pterm.Error.Printf("No wiretap configuration located. Using defaults: %s\n", cerr.Error())
 			}
 			if cerr != nil && configFlag == "" {
 				pterm.Info.Println("No wiretap configuration located. Using defaults.")
@@ -57,6 +58,9 @@ var (
 			var port string
 			var monitorPort string
 			var wsPort string
+			var staticPort string
+			var staticDir string
+			var pathConfigurations map[string]*shared.WiretapPathConfig
 			var redirectHost string
 			var redirectPort string
 			var redirectScheme string
@@ -79,6 +83,25 @@ var (
 
 			if viper.IsSet("WEBSOCKET_PORT") {
 				wsPort = viper.GetString("WEBSOCKET_PORT")
+			}
+
+			if viper.IsSet("STATIC_PORT") {
+				staticPort = viper.GetString("STATIC_PORT")
+			}
+
+			if viper.IsSet("STATIC_DIR") {
+				staticDir = viper.GetString("STATIC_DIR")
+			}
+
+			if viper.IsSet("PATHS") {
+				paths := viper.Get("PATHS")
+				var pc map[string]*shared.WiretapPathConfig
+				err := mapstructure.Decode(paths, &pc)
+				if err != nil {
+					pterm.Error.Printf("Unable to decode paths from configuration: %s\n", err.Error())
+				} else {
+					pathConfigurations = pc
+				}
 			}
 
 			if viper.IsSet("REDIRECT_URL") {
@@ -171,17 +194,20 @@ var (
 			}
 
 			config := shared.WiretapConfiguration{
-				Contract:         spec,
-				RedirectURL:      redirectURL,
-				RedirectHost:     redirectHost,
-				RedirectBasePath: redirectBasePath,
-				RedirectPort:     redirectPort,
-				RedirectProtocol: redirectScheme,
-				Port:             port,
-				MonitorPort:      monitorPort,
-				GlobalAPIDelay:   globalAPIDelay,
-				WebSocketPort:    wsPort,
-				FS:               FS,
+				Contract:           spec,
+				RedirectURL:        redirectURL,
+				RedirectHost:       redirectHost,
+				RedirectBasePath:   redirectBasePath,
+				RedirectPort:       redirectPort,
+				RedirectProtocol:   redirectScheme,
+				Port:               port,
+				MonitorPort:        monitorPort,
+				GlobalAPIDelay:     globalAPIDelay,
+				WebSocketPort:      wsPort,
+				StaticDir:          staticDir,
+				StaticPort:         staticPort,
+				PathConfigurations: pathConfigurations,
+				FS:                 FS,
 			}
 
 			// ready to boot, let's go!
