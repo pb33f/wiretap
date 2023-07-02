@@ -6,6 +6,7 @@ package shared
 import (
 	"embed"
 	"github.com/gobwas/glob"
+	"regexp"
 )
 
 type WiretapConfiguration struct {
@@ -34,13 +35,22 @@ func (wtc *WiretapConfiguration) CompilePaths() {
 }
 
 type WiretapPathConfig struct {
-	Target      string            `json:"target,omitempty"`
-	PathRewrite map[string]string `json:"pathRewrite,omitempty"`
-	Secure      bool              `json:"secure,omitempty"`
+	Target       string            `json:"target,omitempty"`
+	PathRewrite  map[string]string `json:"pathRewrite,omitempty"`
+	CompiledPath *CompiledPath     `json:"-"`
+	Secure       bool              `json:"secure,omitempty"`
 }
 
 type CompiledPath struct {
+	PathConfig          *WiretapPathConfig
+	CompiledKey         glob.Glob
+	CompiledTarget      glob.Glob
+	CompiledPathRewrite map[string]*regexp.Regexp
+}
+
+type CompiledPathRewrite struct {
 	PathConfig     *WiretapPathConfig
+	Key            string
 	CompiledKey    glob.Glob
 	CompiledTarget glob.Glob
 }
@@ -50,6 +60,11 @@ func (wpc *WiretapPathConfig) Compile(key string) *CompiledPath {
 		PathConfig:     wpc,
 		CompiledKey:    glob.MustCompile(key),
 		CompiledTarget: glob.MustCompile(wpc.Target),
+	}
+	wpc.CompiledPath = cp
+	cp.CompiledPathRewrite = make(map[string]*regexp.Regexp)
+	for x := range wpc.PathRewrite {
+		cp.CompiledPathRewrite[x] = regexp.MustCompile(x)
 	}
 	return cp
 }

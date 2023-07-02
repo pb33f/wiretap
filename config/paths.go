@@ -4,10 +4,11 @@
 package config
 
 import (
+	"fmt"
 	"github.com/pb33f/wiretap/shared"
 )
 
-func FindPath(path string, configuration *shared.WiretapConfiguration) []*shared.WiretapPathConfig {
+func FindPaths(path string, configuration *shared.WiretapConfiguration) []*shared.WiretapPathConfig {
 	var foundConfigurations []*shared.WiretapPathConfig
 	for key := range configuration.CompiledPaths {
 		if configuration.CompiledPaths[key].CompiledKey.Match(path) {
@@ -15,4 +16,24 @@ func FindPath(path string, configuration *shared.WiretapConfiguration) []*shared
 		}
 	}
 	return foundConfigurations
+}
+
+func RewritePath(path string, configuration *shared.WiretapConfiguration) string {
+	paths := FindPaths(path, configuration)
+	var replaced string
+	if len(paths) > 0 {
+		// extract first path
+		pathConfig := paths[0]
+		replaced = ""
+		for key := range pathConfig.CompiledPath.CompiledPathRewrite {
+			if pathConfig.CompiledPath.CompiledPathRewrite[key].MatchString(path) {
+				replace := pathConfig.PathRewrite[key]
+				rex := pathConfig.CompiledPath.CompiledPathRewrite[key]
+				replacedPath := rex.ReplaceAllString(path, replace)
+				replaced = fmt.Sprintf("%s%s", pathConfig.Target, replacedPath)
+				break
+			}
+		}
+	}
+	return replaced
 }
