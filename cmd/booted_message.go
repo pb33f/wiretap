@@ -23,7 +23,7 @@ func bootedMessage(wiretapConfig *shared.WiretapConfiguration) {
 				pterm.Println()
 				b1 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("API Gateway")).Sprint(fmt.Sprintf("http://localhost:%s", wiretapConfig.Port))
 				b2 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Monitor UI")).Sprint(fmt.Sprintf("http://localhost:%s", wiretapConfig.MonitorPort))
-				b3 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Static Files")).Sprint(fmt.Sprintf("http://localhost:%s", wiretapConfig.StaticPort))
+				b3 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Static files served from")).Sprint(wiretapConfig.StaticDir)
 
 				var pp *pterm.PanelPrinter
 				if wiretapConfig.StaticDir != "" {

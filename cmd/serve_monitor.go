@@ -6,6 +6,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"github.com/gorilla/handlers"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
 	"io"
@@ -62,6 +63,9 @@ func serveMonitor(wiretapConfig *shared.WiretapConfiguration) {
 
 		// handle the index
 		mux.HandleFunc("/", handleIndex)
+
+		// compress everything!
+		handlers.CompressHandler(fileServer)
 
 		// handle the assets
 		mux.Handle("/assets/", http.StripPrefix("/assets", fileServer))

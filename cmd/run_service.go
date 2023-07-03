@@ -72,7 +72,7 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 	platformServer := server.NewPlatformServer(ranchConfig)
 
 	// create wiretap service
-	wtService := daemon.NewWiretapService(doc)
+	wtService := daemon.NewWiretapService(doc, wiretapConfig)
 
 	// register wiretap service
 	if err = platformServer.RegisterService(wtService, daemon.WiretapServiceChan); err != nil {
@@ -121,11 +121,6 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 
 	// boot the monitor
 	serveMonitor(wiretapConfig)
-
-	// if static dir is not empty, boot the static server
-	if wiretapConfig.StaticDir != "" {
-		serveStatic(wiretapConfig)
-	}
 
 	// boot wiretap
 	platformServer.StartServer(sysChan)

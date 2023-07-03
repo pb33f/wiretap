@@ -89,7 +89,6 @@ github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5Kwzbycv
 github.com/fatih/color v1.12.0 h1:mRhaKNwANqRgUBGKmnI5ZxEk7QXmjQeCcuYFMX2bfcc=
 github.com/fatih/color v1.12.0/go.mod h1:ELkj/draVOlAH/xkhN6mQ50Qd0MPOk5AAr3maGEBuJM=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
-github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/fsnotify/fsnotify v1.6.0 h1:n+5WquG0fcWoWp6xPWfHdbskMCQaFnG6PfBrh1Ky4HY=
 github.com/fsnotify/fsnotify v1.6.0/go.mod h1:sl3t1tCWJFWoRz9R8WJCbQihKKwmorjAbSClcnxKAGw=
@@ -273,14 +272,8 @@ github.com/onsi/gomega v1.19.0/go.mod h1:LY+I3pBVzYsTBU1AnDwOSxaYi9WoWiqgwooUqq9
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pb33f/libopenapi v0.8.5 h1:9wOa/qu7mvuX8rgi/VlrKycS/Y1EaeIZaq3iILitgPI=
 github.com/pb33f/libopenapi v0.8.5/go.mod h1:lvUmCtjgHUGVj6WzN3I5/CS9wkXtyN3Ykjh6ZZP5lrI=
-github.com/pb33f/libopenapi-validator v0.0.7 h1:0ZtV2V28Fu69wIMccNeFHyusmubfoq4zy2uGqrjDHMk=
-github.com/pb33f/libopenapi-validator v0.0.7/go.mod h1:uAF035zrQxpAdaoZuZZyy7eh7+Fjw3ovv4bOAPjt97U=
 github.com/pb33f/libopenapi-validator v0.0.8 h1:ydeoKZ8VMnrN+ORaXP64IQCqgbIMxv7EkhukbW72e0U=
 github.com/pb33f/libopenapi-validator v0.0.8/go.mod h1:uAF035zrQxpAdaoZuZZyy7eh7+Fjw3ovv4bOAPjt97U=
-github.com/pb33f/ranch v0.2.0 h1:F+md93GXXhlZJi9Kfa00zexm2lTjt0DSgLaazn78SNA=
-github.com/pb33f/ranch v0.2.0/go.mod h1:BHhS0EZw9pkK8cNtOxvIHaPMyFVd77I9cmy1kgKKA6M=
-github.com/pb33f/ranch v0.2.1 h1:1w6X2YUVP5MZFK+BhLbm7jrBUhD7sg1nR4SWMGkil5E=
-github.com/pb33f/ranch v0.2.1/go.mod h1:BHhS0EZw9pkK8cNtOxvIHaPMyFVd77I9cmy1kgKKA6M=
 github.com/pb33f/ranch v0.2.2 h1:pxff0FI0T+zr2o3bv5nKcTKk+41CjMX7fJr9L2tKGg4=
 github.com/pb33f/ranch v0.2.2/go.mod h1:BHhS0EZw9pkK8cNtOxvIHaPMyFVd77I9cmy1kgKKA6M=
 github.com/pelletier/go-toml v1.9.3 h1:zeC5b1GviRUyKYd6OJPvBU/mcVDVoL1OhT17FCt5dSQ=

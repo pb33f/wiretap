@@ -58,7 +58,6 @@ var (
 			var port string
 			var monitorPort string
 			var wsPort string
-			var staticPort string
 			var staticDir string
 			var pathConfigurations map[string]*shared.WiretapPathConfig
 			var redirectHost string
@@ -83,10 +82,6 @@ var (
 
 			if viper.IsSet("WEBSOCKET_PORT") {
 				wsPort = viper.GetString("WEBSOCKET_PORT")
-			}
-
-			if viper.IsSet("STATIC_PORT") {
-				staticPort = viper.GetString("STATIC_PORT")
 			}
 
 			if viper.IsSet("STATIC_DIR") {
@@ -134,15 +129,6 @@ var (
 			} else {
 				if monitorPort == "" {
 					monitorPort = "9091" // default
-				}
-			}
-
-			staticPortFlag, _ := cmd.Flags().GetString("static-port")
-			if staticPortFlag != "" {
-				staticPort = staticPortFlag
-			} else {
-				if staticPort == "" {
-					staticPort = "9093" // default
 				}
 			}
 
@@ -225,7 +211,6 @@ var (
 				GlobalAPIDelay:     globalAPIDelay,
 				WebSocketPort:      wsPort,
 				StaticDir:          staticDir,
-				StaticPort:         staticPort,
 				PathConfigurations: pathConfigurations,
 				FS:                 FS,
 			}

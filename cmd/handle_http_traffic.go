@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/gorilla/handlers"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/wiretap/daemon"
 	"github.com/pb33f/wiretap/shared"
@@ -33,8 +34,8 @@ func handleHttpTraffic(wiretapConfig *shared.WiretapConfiguration, wtService *da
 		mux.HandleFunc("/", handleTraffic)
 
 		pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("API Gateway UI booting on port %s...", wiretapConfig.Port)))
+		err := http.ListenAndServe(fmt.Sprintf(":%s", wiretapConfig.Port), handlers.CompressHandler(mux))
 
-		err := http.ListenAndServe(fmt.Sprintf(":%s", wiretapConfig.Port), mux)
 		if err != nil {
 
 			pterm.Fatal.Println(err)
