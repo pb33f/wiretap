@@ -4,15 +4,15 @@
 package daemon
 
 import (
-	"github.com/pb33f/libopenapi"
-	"github.com/pb33f/libopenapi/datamodel/high/v3"
-	"github.com/pb33f/ranch/bus"
-	"github.com/pb33f/ranch/model"
-	"github.com/pb33f/ranch/service"
-	"github.com/pb33f/wiretap/controls"
-	"github.com/pb33f/wiretap/shared"
-	"net/http"
-	"time"
+    "github.com/pb33f/libopenapi"
+    "github.com/pb33f/libopenapi/datamodel/high/v3"
+    "github.com/pb33f/ranch/bus"
+    "github.com/pb33f/ranch/model"
+    "github.com/pb33f/ranch/service"
+    "github.com/pb33f/wiretap/controls"
+    "github.com/pb33f/wiretap/shared"
+    "net/http"
+    "time"
 )
 
 const (
@@ -58,52 +58,7 @@ func NewWiretapService(document libopenapi.Document, config *shared.WiretapConfi
 
     // hard-wire the config, change this later if needed.
     wts.config = config
-
-    // check if we're running static content and create a file-server to handle it.
-    if config.StaticDir != "" {
-        //wts.fs = gziphandler.GzipHandler(http.FileServer(http.Dir(config.StaticDir)))
-        //var err error
-        //go func() {
-        //
-        //	pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("Serving static content from '%s' on port %s...",
-        //		config.StaticDir, config.StaticPort)))
-        //
-        //	watcher, _ := fsnotify.NewWatcher()
-        //	defer watcher.Close()
-        //
-        //	watchDir := func(path string, fi os.FileInfo, err error) error {
-        //		if fi.Mode().IsDir() {
-        //			return watcher.Add(path)
-        //		}
-        //		return nil
-        //	}
-        //
-        //	if wErr := filepath.Walk(config.StaticDir, watchDir); err != nil {
-        //		pterm.Fatal.Println(fmt.Sprintf("Error trying to monitor static directory: %s", wErr))
-        //	}
-        //
-        //	go func() {
-        //		for {
-        //			select {
-        //			case event := <-watcher.Events:
-        //				if event.Has(fsnotify.Write) {
-        //					pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("[wiretap] reloading static file: %s", event.Name)))
-        //				}
-        //			case wErr := <-watcher.Errors:
-        //				pterm.Error.Println(fmt.Sprintf("[wiretap] static error: %s", wErr.Error()))
-        //			}
-        //		}
-        //	}()
-        //
-        //	err = http.ListenAndServe(fmt.Sprintf(":%s", config.StaticPort), wts.fs)
-        //	if err != nil {
-        //		pterm.Fatal.Printf("Fatal error serving static content: %s\n", err.Error())
-        //	}
-        //
-        //}()
-
-    }
-
+    
     return wts
 
 }
