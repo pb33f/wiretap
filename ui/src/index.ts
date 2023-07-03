@@ -30,6 +30,8 @@ import './css/syntax.css'
 import './components/wiretap-header/header';
 import './components/transaction/transaction-container';
 import './components/transaction/transaction-view';
+import './components/transaction/response-body';
+import './components/transaction/spec_controls';
 import './components/violation/violation';
 import './components/kv-view/kv-view';
 import './components/editor/editor';
@@ -38,8 +40,8 @@ import './components/wiretap-header/metric';
 import './components/controls/controls';
 import './components/controls/settings.component';
 import './components/controls/filters.component';
-import './components/transaction/spec_controls';
-
+import './components/timeline/timeline';
+import './components/timeline/timeline-item';
 
 // models
 import './model/http_transaction';
