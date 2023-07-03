@@ -41,10 +41,10 @@ func serveStatic(wiretapConfig *shared.WiretapConfiguration) {
 				select {
 				case event := <-watcher.Events:
 					if event.Has(fsnotify.Write) {
-						pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("reloading static file: %s", event.Name)))
+						pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("[wiretap] reloading static file: %s", event.Name)))
 					}
 				case wErr := <-watcher.Errors:
-					pterm.Error.Println(fmt.Sprintf("static error: %s", wErr.Error()))
+					pterm.Error.Println(fmt.Sprintf("[wiretap] static error: %s", wErr.Error()))
 				}
 			}
 		}()

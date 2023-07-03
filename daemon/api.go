@@ -5,8 +5,10 @@ package daemon
 
 import (
 	"crypto/tls"
-	"fmt"
+	"github.com/pb33f/wiretap/config"
+	"github.com/pterm/pterm"
 	"net/http"
+	"net/url"
 
 	"github.com/pb33f/wiretap/shared"
 )
@@ -43,26 +45,30 @@ func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 	configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
 
 	// create a new request from the original request, but replace the path
-	config := configStore.(*shared.WiretapConfiguration)
+	wiretapConfig := configStore.(*shared.WiretapConfiguration)
 
 	// lookup path and determine if we need to redirect it.
+	replaced := config.RewritePath(req.URL.Path, wiretapConfig)
+	if replaced != "" {
+		newUrl, _ := url.Parse(replaced)
+		pterm.Info.Printf("[wiretap] Re-writing path '%s' to '%s'\n", req.URL.Path, replaced)
+		req.URL = newUrl
+	}
 
 	// re-write referer
 	if req.Header.Get("Referer") != "" {
 		// retain original referer for logging
 		req.Header.Set("X-Original-Referer", req.Header.Get("Referer"))
 		req.Header.Set("Referer", reconstructURL(req,
-			config.RedirectProtocol,
-			config.RedirectHost,
-			config.RedirectPort))
+			wiretapConfig.RedirectProtocol,
+			wiretapConfig.RedirectHost,
+			wiretapConfig.RedirectPort))
 	}
 	resp, err := client.Do(req)
 
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Print(tr.capturedCookieHeaders)
 
 	if len(tr.capturedCookieHeaders) > 0 {
 		if resp.Header.Get("Set-Cookie") == "" {
