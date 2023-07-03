@@ -11,15 +11,33 @@ This is an early tool and in active development.
 Probably best to leave this one alone for now, come back later
 when it's a little more baked.
 
+## Configuring paths & rewriting them. 
+
+Provide a configuration for path rewriting via the wiretap config.
+
+This uses the same syntax for path rewriting as the [http-proxy-middleware](https://github.com/chimurai/http-proxy-middleware)
+
+Paths can be matched by globs and then individual segments can be matched and re-written.
+
+```yaml
+paths:
+  /pb33f/*/test/**:
+    target: localhost:80
+    pathRewrite:
+      '^/pb33f/(\w+)/test/': ''
+```
+
 ## Command Line Interface
 
 ### Available Flags
 
-| Shortcut | Flag             | Description                                                                                |
-| -------- | ---------------- | ------------------------------------------------------------------------------------------ |
-| `-u`     | `--url`          | Redirect URL for wiretap to send traffic to.                                               |
-| `-s`     | `--spec`         | Path to the OpenAPI Specification to use.                                                  |
-| `-p`     | `--port`         | Port on which to listen for API traffic. (default is `9090`)                               |
+| Shortcut | Flag            | Description                                                                                |
+|----------|-----------------|--------------------------------------------------------------------------------------------|
+| `-u`     | `--url`         | Redirect URL for wiretap to send traffic to.                                               |
+| `-s`     | `--spec`        | Path to the OpenAPI Specification to use.                                                  |
+| `-p`     | `--port`        | Port on which to listen for API traffic. (default is `9090`)                               |
 | `-m`     | `--monitor-port` | Port on which to serve the monitor UI. (default is `9091`)                                 |
-| `-d`     | `--delay`        | Set a global delay for all API requests in milliseconds. (default is `0`)                  |
-| `-c`     | `--config`       | Location of wiretap configuration file to use (default is `.wiretap` in current directory) |
+| `-d`     | `--delay`       | Set a global delay for all API requests in milliseconds. (default is `0`)                  |
+| `-c`     | `--config`      | Location of wiretap configuration file to use (default is `.wiretap` in current directory) |
+| `-t`     | `--static`      | Location of static files to serve along with API requests (simulate real app deployment)   |
+
