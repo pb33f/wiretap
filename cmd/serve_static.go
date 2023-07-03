@@ -51,7 +51,7 @@ func serveStatic(wiretapConfig *shared.WiretapConfiguration) {
 
 		err = http.ListenAndServe(fmt.Sprintf(":%s", wiretapConfig.StaticPort), fileServer)
 		if err != nil {
-			pterm.Fatal.Println("Fatal error serving static content: %s", err.Error())
+			pterm.Fatal.Printf("Fatal error serving static content: %s\n", err.Error())
 		}
 	}()
 }
