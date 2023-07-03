@@ -100,6 +100,8 @@ var (
 				if err != nil {
 					pterm.Error.Printf("Unable to decode paths from configuration: %s\n", err.Error())
 				} else {
+					// print out the path configurations.
+					printLoadedPathConfigurations(pc)
 					pathConfigurations = pc
 				}
 			}
@@ -135,6 +137,20 @@ var (
 				}
 			}
 
+			staticPortFlag, _ := cmd.Flags().GetString("static-port")
+			if staticPortFlag != "" {
+				staticPort = staticPortFlag
+			} else {
+				if staticPort == "" {
+					staticPort = "9093" // default
+				}
+			}
+
+			staticDirFlag, _ := cmd.Flags().GetString("static")
+			if staticDirFlag != "" {
+				staticDir = staticDirFlag
+			}
+
 			wsPortFlag, _ := cmd.Flags().GetString("ws-port")
 			if wsPortFlag != "" {
 				wsPort = wsPortFlag
@@ -146,6 +162,11 @@ var (
 
 			redirectURLFlag, _ := cmd.Flags().GetString("url")
 			if redirectURLFlag != "" {
+
+				if pathConfigurations != nil {
+					// warn the user that the path configurations will trump the switch
+					pterm.Warning.Println("Using the --url flag will be *overridden* by the path configuration 'target' setting")
+				}
 				redirectURL = redirectURLFlag
 			}
 
@@ -155,7 +176,6 @@ var (
 			}
 
 			if spec == "" {
-				pterm.Println()
 				pterm.Warning.Println("No OpenAPI specification provided. " +
 					"Please provide a path to an OpenAPI specification using the --spec or -s flags.")
 				pterm.Warning.Println("Without an OpenAPI specification, wiretap will not be able to validate " +
@@ -233,14 +253,36 @@ func Execute(version, commit, date string, fs embed.FS) {
 
 	rootCmd.Flags().StringP("url", "u", "", "Set the redirect URL for wiretap to send traffic to")
 	rootCmd.Flags().IntP("delay", "d", 0, "Set a global delay for all API requests")
-	rootCmd.Flags().StringP("port", "p", "", "Set port on which to listen for API traffic (default is 9090")
+	rootCmd.Flags().StringP("port", "p", "", "Set port on which to listen for API traffic (default is 9090)")
 	rootCmd.Flags().StringP("monitor-port", "m", "", "Set port on which to serve the monitor UI (default is 9091)")
-	rootCmd.Flags().StringP("ws-port", "w", "", "Set port on which to serve the monitor UI websocket (default is 9092")
+	rootCmd.Flags().StringP("ws-port", "w", "", "Set port on which to serve the monitor UI websocket (default is 9092)")
 	rootCmd.Flags().StringP("spec", "s", "", "Set the path to the OpenAPI specification to use")
+	rootCmd.Flags().StringP("static", "t", "", "Set the path to a directory of static files to serve")
+	rootCmd.Flags().StringP("static-port", "r", "", "Set port on which to listen for API traffic (default is 9093)")
 	rootCmd.Flags().StringP("config", "c", "",
 		"Location of wiretap configuration file to use (default is .wiretap in current directory)")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
+	}
+}
+
+func printLoadedPathConfigurations(configs map[string]*shared.WiretapPathConfig) {
+	plural := func(count int) string {
+		if count == 1 {
+			return ""
+		}
+		return "s"
+	}
+
+	pterm.Info.Printf("Loaded %d path configuration%s:\n", len(configs), plural(len(configs)))
+	pterm.Println()
+
+	for k, v := range configs {
+		pterm.Printf("%s\n", pterm.LightMagenta(k))
+		for k, p := range v.PathRewrite {
+			pterm.Printf("✏️ '%s' re-written to '%s'\n", pterm.LightCyan(k), pterm.LightGreen(p))
+		}
+		pterm.Println()
 	}
 }

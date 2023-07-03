@@ -23,9 +23,19 @@ func bootedMessage(wiretapConfig *shared.WiretapConfiguration) {
 				pterm.Println()
 				b1 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("API Gateway")).Sprint(fmt.Sprintf("http://localhost:%s", wiretapConfig.Port))
 				b2 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Monitor UI")).Sprint(fmt.Sprintf("http://localhost:%s", wiretapConfig.MonitorPort))
-				panels, _ := pterm.DefaultPanel.WithPanels(pterm.Panels{
-					{{Data: b1}, {Data: b2}},
-				}).Srender()
+				b3 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Static Files")).Sprint(fmt.Sprintf("http://localhost:%s", wiretapConfig.StaticPort))
+
+				var pp *pterm.PanelPrinter
+				if wiretapConfig.StaticDir != "" {
+					pp = pterm.DefaultPanel.WithPanels(pterm.Panels{
+						{{Data: b1}, {Data: b2}, {Data: b3}},
+					})
+				} else {
+					pp = pterm.DefaultPanel.WithPanels(pterm.Panels{
+						{{Data: b1}, {Data: b2}},
+					})
+				}
+				panels, _ := pp.Srender()
 
 				pterm.DefaultBox.WithTitle(pterm.LightCyan("wiretap is online!")).
 					WithTitleTopLeft().

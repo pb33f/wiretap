@@ -122,6 +122,11 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 	// boot the monitor
 	serveMonitor(wiretapConfig)
 
+	// if static dir is not empty, boot the static server
+	if wiretapConfig.StaticDir != "" {
+		serveStatic(wiretapConfig)
+	}
+
 	// boot wiretap
 	platformServer.StartServer(sysChan)
 	return platformServer, nil
