@@ -247,7 +247,6 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringP("ws-port", "w", "", "Set port on which to serve the monitor UI websocket (default is 9092)")
 	rootCmd.Flags().StringP("spec", "s", "", "Set the path to the OpenAPI specification to use")
 	rootCmd.Flags().StringP("static", "t", "", "Set the path to a directory of static files to serve")
-	rootCmd.Flags().StringP("static-port", "r", "", "Set port on which to listen for API traffic (default is 9093)")
 	rootCmd.Flags().StringP("config", "c", "",
 		"Location of wiretap configuration file to use (default is .wiretap in current directory)")
 
