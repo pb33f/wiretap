@@ -230,6 +230,10 @@ var (
 				FS:                 FS,
 			}
 
+			if len(pathConfigurations) > 0 {
+				config.CompilePaths()
+			}
+
 			// ready to boot, let's go!
 			_, pErr := runWiretapService(&config)
 
