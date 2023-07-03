@@ -13,11 +13,29 @@ import (
 	"github.com/pb33f/wiretap/shared"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 )
 
 func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 
+	// determine if this is a request for a file or not.
+	if ws.config.StaticDir != "" {
+		fp := filepath.Join(ws.config.StaticDir, request.HttpRequest.URL.Path)
+
+		// check if this is a root request
+		if fp == ws.config.StaticDir {
+			fp = filepath.Join(ws.config.StaticDir, "index.html")
+		}
+		localStat, _ := os.Stat(fp)
+		if localStat != nil {
+			if !localStat.IsDir() {
+				http.ServeFile(request.HttpResponseWriter, request.HttpRequest, fp)
+				return
+			}
+		}
+	}
 	var returnedResponse *http.Response
 	var returnedError error
 

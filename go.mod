@@ -18,9 +18,9 @@ require (
 	github.com/fatih/color v1.12.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-stomp/stomp/v3 v3.0.3 // indirect
-	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/gobwas/glob v0.2.3
 	github.com/gookit/color v1.5.3 // indirect
-	github.com/gorilla/handlers v1.4.2 // indirect
+	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -44,7 +44,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.8.1
-	github.com/stretchr/testify v1.8.0 // indirect
+	github.com/stretchr/testify v1.8.0
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect

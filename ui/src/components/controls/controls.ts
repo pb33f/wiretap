@@ -93,7 +93,7 @@ export class WiretapControlsComponent extends LitElement {
     controlUpdateHandler(): BusCallback<CommandResponse> {
         return (msg: Message<CommandResponse<ControlsResponse>>) => {
             const delay = msg.payload.payload.config.globalAPIDelay;
-            const existingDelay = this._controls.globalDelay;
+            const existingDelay = this._controls?.globalDelay;
 
             if (delay == undefined) {
                 // this means a reset back to 0.

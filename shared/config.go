@@ -21,7 +21,6 @@ type WiretapConfiguration struct {
 	WebSocketPort      string                        `json:"webSocketPort,omitempty"`
 	GlobalAPIDelay     int                           `json:"globalAPIDelay,omitempty"`
 	StaticDir          string                        `json:"staticDir,omitempty"`
-	StaticPort         string                        `json:"staticPort,omitempty"`
 	PathConfigurations map[string]*WiretapPathConfig `json:"paths,omitempty"`
 	CompiledPaths      map[string]*CompiledPath      `json:"-"`
 	FS                 embed.FS                      `json:"-"`
