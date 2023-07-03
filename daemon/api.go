@@ -45,6 +45,8 @@ func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 	// create a new request from the original request, but replace the path
 	config := configStore.(*shared.WiretapConfiguration)
 
+	// lookup path and determine if we need to redirect it.
+
 	// re-write referer
 	if req.Header.Get("Referer") != "" {
 		// retain original referer for logging

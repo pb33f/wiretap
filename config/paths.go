@@ -30,7 +30,12 @@ func RewritePath(path string, configuration *shared.WiretapConfiguration) string
 				replace := pathConfig.PathRewrite[key]
 				rex := pathConfig.CompiledPath.CompiledPathRewrite[key]
 				replacedPath := rex.ReplaceAllString(path, replace)
-				replaced = fmt.Sprintf("%s%s", pathConfig.Target, replacedPath)
+
+				scheme := "http://"
+				if pathConfig.Secure {
+					scheme = "https://"
+				}
+				replaced = fmt.Sprintf("%s%s%s", scheme, pathConfig.Target, replacedPath)
 				break
 			}
 		}
