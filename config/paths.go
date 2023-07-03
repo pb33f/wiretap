@@ -35,7 +35,7 @@ func RewritePath(path string, configuration *shared.WiretapConfiguration) string
 				if pathConfig.Secure {
 					scheme = "https://"
 				}
-				if replacedPath[0] != '/' {
+				if replacedPath[0] != '/' && pathConfig.Target[len(pathConfig.Target)-1] != '/' {
 					replacedPath = fmt.Sprintf("/%s", replacedPath)
 				}
 				replaced = fmt.Sprintf("%s%s%s", scheme, pathConfig.Target, replacedPath)
