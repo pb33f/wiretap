@@ -103,14 +103,19 @@ func buildResponse(r *model.Request, response *http.Response) *HttpTransaction {
 
 func buildRequest(r *model.Request) *HttpTransaction {
 
-	storeManager := bus.GetBus().GetStoreManager()
-	controlsStore := storeManager.CreateStore(controls.ControlServiceChan)
-	config, _ := controlsStore.Get(shared.ConfigKey)
+	config, _ := bus.
+		GetBus().
+		GetStoreManager().
+		GetStore(controls.ControlServiceChan).
+		Get(shared.ConfigKey)
 
-	newReq := cloneRequest(r.HttpRequest,
-		config.(*shared.WiretapConfiguration).RedirectProtocol,
-		config.(*shared.WiretapConfiguration).RedirectHost,
-		config.(*shared.WiretapConfiguration).RedirectPort)
+	newReq := cloneRequest(CloneRequest{
+		Request:     r.HttpRequest,
+		Protocol:    config.(*shared.WiretapConfiguration).RedirectProtocol,
+		Host:        config.(*shared.WiretapConfiguration).RedirectHost,
+		Port:        config.(*shared.WiretapConfiguration).RedirectPort,
+		DropHeaders: config.(*shared.WiretapConfiguration).Headers.DropHeaders,
+	})
 
 	var requestBody []byte
 

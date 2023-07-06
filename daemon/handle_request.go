@@ -47,15 +47,21 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
 
 	config := configStore.(*shared.WiretapConfiguration)
-	newReq := cloneRequest(request.HttpRequest,
-		config.RedirectProtocol,
-		config.RedirectHost,
-		config.RedirectPort)
+	newReq := cloneRequest(CloneRequest{
+		Request:     request.HttpRequest,
+		Protocol:    config.RedirectProtocol,
+		Host:        config.RedirectHost,
+		Port:        config.RedirectPort,
+		DropHeaders: config.Headers.DropHeaders,
+	})
 
-	apiRequest := cloneRequest(request.HttpRequest,
-		config.RedirectProtocol,
-		config.RedirectHost,
-		config.RedirectPort)
+	apiRequest := cloneRequest(CloneRequest{
+		Request:     request.HttpRequest,
+		Protocol:    config.RedirectProtocol,
+		Host:        config.RedirectHost,
+		Port:        config.RedirectPort,
+		DropHeaders: config.Headers.DropHeaders,
+	})
 
 	// validate the request
 	go ws.validateRequest(request, newReq, requestValidator, paramValidator, responseValidator)

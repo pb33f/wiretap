@@ -8,6 +8,7 @@ import (
 	"github.com/pb33f/wiretap/shared"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 	"strings"
 	"testing"
 )
@@ -36,7 +37,6 @@ paths:
 		PathConfigurations: pc,
 	}
 
-	// compile paths
 	wcConfig.CompilePaths()
 
 	res := FindPaths("/pb33f/test/123", wcConfig)
@@ -74,7 +74,6 @@ paths:
 		PathConfigurations: pc,
 	}
 
-	// compile paths
 	wcConfig.CompilePaths()
 
 	path := RewritePath("/pb33f/test/123/slap/a/chap", wcConfig)
@@ -106,7 +105,6 @@ paths:
 		PathConfigurations: pc,
 	}
 
-	// compile paths
 	wcConfig.CompilePaths()
 
 	path := RewritePath("/pb33f/cakes/test/123/smelly/jelly", wcConfig)
@@ -138,10 +136,55 @@ paths:
 		PathConfigurations: pc,
 	}
 
-	// compile paths
 	wcConfig.CompilePaths()
 
 	path := RewritePath("/pb33f/cakes/test/lemons/321/smelly/jelly", wcConfig)
 	assert.Equal(t, "https://localhost:9093/slippy/cakes/whip/321/lemons/smelly/jelly", path)
+
+}
+
+func TestRewritePath_Secure_With_Variables_CaseSensitive(t *testing.T) {
+
+	config := `
+paths:
+  /en-US/burgerd/__raw/*:
+    target: localhost:80
+    pathRewrite:
+      '^/en-US/burgerd/__raw/(\w+)/nobody/': '$1/-/'
+  /en-US/burgerd/services/*:
+    target: locahost:80
+    pathRewrite:
+      '^/en-US/burgerd/services': '/services'`
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &c)
+
+	c.CompilePaths()
+
+	path := RewritePath("/en-US/burgerd/__raw/noKetchupPlease/nobody/", &c)
+	assert.Equal(t, "http://localhost:80/noKetchupPlease/-/", path)
+
+}
+
+func TestRewritePath_Secure_With_Variables_CaseSensitive_AndQuery(t *testing.T) {
+
+	config := `
+paths:
+  /en-US/burgerd/__raw/*:
+    target: localhost:80
+    pathRewrite:
+      '^/en-US/burgerd/__raw/(\w+)/nobody/': '$1/-/'
+  /en-US/burgerd/services/*:
+    target: locahost:80
+    pathRewrite:
+      '^/en-US/burgerd/services': '/services'`
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &c)
+
+	c.CompilePaths()
+
+	path := RewritePath("/en-US/burgerd/__raw/noKetchupPlease/nobody/yummy/yum?onions=true", &c)
+	assert.Equal(t, "http://localhost:80/noKetchupPlease/-/yummy/yum?onions=true", path)
 
 }

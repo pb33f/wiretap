@@ -5,14 +5,13 @@ package cmd
 
 import (
 	"embed"
-	"github.com/mitchellh/mapstructure"
+	"gopkg.in/yaml.v3"
 	"net/url"
 	"os"
 
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -33,33 +32,12 @@ var (
 
 			configFlag, _ := cmd.Flags().GetString("config")
 
-			if configFlag == "" {
-				pterm.Info.Println("Attempting to locate wiretap configuration...")
-				viper.SetConfigFile(".wiretap")
-				viper.SetConfigType("env")
-				viper.AddConfigPath("$HOME/.wiretap")
-				viper.AddConfigPath(".")
-			} else {
-				viper.SetConfigFile(configFlag)
-			}
-
-			cerr := viper.ReadInConfig()
-			if cerr != nil && configFlag != "" {
-				pterm.Error.Printf("No wiretap configuration located. Using defaults: %s\n", cerr.Error())
-			}
-			if cerr != nil && configFlag == "" {
-				pterm.Info.Println("No wiretap configuration located. Using defaults.")
-			}
-			if cerr == nil {
-				pterm.Info.Printf("Located configuration file at: %s\n", viper.ConfigFileUsed())
-			}
-
 			var spec string
 			var port string
 			var monitorPort string
 			var wsPort string
 			var staticDir string
-			var pathConfigurations map[string]*shared.WiretapPathConfig
+
 			var redirectHost string
 			var redirectPort string
 			var redirectScheme string
@@ -67,55 +45,11 @@ var (
 			var redirectURL string
 			var globalAPIDelay int
 
-			// extract from wiretap environment variables.
-			if viper.IsSet("PORT") {
-				port = viper.GetString("PORT")
-			}
-
-			if viper.IsSet("SPEC") {
-				spec = viper.GetString("SPEC")
-			}
-
-			if viper.IsSet("MONITOR_PORT") {
-				monitorPort = viper.GetString("MONITOR_PORT")
-			}
-
-			if viper.IsSet("WEBSOCKET_PORT") {
-				wsPort = viper.GetString("WEBSOCKET_PORT")
-			}
-
-			if viper.IsSet("STATIC_DIR") {
-				staticDir = viper.GetString("STATIC_DIR")
-			}
-
-			if viper.IsSet("PATHS") {
-				paths := viper.Get("PATHS")
-				var pc map[string]*shared.WiretapPathConfig
-				err := mapstructure.Decode(paths, &pc)
-				if err != nil {
-					pterm.Error.Printf("Unable to decode paths from configuration: %s\n", err.Error())
-				} else {
-					// print out the path configurations.
-					printLoadedPathConfigurations(pc)
-					pathConfigurations = pc
-				}
-			}
-
-			if viper.IsSet("REDIRECT_URL") {
-				redirectURL = viper.GetString("REDIRECT_URL")
-			}
-
-			if viper.IsSet("GLOBAL_API_DELAY") {
-				globalAPIDelay = viper.GetInt("GLOBAL_API_DELAY")
-			}
-
 			portFlag, _ := cmd.Flags().GetString("port")
 			if portFlag != "" {
 				port = portFlag
 			} else {
-				if port == "" {
-					port = "9090" // default
-				}
+				port = "9090" // default
 			}
 
 			specFlag, _ := cmd.Flags().GetString("spec")
@@ -127,9 +61,7 @@ var (
 			if monitorPortFlag != "" {
 				monitorPort = monitorPortFlag
 			} else {
-				if monitorPort == "" {
-					monitorPort = "9091" // default
-				}
+				monitorPort = "9091" // default
 			}
 
 			staticDirFlag, _ := cmd.Flags().GetString("static")
@@ -141,24 +73,38 @@ var (
 			if wsPortFlag != "" {
 				wsPort = wsPortFlag
 			} else {
-				if wsPort == "" {
-					wsPort = "9092" // default
-				}
+				wsPort = "9092" // default
 			}
 
 			redirectURLFlag, _ := cmd.Flags().GetString("url")
 			if redirectURLFlag != "" {
-
-				if pathConfigurations != nil {
-					// warn the user that the path configurations will trump the switch
-					pterm.Warning.Println("Using the --url flag will be *overridden* by the path configuration 'target' setting")
-				}
 				redirectURL = redirectURLFlag
 			}
 
 			globalAPIDelayFlag, _ := cmd.Flags().GetInt("delay")
 			if globalAPIDelayFlag > 0 {
 				globalAPIDelay = globalAPIDelayFlag
+			}
+
+			var config shared.WiretapConfiguration
+			if configFlag != "" {
+
+				cBytes, err := os.ReadFile(configFlag)
+				if err != nil {
+					pterm.Error.Printf("Failed to read wiretap configuration '%s': %s\n", configFlag, err.Error())
+					return err
+				}
+				err = yaml.Unmarshal(cBytes, &config)
+				if err != nil {
+					pterm.Error.Printf("Failed to parse wiretap configuration '%s': %s\n", configFlag, err.Error())
+					return err
+				}
+				pterm.Info.Printf("Loaded wiretap configuration '%s'...\n\n", configFlag)
+				if config.RedirectURL != "" {
+					redirectURL = config.RedirectURL
+				}
+			} else {
+				pterm.Info.Println("No wiretap configuration located. Using defaults")
 			}
 
 			if spec == "" {
@@ -177,46 +123,62 @@ var (
 				return nil
 			}
 
-			if redirectURL != "" {
-				parsedURL, e := url.Parse(redirectURL)
-				if e != nil {
-					pterm.Println()
-					pterm.Error.Printf("URL is not valid. "+
-						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
-					pterm.Println()
-					return nil
-				}
-				if parsedURL.Scheme == "" || parsedURL.Host == "" {
-					pterm.Println()
-					pterm.Error.Printf("URL is not valid. "+
-						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
-					pterm.Println()
-					return nil
-				}
-				redirectHost = parsedURL.Hostname()
-				redirectPort = parsedURL.Port()
-				redirectScheme = parsedURL.Scheme
-				redirectBasePath = parsedURL.Path
+			parsedURL, e := url.Parse(redirectURL)
+			if e != nil {
+				pterm.Println()
+				pterm.Error.Printf("URL is not valid. "+
+					"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
+				pterm.Println()
+				return nil
 			}
-
-			config := shared.WiretapConfiguration{
-				Contract:           spec,
-				RedirectURL:        redirectURL,
-				RedirectHost:       redirectHost,
-				RedirectBasePath:   redirectBasePath,
-				RedirectPort:       redirectPort,
-				RedirectProtocol:   redirectScheme,
-				Port:               port,
-				MonitorPort:        monitorPort,
-				GlobalAPIDelay:     globalAPIDelay,
-				WebSocketPort:      wsPort,
-				StaticDir:          staticDir,
-				PathConfigurations: pathConfigurations,
-				FS:                 FS,
+			if parsedURL.Scheme == "" || parsedURL.Host == "" {
+				pterm.Println()
+				pterm.Error.Printf("URL is not valid. "+
+					"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
+				pterm.Println()
+				return nil
 			}
+			redirectHost = parsedURL.Hostname()
+			redirectPort = parsedURL.Port()
+			redirectScheme = parsedURL.Scheme
+			redirectBasePath = parsedURL.Path
 
-			if len(pathConfigurations) > 0 {
+			config.Contract = spec
+			config.RedirectURL = redirectURL
+			config.RedirectHost = redirectHost
+			config.RedirectBasePath = redirectBasePath
+			config.RedirectPort = redirectPort
+			config.RedirectProtocol = redirectScheme
+			if config.Port == "" {
+				config.Port = port
+			}
+			if config.MonitorPort == "" {
+				config.MonitorPort = monitorPort
+			}
+			if config.WebSocketPort == "" {
+				config.WebSocketPort = wsPort
+			}
+			if config.GlobalAPIDelay == 0 {
+				config.GlobalAPIDelay = globalAPIDelay
+			}
+			if config.StaticDir == "" {
+				config.StaticDir = staticDir
+			}
+			config.FS = FS
+
+			if len(config.PathConfigurations) > 0 {
+				printLoadedPathConfigurations(config.PathConfigurations)
 				config.CompilePaths()
+			}
+
+			if config.Headers != nil && len(config.Headers.DropHeaders) > 0 {
+
+				pterm.Info.Printf("Dropping the following %d %s:\n", len(config.Headers.DropHeaders),
+					shared.Pluralize(len(config.Headers.DropHeaders), "header", "headers"))
+				for _, header := range config.Headers.DropHeaders {
+					pterm.Printf("🗑️ %s\n", pterm.LightMagenta(header))
+				}
+				pterm.Println()
 			}
 
 			// ready to boot, let's go!

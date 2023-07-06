@@ -34,10 +34,12 @@ export class RequestBodyViewComponent extends LitElement {
 
     parseFormEncodedData(data: string): Map<string, string> {
         const map = new Map<string, string>();
-        const pairs = data.split('&');
-        for (const pair of pairs) {
-            const [key, value] = pair.split('=');
-            map.set(decodeURI(key), decodeURI(value));
+        if (data) {
+            const pairs = data.split('&');
+            for (const pair of pairs) {
+                const [key, value] = pair.split('=');
+                map.set(decodeURI(key), decodeURI(value));
+            }
         }
         return map;
     }
