@@ -154,7 +154,7 @@ export class HttpTransaction extends HttpTransactionBase {
                 }
 
                 // check if the keyword filter is in the response body.
-                if (this.httpResponse.responseBody?.toLowerCase().includes(keywordFilter.keyword.toLowerCase())) {
+                if (this.httpResponse?.responseBody?.toLowerCase().includes(keywordFilter.keyword.toLowerCase())) {
                     return keywordFilter;
                 }
 

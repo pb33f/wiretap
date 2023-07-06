@@ -27,6 +27,17 @@ paths:
       '^/pb33f/(\w+)/test/': ''
 ```
 
+## Dropping certain headers
+
+To prevent certain headers from being proxies, you can drop them using the `headers` config property and the `drop` property
+which is an array of headers to drop from all outbound requests..
+
+```yaml
+headers:
+  drop:
+    - Origin
+```    
+
 ## Command Line Interface
 
 ### Available Flags

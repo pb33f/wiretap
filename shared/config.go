@@ -10,18 +10,19 @@ import (
 )
 
 type WiretapConfiguration struct {
-	Contract           string                        `json:"-"`
-	RedirectHost       string                        `json:"redirectHost,omitempty"`
-	RedirectPort       string                        `json:"redirectPort,omitempty"`
-	RedirectBasePath   string                        `json:"redirectBasePath,omitempty"`
-	RedirectProtocol   string                        `json:"redirectProtocol,omitempty"`
-	RedirectURL        string                        `json:"redirectURL,omitempty"`
-	Port               string                        `json:"port,omitempty"`
-	MonitorPort        string                        `json:"monitorPort,omitempty"`
-	WebSocketPort      string                        `json:"webSocketPort,omitempty"`
-	GlobalAPIDelay     int                           `json:"globalAPIDelay,omitempty"`
-	StaticDir          string                        `json:"staticDir,omitempty"`
-	PathConfigurations map[string]*WiretapPathConfig `json:"paths,omitempty"`
+	Contract           string                        `json:"-" yaml:"-"`
+	RedirectHost       string                        `json:"redirectHost,omitempty" yaml:"redirectHost,omitempty"`
+	RedirectPort       string                        `json:"redirectPort,omitempty" yaml:"redirectPort,omitempty"`
+	RedirectBasePath   string                        `json:"redirectBasePath,omitempty" yaml:"redirectBasePath,omitempty"`
+	RedirectProtocol   string                        `json:"redirectProtocol,omitempty" yaml:"redirectProtocol,omitempty"`
+	RedirectURL        string                        `json:"redirectURL,omitempty" yaml:"redirectURL,omitempty"`
+	Port               string                        `json:"port,omitempty" yaml:"port,omitempty"`
+	MonitorPort        string                        `json:"monitorPort,omitempty" yaml:"monitorPort,omitempty"`
+	WebSocketPort      string                        `json:"webSocketPort,omitempty" yaml:"webSocketPort,omitempty"`
+	GlobalAPIDelay     int                           `json:"globalAPIDelay,omitempty" yaml:"globalAPIDelay,omitempty"`
+	StaticDir          string                        `json:"staticDir,omitempty" yaml:"staticDir,omitempty"`
+	PathConfigurations map[string]*WiretapPathConfig `json:"paths,omitempty" yaml:"paths,omitempty"`
+	Headers            *WiretapHeaderConfig          `json:"headers,omitempty" yaml:"headers,omitempty"`
 	CompiledPaths      map[string]*CompiledPath      `json:"-"`
 	FS                 embed.FS                      `json:"-"`
 }
@@ -34,10 +35,10 @@ func (wtc *WiretapConfiguration) CompilePaths() {
 }
 
 type WiretapPathConfig struct {
-	Target       string            `json:"target,omitempty"`
-	PathRewrite  map[string]string `json:"pathRewrite,omitempty"`
+	Target       string            `json:"target,omitempty" yaml:"target,omitempty"`
+	PathRewrite  map[string]string `json:"pathRewrite,omitempty" yaml:"pathRewrite,omitempty"`
 	CompiledPath *CompiledPath     `json:"-"`
-	Secure       bool              `json:"secure,omitempty"`
+	Secure       bool              `json:"secure,omitempty" yaml:"secure"`
 }
 
 type CompiledPath struct {
@@ -52,6 +53,10 @@ type CompiledPathRewrite struct {
 	Key            string
 	CompiledKey    glob.Glob
 	CompiledTarget glob.Glob
+}
+
+type WiretapHeaderConfig struct {
+	DropHeaders []string `json:"drop,omitempty" yaml:"drop,omitempty"`
 }
 
 func (wpc *WiretapPathConfig) Compile(key string) *CompiledPath {

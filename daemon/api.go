@@ -51,7 +51,10 @@ func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 	replaced := config.RewritePath(req.URL.Path, wiretapConfig)
 	if replaced != "" {
 		newUrl, _ := url.Parse(replaced)
-		pterm.Info.Printf("[wiretap] Re-writing path '%s' to '%s'\n", req.URL.Path, replaced)
+		if req.URL.RawQuery != "" {
+			newUrl.RawQuery = req.URL.RawQuery
+		}
+		pterm.Info.Printf("[wiretap] Re-writing path '%s' to '%s'\n", req.URL.String(), newUrl.String())
 		req.URL = newUrl
 	}
 
