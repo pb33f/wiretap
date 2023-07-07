@@ -24,6 +24,16 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	if ws.config.StaticDir != "" {
 		fp := filepath.Join(ws.config.StaticDir, request.HttpRequest.URL.Path)
 
+		// check if this is a static path catch-all
+		if len(ws.config.StaticPathsCompiled) > 0 {
+			for key := range ws.config.StaticPathsCompiled {
+				if ws.config.StaticPathsCompiled[key].Match(request.HttpRequest.URL.Path) {
+					fp = filepath.Join(ws.config.StaticDir, ws.config.StaticIndex)
+					break
+				}
+			}
+		}
+
 		// check if this is a root request
 		if fp == ws.config.StaticDir {
 			fp = filepath.Join(ws.config.StaticDir, "index.html")
