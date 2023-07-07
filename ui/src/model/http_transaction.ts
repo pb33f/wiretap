@@ -137,6 +137,7 @@ export class HttpTransaction extends HttpTransactionBase {
     matchesKeywordFilter(filter: WiretapFilters): Filter | boolean {
         if (filter?.filterKeywords?.length > 0) {
             for (let i = 0; i < filter.filterKeywords.length; i++) {
+
                 const keywordFilter = filter.filterKeywords[i];
                 // check if the keyword filter is in the url.
                 if (this.httpRequest.url.toLowerCase().includes(keywordFilter.keyword.toLowerCase())) {
@@ -182,9 +183,7 @@ export class HttpTransaction extends HttpTransactionBase {
         }
         return false;
     }
-
 }
-
 
 
 export function BuildLiveTransactionFromState(httpTransaction: HttpTransaction): HttpTransaction {

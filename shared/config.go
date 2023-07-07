@@ -10,27 +10,37 @@ import (
 )
 
 type WiretapConfiguration struct {
-	Contract           string                        `json:"-" yaml:"-"`
-	RedirectHost       string                        `json:"redirectHost,omitempty" yaml:"redirectHost,omitempty"`
-	RedirectPort       string                        `json:"redirectPort,omitempty" yaml:"redirectPort,omitempty"`
-	RedirectBasePath   string                        `json:"redirectBasePath,omitempty" yaml:"redirectBasePath,omitempty"`
-	RedirectProtocol   string                        `json:"redirectProtocol,omitempty" yaml:"redirectProtocol,omitempty"`
-	RedirectURL        string                        `json:"redirectURL,omitempty" yaml:"redirectURL,omitempty"`
-	Port               string                        `json:"port,omitempty" yaml:"port,omitempty"`
-	MonitorPort        string                        `json:"monitorPort,omitempty" yaml:"monitorPort,omitempty"`
-	WebSocketPort      string                        `json:"webSocketPort,omitempty" yaml:"webSocketPort,omitempty"`
-	GlobalAPIDelay     int                           `json:"globalAPIDelay,omitempty" yaml:"globalAPIDelay,omitempty"`
-	StaticDir          string                        `json:"staticDir,omitempty" yaml:"staticDir,omitempty"`
-	PathConfigurations map[string]*WiretapPathConfig `json:"paths,omitempty" yaml:"paths,omitempty"`
-	Headers            *WiretapHeaderConfig          `json:"headers,omitempty" yaml:"headers,omitempty"`
-	CompiledPaths      map[string]*CompiledPath      `json:"-"`
-	FS                 embed.FS                      `json:"-"`
+	Contract            string                        `json:"-" yaml:"-"`
+	RedirectHost        string                        `json:"redirectHost,omitempty" yaml:"redirectHost,omitempty"`
+	RedirectPort        string                        `json:"redirectPort,omitempty" yaml:"redirectPort,omitempty"`
+	RedirectBasePath    string                        `json:"redirectBasePath,omitempty" yaml:"redirectBasePath,omitempty"`
+	RedirectProtocol    string                        `json:"redirectProtocol,omitempty" yaml:"redirectProtocol,omitempty"`
+	RedirectURL         string                        `json:"redirectURL,omitempty" yaml:"redirectURL,omitempty"`
+	Port                string                        `json:"port,omitempty" yaml:"port,omitempty"`
+	MonitorPort         string                        `json:"monitorPort,omitempty" yaml:"monitorPort,omitempty"`
+	WebSocketPort       string                        `json:"webSocketPort,omitempty" yaml:"webSocketPort,omitempty"`
+	GlobalAPIDelay      int                           `json:"globalAPIDelay,omitempty" yaml:"globalAPIDelay,omitempty"`
+	StaticDir           string                        `json:"staticDir,omitempty" yaml:"staticDir,omitempty"`
+	StaticIndex         string                        `json:"staticIndex,omitempty" yaml:"staticIndex,omitempty"`
+	PathConfigurations  map[string]*WiretapPathConfig `json:"paths,omitempty" yaml:"paths,omitempty"`
+	Headers             *WiretapHeaderConfig          `json:"headers,omitempty" yaml:"headers,omitempty"`
+	StaticPaths         []string                      `json:"staticPaths,omitempty" yaml:"staticPaths,omitempty"`
+	StaticPathsCompiled []glob.Glob                   `json:"-" yaml:"-"`
+	CompiledPaths       map[string]*CompiledPath      `json:"-"`
+	FS                  embed.FS                      `json:"-"`
 }
 
 func (wtc *WiretapConfiguration) CompilePaths() {
 	wtc.CompiledPaths = make(map[string]*CompiledPath)
 	for x := range wtc.PathConfigurations {
 		wtc.CompiledPaths[x] = wtc.PathConfigurations[x].Compile(x)
+	}
+	if len(wtc.StaticPaths) > 0 {
+		comp := make([]glob.Glob, len(wtc.StaticPaths))
+		for x, path := range wtc.StaticPaths {
+			comp[x] = glob.MustCompile(path)
+		}
+		wtc.StaticPathsCompiled = comp
 	}
 }
 

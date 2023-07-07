@@ -38,17 +38,30 @@ headers:
     - Origin
 ```    
 
+## Configuring static paths
+
+Running a single page application? Need certain paths to always be caught and forwarded to your SPA? Configure
+static paths to be caught and forwarded to your SPA.
+
+```yaml
+staticDir: ui/dist
+staticIndex: index.html
+staticPaths:
+  - /my-app/*
+  - /another-app/somewhere/*
+```
+
 ## Command Line Interface
 
 ### Available Flags
 
-| Shortcut | Flag            | Description                                                                                |
-|----------|-----------------|--------------------------------------------------------------------------------------------|
-| `-u`     | `--url`         | Redirect URL for wiretap to send traffic to.                                               |
-| `-s`     | `--spec`        | Path to the OpenAPI Specification to use.                                                  |
-| `-p`     | `--port`        | Port on which to listen for API traffic. (default is `9090`)                               |
+| Shortcut | Flag             | Description                                                                                |
+|----------|------------------|--------------------------------------------------------------------------------------------|
+| `-u`     | `--url`          | Redirect URL for wiretap to send traffic to.                                               |
+| `-s`     | `--spec`         | Path to the OpenAPI Specification to use.                                                  |
+| `-p`     | `--port`         | Port on which to listen for API traffic. (default is `9090`)                               |
 | `-m`     | `--monitor-port` | Port on which to serve the monitor UI. (default is `9091`)                                 |
-| `-d`     | `--delay`       | Set a global delay for all API requests in milliseconds. (default is `0`)                  |
-| `-c`     | `--config`      | Location of wiretap configuration file to use (default is `.wiretap` in current directory) |
-| `-t`     | `--static`      | Location of static files to serve along with API requests (simulate real app deployment)   |
-
+| `-d`     | `--delay`        | Set a global delay for all API requests in milliseconds. (default is `0`)                  |
+| `-c`     | `--config`       | Location of wiretap configuration file to use (default is `.wiretap` in current directory) |
+| `-t`     | `--static`       | Location of static files to serve along with API requests (simulate real app deployment)   |
+| `-i`     | `--static-index` | Index file to serve for root static requests and all static paths (default is index.html)  |

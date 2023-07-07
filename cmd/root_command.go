@@ -8,6 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
@@ -37,7 +38,7 @@ var (
 			var monitorPort string
 			var wsPort string
 			var staticDir string
-
+			var staticIndex string
 			var redirectHost string
 			var redirectPort string
 			var redirectScheme string
@@ -68,6 +69,8 @@ var (
 			if staticDirFlag != "" {
 				staticDir = staticDirFlag
 			}
+
+			staticIndex, _ = cmd.Flags().GetString("static-index")
 
 			wsPortFlag, _ := cmd.Flags().GetString("ws-port")
 			if wsPortFlag != "" {
@@ -103,11 +106,16 @@ var (
 				if config.RedirectURL != "" {
 					redirectURL = config.RedirectURL
 				}
+				if config.StaticIndex == "" {
+					config.StaticIndex = staticIndex
+				}
 			} else {
 				pterm.Info.Println("No wiretap configuration located. Using defaults")
+				config.StaticIndex = staticIndex
 			}
 
 			if spec == "" {
+				pterm.Println()
 				pterm.Warning.Println("No OpenAPI specification provided. " +
 					"Please provide a path to an OpenAPI specification using the --spec or -s flags.")
 				pterm.Warning.Println("Without an OpenAPI specification, wiretap will not be able to validate " +
@@ -149,6 +157,7 @@ var (
 			config.RedirectBasePath = redirectBasePath
 			config.RedirectPort = redirectPort
 			config.RedirectProtocol = redirectScheme
+
 			if config.Port == "" {
 				config.Port = port
 			}
@@ -172,11 +181,20 @@ var (
 			}
 
 			if config.Headers != nil && len(config.Headers.DropHeaders) > 0 {
-
 				pterm.Info.Printf("Dropping the following %d %s:\n", len(config.Headers.DropHeaders),
 					shared.Pluralize(len(config.Headers.DropHeaders), "header", "headers"))
 				for _, header := range config.Headers.DropHeaders {
 					pterm.Printf("🗑️ %s\n", pterm.LightMagenta(header))
+				}
+				pterm.Println()
+			}
+
+			if len(config.StaticPaths) > 0 && config.StaticDir != "" {
+				staticPath := filepath.Join(config.StaticDir, config.StaticIndex)
+				pterm.Info.Printf("Mapping %d static %s to '%s':\n", len(config.StaticPaths),
+					shared.Pluralize(len(config.StaticPaths), "path", "paths"), staticPath)
+				for _, path := range config.StaticPaths {
+					pterm.Printf("⛱️ %s\n", pterm.LightMagenta(path))
 				}
 				pterm.Println()
 			}
@@ -204,11 +222,13 @@ func Execute(version, commit, date string, fs embed.FS) {
 
 	rootCmd.Flags().StringP("url", "u", "", "Set the redirect URL for wiretap to send traffic to")
 	rootCmd.Flags().IntP("delay", "d", 0, "Set a global delay for all API requests")
-	rootCmd.Flags().StringP("port", "p", "", "Set port on which to listen for API traffic (default is 9090)")
+	rootCmd.Flags().StringP("port", "p", "", "Set port on which to listen for HTTP traffic (default is 9090)")
 	rootCmd.Flags().StringP("monitor-port", "m", "", "Set port on which to serve the monitor UI (default is 9091)")
 	rootCmd.Flags().StringP("ws-port", "w", "", "Set port on which to serve the monitor UI websocket (default is 9092)")
 	rootCmd.Flags().StringP("spec", "s", "", "Set the path to the OpenAPI specification to use")
 	rootCmd.Flags().StringP("static", "t", "", "Set the path to a directory of static files to serve")
+	rootCmd.Flags().StringP("static-index", "i", "index.html", "Set the index filename for static file serving (default is index.html)")
+
 	rootCmd.Flags().StringP("config", "c", "",
 		"Location of wiretap configuration file to use (default is .wiretap in current directory)")
 
