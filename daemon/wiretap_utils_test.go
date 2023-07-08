@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReconstructURL(t *testing.T){
+func TestReconstructURL(t *testing.T) {
 	protocol := "http"
 	host := "localhost"
 	port := "8000"

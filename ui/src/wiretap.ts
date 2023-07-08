@@ -12,11 +12,11 @@ import {
     SpecChannel, TopicPrefix,
     WiretapChannel, WiretapConfigurationChannel,
     WiretapControlsChannel, WiretapControlsKey, WiretapControlsStore,
-    WiretapCurrentSpec, WiretapFiltersKey, WiretapFiltersStore,
+    WiretapCurrentSpec, WiretapFiltersStore,
     WiretapHttpTransactionStore, WiretapLinkCacheKey, WiretapLinkCacheStore,
     WiretapLocalStorage, WiretapReportChannel,
     WiretapSelectedTransactionStore,
-    WiretapSpecStore
+    WiretapSpecStore, WiretapStaticChannel,
 } from "@/model/constants";
 
 declare global {
@@ -24,7 +24,6 @@ declare global {
         wiretapPort: any;
     }
 }
-
 
 @customElement('wiretap-application')
 export class WiretapComponent extends LitElement {
@@ -42,10 +41,13 @@ export class WiretapComponent extends LitElement {
     private readonly _wiretapControlsChannel: Channel;
     private readonly _wiretapReportChannel: Channel;
     private readonly _wiretapConfigChannel: Channel;
+    private readonly _staticNotificationChannel: Channel;
     private readonly _wiretapPort: string;
     private _transactionChannelSubscription: Subscription;
     private _specChannelSubscription: Subscription;
     private _configChannelSubscription: Subscription;
+    private _staticChannelSubscription: Subscription;
+
     private _transactionContainer: HttpTransactionContainerComponent;
 
     @query("wiretap-header")
@@ -110,6 +112,7 @@ export class WiretapComponent extends LitElement {
         this._wiretapControlsChannel = this._bus.createChannel(WiretapControlsChannel);
         this._wiretapReportChannel = this._bus.createChannel(WiretapReportChannel);
         this._wiretapConfigChannel = this._bus.createChannel(WiretapConfigurationChannel);
+        this._staticNotificationChannel = this._bus.createChannel(WiretapStaticChannel);
 
         // map local bus channels to broker destinations.
         this._bus.mapChannelToBrokerDestination(TopicPrefix + WiretapChannel, WiretapChannel);
@@ -117,11 +120,14 @@ export class WiretapComponent extends LitElement {
         this._bus.mapChannelToBrokerDestination(QueuePrefix + WiretapControlsChannel, WiretapControlsChannel);
         this._bus.mapChannelToBrokerDestination(QueuePrefix + WiretapReportChannel, WiretapReportChannel);
         this._bus.mapChannelToBrokerDestination(QueuePrefix + WiretapConfigurationChannel, WiretapConfigurationChannel);
+        this._bus.mapChannelToBrokerDestination(TopicPrefix + WiretapStaticChannel, WiretapStaticChannel);
 
         // handle incoming messages on different channels.
         this._transactionChannelSubscription = this._wiretapChannel.subscribe(this.wireTransactionHandler());
         this._specChannelSubscription = this._wiretapSpecChannel.subscribe(this.specHandler());
         this._configChannelSubscription = this._wiretapConfigChannel.subscribe(this.configHandler());
+        this._staticChannelSubscription = this._staticNotificationChannel.subscribe(this.staticHandler());
+
 
         // load previous transactions from local storage.
         this.loadHistoryFromLocalStorage().then((previousTransactions: Map<string, HttpTransaction>) => {
@@ -189,10 +195,6 @@ export class WiretapComponent extends LitElement {
             const decoded = atob(msg.payload.payload);
             this._specStore.set(WiretapCurrentSpec, decoded)
             localforage.setItem(WiretapCurrentSpec, decoded);
-
-
-
-
             this.requestUpdate();
         }
     }
@@ -205,17 +207,21 @@ export class WiretapComponent extends LitElement {
     }
 
 
+    staticHandler(): BusCallback<CommandResponse> {
+        return (msg: CommandResponse) => {
+            // todo: do something in here.
+        }
+    }
+
     wireTransactionHandler(): BusCallback {
         return (msg: CommandResponse) => {
             const wiretapMessage = msg.payload as HttpTransaction
-
 
             const constructedTransaction: HttpTransaction = new HttpTransaction();
             constructedTransaction.httpRequest = Object.assign(new HttpRequest(), wiretapMessage.httpRequest);
             constructedTransaction.id = wiretapMessage.id;
             constructedTransaction.requestValidation = wiretapMessage.requestValidation;
             constructedTransaction.responseValidation = wiretapMessage.responseValidation;
-
 
             // get global delay
             const controls = this._controlsStore.get(WiretapControlsKey)
@@ -290,8 +296,6 @@ export class WiretapComponent extends LitElement {
 
     render() {
 
-
-
         let transaction: HttpTransactionContainerComponent
         if (this._transactionContainer) {
             transaction = this._transactionContainer;
@@ -335,5 +339,4 @@ export class WiretapComponent extends LitElement {
             </wiretap-header>
             ${transaction}`
     }
-
 }
