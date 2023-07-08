@@ -1,0 +1,21 @@
+{{ .OriginalContent }}
+<!-- auto-injected into the page by wiretap -->
+<script type="importmap">
+  {
+    "imports": {
+      "@stomp/stompjs": "https://ga.jspm.io/npm:@stomp/stompjs@7.0.0/esm6/index.js"
+    }
+  }
+</script>
+<script type="module">
+    import { Client } from '@stomp/stompjs';
+    const client = new Client({
+        brokerURL: 'ws://localhost:{{ .WebSocketPort }}/ranch',
+        onConnect: () => {
+            client.subscribe("/topic/wiretap-static-change", message => {
+                window.location.reload();
+            });
+        },
+    });
+    client.activate();
+</script>

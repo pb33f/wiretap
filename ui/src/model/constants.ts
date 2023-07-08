@@ -5,6 +5,7 @@ export const WiretapControlsChannel = "controls";
 export const WiretapReportChannel = "report";
 
 export const WiretapConfigurationChannel = "configuration";
+export const WiretapStaticChannel = "wiretap-static-change";
 
 export const WiretapHttpTransactionStore = "http-transaction-store";
 export const WiretapSelectedTransactionStore = "selected-transaction-store";

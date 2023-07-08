@@ -6,15 +6,19 @@ package daemon
 import "github.com/pb33f/ranch/service"
 
 func (ws *WiretapService) Init(core service.FabricServiceCore) error {
-    ws.serviceCore = core
-    eventBus := core.Bus()
+	ws.serviceCore = core
+	eventBus := core.Bus()
 
-    // create broadcast channel and set it to galactic
-    channel := eventBus.GetChannelManager().CreateChannel(WiretapBroadcastChan)
-    channel.SetGalactic(WiretapBroadcastChan)
+	// create broadcast channel and set it to galactic
+	channel := eventBus.GetChannelManager().CreateChannel(WiretapBroadcastChan)
+	channel.SetGalactic(WiretapBroadcastChan)
 
-    ws.broadcastChan = channel
-    ws.bus = eventBus
-    core.SetDefaultJSONHeaders()
-    return nil
+	// create static change channel and set it to galactic
+	staticChan := eventBus.GetChannelManager().CreateChannel(WiretapStaticChangeChan)
+	staticChan.SetGalactic(WiretapStaticChangeChan)
+
+	ws.broadcastChan = channel
+	ws.bus = eventBus
+	core.SetDefaultJSONHeaders()
+	return nil
 }

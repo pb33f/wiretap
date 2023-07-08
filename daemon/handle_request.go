@@ -4,6 +4,7 @@
 package daemon
 
 import (
+	_ "embed"
 	"fmt"
 	"github.com/pb33f/libopenapi-validator/parameters"
 	"github.com/pb33f/libopenapi-validator/requests"
@@ -15,8 +16,17 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"text/template"
 	"time"
 )
+
+//go:embed templates/socket-include.html
+var staticTemplate string
+
+type staticTemplateModel struct {
+	OriginalContent string
+	WebSocketPort   string
+}
 
 func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 
@@ -24,11 +34,13 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	if ws.config.StaticDir != "" {
 		fp := filepath.Join(ws.config.StaticDir, request.HttpRequest.URL.Path)
 
+		isRoot := false
 		// check if this is a static path catch-all
 		if len(ws.config.StaticPathsCompiled) > 0 {
 			for key := range ws.config.StaticPathsCompiled {
 				if ws.config.StaticPathsCompiled[key].Match(request.HttpRequest.URL.Path) {
 					fp = filepath.Join(ws.config.StaticDir, ws.config.StaticIndex)
+					isRoot = true
 					break
 				}
 			}
@@ -36,10 +48,35 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 
 		// check if this is a root request
 		if fp == ws.config.StaticDir {
+			isRoot = true
 			fp = filepath.Join(ws.config.StaticDir, "index.html")
 		}
 		localStat, _ := os.Stat(fp)
 		if localStat != nil {
+
+			if isRoot {
+
+				// if this root, we need to modify the index to inject some JS.
+				tmpFile, _ := os.CreateTemp("", "index.html")
+				defer os.Remove(tmpFile.Name())
+
+				tmpl, _ := template.New("index").Parse(staticTemplate)
+				indexBytes, _ := os.ReadFile(fp)
+
+				// prep a model
+				m := staticTemplateModel{
+					OriginalContent: string(indexBytes),
+					WebSocketPort:   ws.config.WebSocketPort,
+				}
+
+				// execute the new template
+				tmpl.Execute(tmpFile, m)
+
+				// serve it.
+				http.ServeFile(request.HttpResponseWriter, request.HttpRequest, tmpFile.Name())
+				return
+			}
+
 			if !localStat.IsDir() {
 				http.ServeFile(request.HttpResponseWriter, request.HttpRequest, fp)
 				return
