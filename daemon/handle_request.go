@@ -92,8 +92,14 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	responseValidator := responses.NewResponseBodyValidator(ws.docModel)
 
 	configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
-
 	config := configStore.(*shared.WiretapConfiguration)
+
+	if config.Headers == nil || len(config.Headers.DropHeaders) == 0 {
+		config.Headers = &shared.WiretapHeaderConfig{
+			DropHeaders: []string{},
+		}
+	}
+
 	newReq := cloneRequest(CloneRequest{
 		Request:     request.HttpRequest,
 		Protocol:    config.RedirectProtocol,
