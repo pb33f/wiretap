@@ -5,6 +5,7 @@ package shared
 
 import (
 	"embed"
+	"fmt"
 	"github.com/gobwas/glob"
 	"regexp"
 )
@@ -25,6 +26,8 @@ type WiretapConfiguration struct {
 	PathConfigurations  map[string]*WiretapPathConfig `json:"paths,omitempty" yaml:"paths,omitempty"`
 	Headers             *WiretapHeaderConfig          `json:"headers,omitempty" yaml:"headers,omitempty"`
 	StaticPaths         []string                      `json:"staticPaths,omitempty" yaml:"staticPaths,omitempty"`
+	Variables           map[string]string             `json:"variables,omitempty" yaml:"variables,omitempty"`
+	CompiledVariables   map[string]*CompiledVariable  `json:"-" yaml:"-"`
 	StaticPathsCompiled []glob.Glob                   `json:"-" yaml:"-"`
 	CompiledPaths       map[string]*CompiledPath      `json:"-"`
 	FS                  embed.FS                      `json:"-"`
@@ -44,11 +47,35 @@ func (wtc *WiretapConfiguration) CompilePaths() {
 	}
 }
 
+func (wtc *WiretapConfiguration) CompileVariables() {
+	wtc.CompiledVariables = make(map[string]*CompiledVariable)
+	for x := range wtc.Variables {
+		compiled := &CompiledVariable{
+			CompiledVariable: regexp.MustCompile(fmt.Sprintf("\\${(%s)}", x)),
+			VariableValue:    wtc.Variables[x],
+		}
+		wtc.CompiledVariables[x] = compiled
+	}
+}
+
+func (wtc *WiretapConfiguration) ReplaceWithVariables(input string) string {
+	for x := range wtc.Variables {
+		if wtc.Variables[x] != "" && wtc.CompiledVariables[x] != nil {
+			input = wtc.CompiledVariables[x].CompiledVariable.
+				ReplaceAllString(input, wtc.CompiledVariables[x].VariableValue)
+		}
+	}
+	return input
+}
+
 type WiretapPathConfig struct {
-	Target       string            `json:"target,omitempty" yaml:"target,omitempty"`
-	PathRewrite  map[string]string `json:"pathRewrite,omitempty" yaml:"pathRewrite,omitempty"`
-	CompiledPath *CompiledPath     `json:"-"`
-	Secure       bool              `json:"secure,omitempty" yaml:"secure"`
+	Target       string               `json:"target,omitempty" yaml:"target,omitempty"`
+	PathRewrite  map[string]string    `json:"pathRewrite,omitempty" yaml:"pathRewrite,omitempty"`
+	ChangeOrigin bool                 `json:"changeOrigin,omitempty" yaml:"changeOrigin,omitempty"`
+	Headers      *WiretapHeaderConfig `json:"headers,omitempty" yaml:"headers,omitempty"`
+	Secure       bool                 `json:"secure,omitempty" yaml:"secure,omitempty"`
+	Auth         string               `json:"auth,omitempty" yaml:"auth,omitempty"`
+	CompiledPath *CompiledPath        `json:"-"`
 }
 
 type CompiledPath struct {
@@ -56,6 +83,11 @@ type CompiledPath struct {
 	CompiledKey         glob.Glob
 	CompiledTarget      glob.Glob
 	CompiledPathRewrite map[string]*regexp.Regexp
+}
+
+type CompiledVariable struct {
+	CompiledVariable *regexp.Regexp
+	VariableValue    string
 }
 
 type CompiledPathRewrite struct {
@@ -66,7 +98,9 @@ type CompiledPathRewrite struct {
 }
 
 type WiretapHeaderConfig struct {
-	DropHeaders []string `json:"drop,omitempty" yaml:"drop,omitempty"`
+	DropHeaders    []string          `json:"drop,omitempty" yaml:"drop,omitempty"`
+	InjectHeaders  map[string]string `json:"inject,omitempty" yaml:"inject,omitempty"`
+	RewriteHeaders map[string]string `json:"rewrite,omitempty" yaml:"rewrite,omitempty"`
 }
 
 func (wpc *WiretapPathConfig) Compile(key string) *CompiledPath {

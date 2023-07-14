@@ -90,6 +90,19 @@ var (
 			}
 
 			var config shared.WiretapConfiguration
+
+			if configFlag == "" {
+				// see if a configuration file exists in the current directory or in the user's home directory.
+				local, _ := os.Stat("wiretap.yaml")
+				home, _ := os.Stat(filepath.Join(os.Getenv("HOME"), "wiretap.yaml"))
+				if home != nil {
+					configFlag = filepath.Join(os.Getenv("HOME"), "wiretap.yaml")
+				}
+				if local != nil {
+					configFlag = local.Name()
+				}
+			}
+
 			if configFlag != "" {
 
 				cBytes, err := os.ReadFile(configFlag)
@@ -110,6 +123,7 @@ var (
 					config.StaticIndex = staticIndex
 				}
 			} else {
+
 				pterm.Info.Println("No wiretap configuration located. Using defaults")
 				config.StaticIndex = staticIndex
 			}
@@ -151,7 +165,9 @@ var (
 			redirectScheme = parsedURL.Scheme
 			redirectBasePath = parsedURL.Path
 
-			config.Contract = spec
+			if spec != "" {
+				config.Contract = spec
+			}
 			config.RedirectURL = redirectURL
 			config.RedirectHost = redirectHost
 			config.RedirectBasePath = redirectBasePath
@@ -175,16 +191,23 @@ var (
 			}
 			config.FS = FS
 
+			// variables
+			if len(config.Variables) > 0 {
+				config.CompileVariables()
+				printLoadedVariables(config.Variables)
+			}
+
+			// paths
 			if len(config.PathConfigurations) > 0 {
-				printLoadedPathConfigurations(config.PathConfigurations)
 				config.CompilePaths()
+				printLoadedPathConfigurations(config.PathConfigurations)
 			}
 
 			if config.Headers != nil && len(config.Headers.DropHeaders) > 0 {
-				pterm.Info.Printf("Dropping the following %d %s:\n", len(config.Headers.DropHeaders),
+				pterm.Info.Printf("Dropping the following %d %s globally:\n", len(config.Headers.DropHeaders),
 					shared.Pluralize(len(config.Headers.DropHeaders), "header", "headers"))
 				for _, header := range config.Headers.DropHeaders {
-					pterm.Printf("🗑️ %s\n", pterm.LightMagenta(header))
+					pterm.Printf("🗑️  %s\n", pterm.LightRed(header))
 				}
 				pterm.Println()
 			}
@@ -194,7 +217,7 @@ var (
 				pterm.Info.Printf("Mapping %d static %s to '%s':\n", len(config.StaticPaths),
 					shared.Pluralize(len(config.StaticPaths), "path", "paths"), staticPath)
 				for _, path := range config.StaticPaths {
-					pterm.Printf("⛱️ %s\n", pterm.LightMagenta(path))
+					pterm.Printf("⛱️  %s\n", pterm.LightMagenta(path))
 				}
 				pterm.Println()
 			}
@@ -238,21 +261,35 @@ func Execute(version, commit, date string, fs embed.FS) {
 }
 
 func printLoadedPathConfigurations(configs map[string]*shared.WiretapPathConfig) {
-	plural := func(count int) string {
-		if count == 1 {
-			return ""
-		}
-		return "s"
-	}
-
-	pterm.Info.Printf("Loaded %d path configuration%s:\n", len(configs), plural(len(configs)))
+	pterm.Info.Printf("Loaded %d path %s:\n", len(configs),
+		shared.Pluralize(len(configs), "configuration", "configurations"))
 	pterm.Println()
 
 	for k, v := range configs {
-		pterm.Printf("%s\n", pterm.LightMagenta(k))
-		for k, p := range v.PathRewrite {
-			pterm.Printf("✏️ '%s' re-written to '%s'\n", pterm.LightCyan(k), pterm.LightGreen(p))
+		pterm.Printf("%s --> %s\n", pterm.LightMagenta(k), pterm.LightCyan(v.Target))
+		for ka, p := range v.PathRewrite {
+			pterm.Printf("✏️  '%s' re-written to '%s'\n", pterm.LightCyan(ka), pterm.LightGreen(p))
+		}
+		if v.Headers != nil {
+			for kb, h := range v.Headers.InjectHeaders {
+				pterm.Printf("💉 '%s' injected with '%s'\n", pterm.LightCyan(kb), pterm.LightGreen(h))
+			}
+			for _, h := range v.Headers.DropHeaders {
+				pterm.Printf("🗑️  '%s' is being %s\n", pterm.LightCyan(h), pterm.LightRed("dropped"))
+			}
+		}
+		if v.Auth != "" {
+			pterm.Printf("🔐 Basic authentication implemented for '%s'\n", pterm.LightMagenta(k))
 		}
 		pterm.Println()
 	}
+}
+
+func printLoadedVariables(variables map[string]string) {
+	pterm.Info.Printf("Loaded %d %s:\n", len(variables),
+		shared.Pluralize(len(variables), "variable", "variables"))
+	for k, v := range variables {
+		pterm.Printf("📌 Variable '${%s}' points to '%s'\n", pterm.LightCyan(k), pterm.LightGreen(v))
+	}
+	pterm.Println()
 }
