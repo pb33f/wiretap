@@ -11,6 +11,7 @@ import (
 	"github.com/pb33f/libopenapi-validator/responses"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/plank/utils"
+	configModel "github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/shared"
 	"io"
 	"net/http"
@@ -100,20 +101,53 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		}
 	}
 
+	var dropHeaders []string
+	var injectHeaders map[string]string
+
+	// add global headers with injection.
+	if config.Headers != nil {
+		dropHeaders = config.Headers.DropHeaders
+		injectHeaders = config.Headers.InjectHeaders
+	}
+
+	// now add path specific headers.
+	matchedPaths := configModel.FindPaths(request.HttpRequest.URL.Path, config)
+	auth := ""
+	if len(matchedPaths) > 0 {
+		for _, path := range matchedPaths {
+			auth = path.Auth
+			if path.Headers != nil {
+				dropHeaders = append(dropHeaders, path.Headers.DropHeaders...)
+				newInjectHeaders := path.Headers.InjectHeaders
+				for key := range injectHeaders {
+					newInjectHeaders[key] = injectHeaders[key]
+				}
+				injectHeaders = newInjectHeaders
+			}
+			break
+		}
+	}
+
 	newReq := cloneRequest(CloneRequest{
-		Request:     request.HttpRequest,
-		Protocol:    config.RedirectProtocol,
-		Host:        config.RedirectHost,
-		Port:        config.RedirectPort,
-		DropHeaders: config.Headers.DropHeaders,
+		Request:       request.HttpRequest,
+		Protocol:      config.RedirectProtocol,
+		Host:          config.RedirectHost,
+		Port:          config.RedirectPort,
+		DropHeaders:   dropHeaders,
+		InjectHeaders: injectHeaders,
+		Auth:          auth,
+		Variables:     config.CompiledVariables,
 	})
 
 	apiRequest := cloneRequest(CloneRequest{
-		Request:     request.HttpRequest,
-		Protocol:    config.RedirectProtocol,
-		Host:        config.RedirectHost,
-		Port:        config.RedirectPort,
-		DropHeaders: config.Headers.DropHeaders,
+		Request:       request.HttpRequest,
+		Protocol:      config.RedirectProtocol,
+		Host:          config.RedirectHost,
+		Port:          config.RedirectPort,
+		DropHeaders:   dropHeaders,
+		InjectHeaders: injectHeaders,
+		Auth:          auth,
+		Variables:     config.CompiledVariables,
 	})
 
 	// validate the request
