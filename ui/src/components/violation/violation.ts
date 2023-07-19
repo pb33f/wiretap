@@ -2,11 +2,13 @@ import {customElement, state, property} from "lit/decorators.js";
 import {html} from "lit";
 import {LitElement, TemplateResult} from "lit";
 
-import violationComponentCss from "@/components/violation/violation.css";
-import {ValidationError} from "@/model/http_transaction";
+import violationComponentCss from "./violation.css";
+import {SchemaValidationFailure, ValidationError} from "@/model/http_transaction";
 import {ViolationLocation, ViolationLocationSelectionEvent} from "@/model/events";
 
 import sharedCss from "@/components/shared.css";
+import {Property} from "@/components/property-view/property-view";
+import {ViolationDetailsComponent} from "@/components/violation/violation-details";
 
 @customElement('wiretap-violation-view')
 export class ViolationViewComponent extends LitElement {
@@ -31,6 +33,17 @@ export class ViolationViewComponent extends LitElement {
         }))
     }
 
+    jumpToViolationLocation(violation: SchemaValidationFailure) {
+        this.dispatchEvent(new CustomEvent<ViolationLocation>(ViolationLocationSelectionEvent, {
+            bubbles: true,
+            composed: true,
+            detail: {
+                line: violation.line,
+                column: violation.column,
+            }
+        }))
+    }
+
     render() {
 
         let howToFix, specMeta: TemplateResult
@@ -49,6 +62,17 @@ export class ViolationViewComponent extends LitElement {
                 </div>`
         }
 
+        let schemaViolations: TemplateResult = null;
+        if (this.violation.validationErrors?.length > 0) {
+            const violationsDetails = new ViolationDetailsComponent(this.violation.validationErrors)
+            schemaViolations = html`
+                <h3>Schema Violations:</h3>
+                <section class="schema-violations">
+                    ${violationsDetails}
+                </section>`
+
+        }
+
         return html`
             <sl-details class="violation">
                 <header slot="summary">
@@ -64,6 +88,7 @@ export class ViolationViewComponent extends LitElement {
                     </div>
                     ${specMeta}
                 </div>
+               ${schemaViolations}
                 <hr/>
                 <p class="reason">${this.violation?.reason}</p>
                 ${howToFix}

@@ -10,7 +10,7 @@ import {SlTab, SlTabGroup} from "@shoelace-style/shoelace";
 import {ExtractHTTPCodeDefinition, ExtractStatusStyleFromCode} from "@/model/extract_status";
 import {LinkMatch, TransactionLinkCache} from "@/model/link_cache";
 import {HttpTransactionItemComponent} from "@/components/transaction/transaction-item";
-import {HttpTransactionSelectedEvent} from "@/model/events";
+import {HttpTransactionSelectedEvent, ViolationLocation} from "@/model/events";
 import {Bag, GetBagManager} from "@pb33f/saddlebag";
 import {WiretapHttpTransactionStore} from "@/model/constants";
 import dividerCss from "@/components/divider.css";
@@ -106,6 +106,7 @@ export class HttpTransactionViewComponent extends LitElement {
         this._selectedTab = event.detail.name;
     }
 
+
     render() {
 
         if (this._httpTransaction) {
@@ -125,7 +126,7 @@ export class HttpTransactionViewComponent extends LitElement {
                 ${this._httpTransaction?.responseValidation?.length > 0 ? html`<h3>Response Violations</h3>` : html``}
                 ${map(this._httpTransaction.responseValidation, (i) => {
                     return html`
-                        <wiretap-violation-view .violation="${i}"></wiretap-violation-view>
+                        <wiretap-violation-view .violation="${i}" ></wiretap-violation-view>
                     `
                 })}`;
 

@@ -124,7 +124,16 @@ export class HttpTransactionItemComponent extends LitElement {
                `
         }
 
-        const totalTime = resp?.timestamp - req.timestamp;
+        let respTime = 0;
+        let reqTime = 0;
+        if (resp) {
+            respTime = resp.timestamp;
+        }
+        if (req) {
+            reqTime = req.timestamp;
+        }
+
+        const totalTime = respTime - reqTime;
 
         return html`
             <div class="${tClass}" @click="${this.setActive}">

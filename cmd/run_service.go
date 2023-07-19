@@ -103,13 +103,6 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 		panic(err)
 	}
 
-	// create a new catchall endpoint and listen for all traffic
-	//platformServer.SetHttpPathPrefixChannelBridge(rbc)
-
-	// add global CORS middleware
-	//middlewareManager := platformServer.GetMiddlewareManager()
-	//_ = middlewareManager.SetGlobalMiddleware([]mux.MiddlewareFunc{daemon.CORSMiddleware()})
-
 	// create a new chan and listen for interrupt signals
 	sysChan := make(chan os.Signal, 1)
 

@@ -6,7 +6,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/pb33f/libopenapi"
-	"github.com/sirupsen/logrus"
+	"github.com/pterm/pterm"
 	"io"
 	"net/http"
 	"net/url"
@@ -19,7 +19,7 @@ func loadOpenAPISpec(contract string) (libopenapi.Document, error) {
 
 	if strings.HasPrefix(contract, "http://") || strings.HasPrefix(contract, "https://") {
 		if docUrl, err := url.Parse(contract); err == nil {
-			logrus.Infof("Fetching OpenAPI Specification from URL: %s", docUrl.String())
+			pterm.Info.Println("Fetching OpenAPI Specification from URL: %s", docUrl.String())
 			resp, er := http.Get(docUrl.String())
 			if er != nil {
 				return nil, er

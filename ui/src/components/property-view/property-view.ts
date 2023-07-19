@@ -13,7 +13,12 @@ import sharedCss from "@/components/shared.css";
 import propertyViewComponentCss from "./property-view.css";
 import {FormDataEntry, FormPart} from "@/model/extract_content_type";
 
-export interface Property extends FormPart {
+export interface Property {
+    name: string;
+    value?: string[];
+    headers?: Map<string, string[]>
+    files?: FormPart[];
+    type: string;
 }
 
 @customElement('http-property-view')

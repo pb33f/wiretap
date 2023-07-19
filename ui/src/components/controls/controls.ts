@@ -97,11 +97,15 @@ export class WiretapControlsComponent extends LitElement {
 
             if (delay == undefined) {
                 // this means a reset back to 0.
-                this._controls.globalDelay = 0;
+                if (this._controls) {
+                    this._controls.globalDelay = 0;
+                }
             }
 
             if (delay != undefined && delay !== existingDelay) {
-                this._controls.globalDelay = delay;
+                if (this._controls) {
+                    this._controls.globalDelay = delay;
+                }
             }
 
             // update the store
