@@ -16,6 +16,7 @@ body {
     --sl-input-border-color: var(--secondary-color);
     width: 100%;
     height: 100vh;
+    overflow-x: hidden
 }
 
 a, a:visited, a:active {

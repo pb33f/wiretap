@@ -27,10 +27,8 @@ export default css`
   .transaction-view-container {
     height: calc(100% - 2px);
     width: 100%;
-    overflow: auto;
     position: relative;
   }
-  
   
 
   .transactions-container::-webkit-scrollbar {

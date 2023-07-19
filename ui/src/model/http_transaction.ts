@@ -17,6 +17,8 @@ export interface HttpCookie {
 export interface SchemaValidationFailure {
     reason?: string;
     location?: string;
+    referenceSchema?: string;
+    referenceObject?: string;
     line?: number;
     column?: number;
 }
@@ -29,7 +31,7 @@ export interface ValidationError {
     specLine: number;
     specColumn: number;
     howToFix: string;
-    schemaValidationErrors?: SchemaValidationFailure[];
+    validationErrors?: SchemaValidationFailure[];
     context?: any;
 }
 

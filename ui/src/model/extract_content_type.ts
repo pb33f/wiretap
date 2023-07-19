@@ -70,7 +70,7 @@ export function ExtractContentTypeFromRequest(request: HttpRequest): string {
         return contentType;
     }
     contentType = request.headers["Content-Type"];
-    if (contentType.indexOf(";") > 0) {
+    if (contentType?.indexOf(";") > 0) {
         contentType = contentType.split(";")[0];
     }
     return contentType;

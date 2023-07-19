@@ -55,8 +55,99 @@ export default css`
     color: var(--secondary-color)
   }
   
+  .schema-violation-objects {
+    display: flex;
+    margin-top: 5px;
+    width: 100%
+  }
+
+  .schema-violation-objects .schema-violation-object {
+    font-size: 0.7rem;
+    flex-grow: 1;
+    word-wrap: break-word;
+    overflow-y: auto;
+    font-style: normal;
+    text-align: left;
+    width: 100%
+  }
+
+  .schema-violation-object pre {
+    white-space: pre-wrap;      
+  }
+  .schema-violation-object pre > code {
+    white-space: pre-wrap;
+  }
   
+  .line-num {
+    color: var(--dark-font-color);
+  }
+  
+  .line-active {
+    color: red;
+  }
+  
+  .schema-violation-objects .schema-violation-object h4 {
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    font-family: var(--mono-font-stack);
+    font-weight: bold;
+    text-transform: initial;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+  
+
+  .schema-violation-objects .schema-violation-object::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .schema-violation-objects .schema-violation-object::-webkit-scrollbar-track {
+    background-color: var(--invert-font-color);
+  }
+
+  .schema-violation-objects .schema-violation-object::-webkit-scrollbar-thumb {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+    background: var(--secondary-color-lowalpha);
+  }
+  
+  
+  .schema-violations {
+    //max-height: 300px;
+    //overflow-y: auto;
+  }
+
+  .schema-violations::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .schema-violations::-webkit-scrollbar-track {
+    background-color: var(--invert-font-color);
+  }
+
+  .schema-violations::-webkit-scrollbar-thumb {
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+    background: var(--secondary-color-lowalpha);
+  }
+
+  .schema-radio-group {
+    float: right
+  }
+
+  a.schema-violation-link {
+    color: var(--primary-color);
+    font-family: var(--mono-font-stack);
+    font-size: 0.8rem;
+  }
+  a.schema-violation-link:visited {
+    color: var(--primary-color);
+  }
+
   .how-to-fix {
     
   }
+  
+  .schema-data-switch {
+    text-align: left;
+  }
+  
 `

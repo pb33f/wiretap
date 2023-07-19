@@ -15,12 +15,22 @@
       "dom",
       "dom.iterable",
       "esnext",
+      "es2015",
+      "es5",
       "es2017"
     ],
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": [
+        "src/*"
+      ]
     }
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "./build", "./dist"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "./build",
+    "./dist"
+  ]
 }

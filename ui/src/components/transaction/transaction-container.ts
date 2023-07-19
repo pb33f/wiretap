@@ -273,7 +273,7 @@ export class HttpTransactionContainerComponent extends LitElement {
                         ${reversed}
                     </div>
                     <div slot="end">
-                        <section class="bottom-panel">
+                        <section class="bottom-panel" @violationLocationSelected=${this.locationSelected}>
                             ${this.renderBottomPanel()}
                             ${specControls}
                         </section>
@@ -311,11 +311,16 @@ export class HttpTransactionContainerComponent extends LitElement {
     }
 
     locationSelected(e: CustomEvent<ViolationLocation>) {
-        const editorRef = this._specEditor.editor
-        editorRef.setPosition({column: e.detail.column, lineNumber: e.detail.line});
-        editorRef.revealLinesInCenter(e.detail.line, e.detail.line);
-        editorRef.revealPositionInCenter({column: e.detail.column, lineNumber: e.detail.line})
-        editorRef.focus();
+        this._showSpec = true;
+        this.requestUpdate();
+        // wait for the dom to update, then select the location in the editor.
+        setTimeout(() => {
+            const editorRef = this._specEditor.editor
+            editorRef.setPosition({column: e.detail.column, lineNumber: e.detail.line});
+            editorRef.revealLinesInCenter(e.detail.line, e.detail.line);
+            editorRef.revealPositionInCenter({column: e.detail.column, lineNumber: e.detail.line})
+            editorRef.focus();
+        }, 20)
     }
 
     updateSelectedTransactionState(d: CustomEvent<HttpTransaction>): void {
