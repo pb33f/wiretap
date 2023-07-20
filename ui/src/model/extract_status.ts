@@ -1,15 +1,16 @@
 import {HttpResponse} from "@/model/http_transaction";
 
 export function ExtractStatusStyleFromCode(response: HttpResponse): string {
-    if (response.statusCode >= 200 && response.statusCode < 400) {
+    if (response?.statusCode >= 200 && response?.statusCode < 400) {
         return "http200"
     }
-    if (response.statusCode >= 400 && response.statusCode < 500) {
+    if (response?.statusCode >= 400 && response?.statusCode < 500) {
         return "http400"
     }
-    if (response.statusCode >= 500) {
+    if (response?.statusCode >= 500) {
         return "http500"
     }
+    return "pending"
 }
 
 export function ExtractHTTPCodeDefinition(response: HttpResponse): string {

@@ -139,7 +139,10 @@ export class HttpTransactionItemComponent extends LitElement {
             reqTime = req.timestamp;
         }
 
-        const totalTime = respTime - reqTime;
+        let totalTime = respTime - reqTime;
+        if (totalTime < 0) {
+            totalTime = 0;
+        }
 
         return html`
             <div class="${tClass}" @click="${this.setActive}">
@@ -150,7 +153,9 @@ export class HttpTransactionItemComponent extends LitElement {
                 </header>
                 ${delay}
                 <div class="request-time">
-                    ${totalTime}ms <sl-icon name="arrow-left-right"></sl-icon>
+                    ${(totalTime > 10000) ? html`${(totalTime/1000).toFixed(1)}s` : 
+                            html`${totalTime>0 ? totalTime : null}${totalTime>0 ? 'ms' : null}`} 
+                    <sl-icon name="arrow-left-right"></sl-icon>
                 </div>
                 <div class="transaction-status">
                     ${this.hideControls? '' : chainLink}
