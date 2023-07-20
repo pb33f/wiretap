@@ -93,7 +93,13 @@ export class HttpTransactionItemComponent extends LitElement {
                     this._httpTransaction.responseValidation?.length > 0) {
                     statusIcon = html`<sl-icon name="exclamation-circle" class="invalid"></sl-icon>`
                 } else {
-                    statusIcon = html`<sl-icon name="check-lg" class="valid"></sl-icon>`
+
+                    if (this._httpTransaction.httpResponse?.statusCode >= 400) {
+                        statusIcon = html`<sl-icon name="x-square" class="failed"></sl-icon>`
+                    } else {
+                        statusIcon = html`<sl-icon name="check-lg" class="valid"></sl-icon>`
+                    }
+
                 }
             }
         }

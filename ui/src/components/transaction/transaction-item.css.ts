@@ -55,7 +55,7 @@ export default css`
   }
   
   .invalid {
-    color: var(--warn-color);
+    color: var(--error-color);
     font-size: 25px;
     margin-top: 2px;
     margin-right: 12px;
@@ -67,7 +67,16 @@ export default css`
     margin-top: 2px;
     margin-right: 12px;
   }
-  
+
+  .failed {
+    color: var(--dark-font-color);
+    font-size: 25px;
+    margin-top: 2px;
+    margin-right: 12px;
+  }
+
+
+
   .delay {
     text-align: right;
     min-width: 60px;
