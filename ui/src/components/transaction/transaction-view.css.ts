@@ -43,6 +43,7 @@ export default css`
   .violation-badge::part(base) {
     font-size: 0.5rem;
     margin-left: 5px;
+    --sl-color-danger-600: var(--error-color);
   }
   
   h2 {

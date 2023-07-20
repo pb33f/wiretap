@@ -2,7 +2,7 @@ import {css} from "lit";
 
 export default css`
   .error-icon {
-    color: var(--warn-color);
+    color: var(--error-color);
     font-size: 1.5em;
     vertical-align: bottom;
   }
