@@ -19,7 +19,7 @@ func loadOpenAPISpec(contract string) (libopenapi.Document, error) {
 
 	if strings.HasPrefix(contract, "http://") || strings.HasPrefix(contract, "https://") {
 		if docUrl, err := url.Parse(contract); err == nil {
-			pterm.Info.Println("Fetching OpenAPI Specification from URL: %s", docUrl.String())
+			pterm.Info.Printf("Fetching OpenAPI Specification from URL: '%s'\n", docUrl.String())
 			resp, er := http.Get(docUrl.String())
 			if er != nil {
 				return nil, er
@@ -34,7 +34,7 @@ func loadOpenAPISpec(contract string) (libopenapi.Document, error) {
 		}
 	} else {
 
-		// not an URL, is it a file?
+		// not a URL, is it a file?
 		var er error
 		if _, er = os.Stat(contract); er != nil {
 			return nil, er
