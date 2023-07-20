@@ -158,4 +158,8 @@ export default css`
     color: var(--primary-color);
   }
   
+  .dropped-header {
+    color: var(--error-color);
+  }
+  
 `

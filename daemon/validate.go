@@ -94,7 +94,7 @@ func (ws *WiretapService) validateRequest(
 		}
 	}
 	// record results
-	transaction := buildRequest(modelRequest)
+	transaction := buildRequest(modelRequest, httpRequest)
 	if len(cleanedErrors) > 0 {
 		transaction.RequestValidation = cleanedErrors
 	}
@@ -102,8 +102,8 @@ func (ws *WiretapService) validateRequest(
 
 	// broadcast what we found.
 	if len(cleanedErrors) > 0 {
-		ws.broadcastRequestValidationErrors(modelRequest, cleanedErrors)
+		ws.broadcastRequestValidationErrors(modelRequest, cleanedErrors, transaction)
 	} else {
-		ws.broadcastRequest(modelRequest)
+		ws.broadcastRequest(modelRequest, transaction)
 	}
 }

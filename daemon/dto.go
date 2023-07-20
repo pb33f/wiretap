@@ -9,12 +9,14 @@ import (
 	"github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
+	"github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/controls"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
 	"io"
 	"net/http"
 	"net/textproto"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -33,14 +35,18 @@ type HttpCookie struct {
 }
 
 type HttpRequest struct {
-	Timestamp int64                  `json:"timestamp,omitempty"`
-	URL       string                 `json:"url,omitempty"`
-	Method    string                 `json:"method,omitempty"`
-	Path      string                 `json:"path,omitempty"`
-	Query     string                 `json:"query,omitempty"`
-	Headers   map[string]any         `json:"headers,omitempty"`
-	Body      string                 `json:"requestBody,omitempty"`
-	Cookies   map[string]*HttpCookie `json:"cookies,omitempty"`
+	Timestamp       int64                  `json:"timestamp,omitempty"`
+	URL             string                 `json:"url,omitempty"`
+	Method          string                 `json:"method,omitempty"`
+	Host            string                 `json:"host,omitempty"`
+	Path            string                 `json:"path,omitempty"`
+	OriginalPath    string                 `json:"originalPath,omitempty"`
+	DroppedHeaders  []string               `json:"droppedHeaders,omitempty"`
+	InjectedHeaders map[string]string      `json:"injectedHeaders,omitempty"`
+	Query           string                 `json:"query,omitempty"`
+	Headers         map[string]any         `json:"headers,omitempty"`
+	Body            string                 `json:"requestBody,omitempty"`
+	Cookies         map[string]*HttpCookie `json:"cookies,omitempty"`
 }
 
 type HttpResponse struct {
@@ -101,20 +107,51 @@ func buildResponse(r *model.Request, response *http.Response) *HttpTransaction {
 	}
 }
 
-func buildRequest(r *model.Request) *HttpTransaction {
+func buildRequest(r *model.Request, newRequest *http.Request) *HttpTransaction {
 
-	config, _ := bus.
+	configuration, _ := bus.
 		GetBus().
 		GetStoreManager().
 		GetStore(controls.ControlServiceChan).
 		Get(shared.ConfigKey)
 
+	var dropHeaders []string
+	var injectHeaders map[string]string
+
+	cf := configuration.(*shared.WiretapConfiguration)
+
+	// add global headers with injection.
+	if cf.Headers != nil {
+		dropHeaders = cf.Headers.DropHeaders
+		injectHeaders = cf.Headers.InjectHeaders
+	}
+
+	// now add path specific headers.
+	matchedPaths := config.FindPaths(r.HttpRequest.URL.Path, cf)
+	auth := ""
+	if len(matchedPaths) > 0 {
+		for _, path := range matchedPaths {
+			auth = path.Auth
+			if path.Headers != nil {
+				dropHeaders = append(dropHeaders, path.Headers.DropHeaders...)
+				newInjectHeaders := path.Headers.InjectHeaders
+				for key := range injectHeaders {
+					newInjectHeaders[key] = injectHeaders[key]
+				}
+				injectHeaders = newInjectHeaders
+			}
+			break
+		}
+	}
+
 	newReq := cloneRequest(CloneRequest{
-		Request:     r.HttpRequest,
-		Protocol:    config.(*shared.WiretapConfiguration).RedirectProtocol,
-		Host:        config.(*shared.WiretapConfiguration).RedirectHost,
-		Port:        config.(*shared.WiretapConfiguration).RedirectPort,
-		DropHeaders: config.(*shared.WiretapConfiguration).Headers.DropHeaders,
+		Request:       newRequest,
+		Protocol:      configuration.(*shared.WiretapConfiguration).RedirectProtocol,
+		Host:          configuration.(*shared.WiretapConfiguration).RedirectHost,
+		Port:          configuration.(*shared.WiretapConfiguration).RedirectPort,
+		DropHeaders:   dropHeaders,
+		Auth:          auth,
+		InjectHeaders: injectHeaders,
 	})
 
 	var requestBody []byte
@@ -174,22 +211,33 @@ func buildRequest(r *model.Request) *HttpTransaction {
 		}
 		requestBody, _ = json.Marshal(parts)
 	} else {
-
 		requestBody, _ = io.ReadAll(newReq.Body)
+	}
 
+	replaced := config.RewritePath(newRequest.URL.Path, cf)
+	var newUrl = newRequest.URL
+	if replaced != "" {
+		newUrl, _ = url.Parse(replaced)
+		if newRequest.URL.RawQuery != "" {
+			newUrl.RawQuery = newRequest.URL.RawQuery
+		}
 	}
 
 	return &HttpTransaction{
 		Id: r.Id.String(),
 		Request: &HttpRequest{
-			URL:       r.HttpRequest.URL.String(),
-			Method:    r.HttpRequest.Method,
-			Path:      r.HttpRequest.URL.Path,
-			Query:     r.HttpRequest.URL.RawQuery,
-			Cookies:   cookies,
-			Headers:   headers,
-			Body:      string(requestBody),
-			Timestamp: time.Now().UnixMilli(),
+			URL:             newUrl.String(),
+			Method:          newRequest.Method,
+			Path:            newUrl.Path,
+			Host:            newUrl.Host,
+			Query:           newUrl.RawQuery,
+			DroppedHeaders:  dropHeaders,
+			InjectedHeaders: injectHeaders,
+			OriginalPath:    newRequest.URL.Path,
+			Cookies:         cookies,
+			Headers:         headers,
+			Body:            string(requestBody),
+			Timestamp:       time.Now().UnixMilli(),
 		},
 	}
 }

@@ -18,7 +18,8 @@ export default css`
   
   .kv-table > table > thead > tr > th:first-child {
     font-weight: bold;
-    font-family: var(--font-stack-paragraph);
+    font-size: 0.9em;
+    font-family: var(--mono-font-stack);
     background: var(--kv-table-header-background-reversed);
     text-align: right;
     color: var(--secondary-color);
@@ -26,9 +27,9 @@ export default css`
   }
 
   .kv-table > table > tbody > tr > td {
-    font-family: var(--font-stack-paragraph);
-    color: var(--darker-font-color);
+    font-family: var(--mono-font-stack);
     padding: 10px 0 10px 10px;
+    font-size: 1em;
     border-bottom: 1px dashed var(--secondary-color-dimmer);
   }
 

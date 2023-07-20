@@ -117,7 +117,7 @@ export class ViolationDetailsComponent extends LitElement {
                 ${map(this._data, (i) => {
                     
                     const formatted = Prism.highlight(i.referenceSchema,
-                            Prism.languages.json, 'json');
+                            Prism.languages.json, 'yaml');
                     
                     let schemaView: TemplateResult;
                     if (this.selectedViolationView === SchemaType.SCHEMA) {
