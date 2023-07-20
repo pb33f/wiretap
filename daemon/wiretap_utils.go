@@ -80,7 +80,7 @@ func cloneRequest(request CloneRequest) *http.Request {
 
 	// if the auth value is set, we need to base64 encode it and add it to the header.
 	if request.Auth != "" {
-		encoded := base64.StdEncoding.EncodeToString([]byte(request.Auth))
+		encoded := base64.StdEncoding.EncodeToString([]byte(ReplaceWithVariables(request.Variables, request.Auth)))
 		// this will overwrite any existing auth header.
 		newReq.Header.Set("Authorization", fmt.Sprintf("Basic %s", encoded))
 	}
