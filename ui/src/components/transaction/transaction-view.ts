@@ -216,9 +216,7 @@ export class HttpTransactionViewComponent extends LitElement {
                     <sl-tab slot="nav" panel="violations" id="violation-tab" class="tab">${violations}</sl-tab>
                     <sl-tab slot="nav" panel="request" class="tab">Request</sl-tab>
                     <sl-tab slot="nav" panel="response" class="tab">Response ${(resp?.statusCode>=400) ? html`
-                        <sl-badge variant="${(resp?.statusCode>=400 && resp?.statusCode < 500) ? 'warning' : 'danger'}" class="violation-badge">
-                        <sl-icon name="exclamation-triangle"></sl-icon>
-                    </sl-badge>` : null}</sl-tab>
+                        <sl-badge variant="${(resp?.statusCode>=400 && resp?.statusCode < 500) ? 'warning' : 'danger'}" class="violation-badge">&nbsp;</sl-badge>` : null}</sl-tab>
                     ${this._currentLinks?.length > 0 ? html`
                         <sl-tab slot="nav" panel="chain" class="tab">Chain</sl-tab>` : null}
                     <sl-tab-panel name="violations" class="tab-panel">
@@ -264,7 +262,7 @@ export class HttpTransactionViewComponent extends LitElement {
                             <sl-tab slot="nav" panel="response-body" class="tab-secondary">Body</sl-tab>
                             <sl-tab slot="nav" panel="response-code" class="tab-secondary">
                                 Code ${(resp?.statusCode>=400) ? html`
-                                <sl-badge variant="${(resp?.statusCode>=400 && resp?.statusCode < 500) ? 'warning' : 'danger'}" class="violation-badge">${resp.statusCode}</sl-badge>` : null}</sl-tab>
+                                <sl-badge variant="${(resp?.statusCode>=400 && resp?.statusCode < 500) ? 'warning' : 'danger'}" class="violation-badge"  pulse></sl-badge>` : null}</sl-tab>
                             <sl-tab slot="nav" panel="response-headers" class="tab-secondary">Headers</sl-tab>
                             <sl-tab slot="nav" panel="response-cookies" class="tab-secondary">Cookies</sl-tab>
                             <sl-tab-panel name="response-code">
