@@ -87,15 +87,14 @@ export class HttpTransactionContainerComponent extends LitElement {
         this._selectedTransactionStore.reset()
     }
 
-    connectedCallback() {
-        super.connectedCallback();
-
+    firstUpdated() {
 
         // listen for changes to selected transaction.
         this._selectedTransactionStore.onAllChanges(this.handleSelectedTransactionChange.bind(this))
         this._specStore.subscribe(WiretapCurrentSpec, this.handleSpecChange.bind(this))
         this._allTransactionStore.onAllChanges(this.handleTransactionChange.bind(this))
         this._allTransactionStore.onPopulated((storeData: Map<string, HttpTransaction>) => {
+
             // rebuild our internal state
             const savedTransactions: Map<string, HttpTransactionContainer> = new Map<string, HttpTransactionContainer>()
             storeData.forEach((value: HttpTransaction, key: string) => {

@@ -102,10 +102,10 @@ export class ViolationDetailsComponent extends LitElement {
         radioGroup = html`
             <sl-radio-group class="schema-radio-group" name="a" value=${SchemaType.SCHEMA}
                             size="small" @sl-change="${this.schemaViolationObjectSwitch}">
-                <sl-radio-button value='${SchemaType.SCHEMA}'
+                <sl-radio-button class="schema-radio-button" size="small" value='${SchemaType.SCHEMA}'
                                  ${!this.showSchemaObjects ? html`disabled` : html`disabled`}>Validation Schema
                 </sl-radio-button>
-                <sl-radio-button value='${SchemaType.OBJECT}'
+                <sl-radio-button class="schema-radio-button" size="small" value='${SchemaType.OBJECT}'
                                  ${!this.showSchemaObjects ? html`disabled` : html`disabled`}>Validated Object
                 </sl-radio-button>
             </sl-radio-group>`
@@ -124,7 +124,9 @@ export class ViolationDetailsComponent extends LitElement {
         
                         const formattedCode = formatted
                                 .split('\n')
-                                .map((line, num) => `<span class="${((num+1) == i.line) ? 'line-active' : ''}"><span class="line-num ${((num+1) == i.line) ? 'line-active' : ''}">${(num + 1).toString().padStart(4, ' ')}.</span> ${line}</span>`)
+                                .map((line, num) => `<span class="${((num+1) == i.line) ?
+                                        'line-active' : ''}"><span class="line-num ${((num+1) == i.line) ? 
+                                        'line-active' : ''}">${(num + 1).toString().padStart(4, ' ')}.</span> ${line}</span>`)
                                 .join('\n');
                         
                         schemaView = html`
@@ -154,7 +156,7 @@ export class ViolationDetailsComponent extends LitElement {
 
                     return html`
                         <tr>
-                            <td>${i.line}:${i.column}</td>
+                            <td>${i.line}</td>
                             <td>${i.location}</td>
                             <td style="width: 75%">${i.reason}</td>
                         </tr>
@@ -173,16 +175,20 @@ export class ViolationDetailsComponent extends LitElement {
 
         const table: TemplateResult = html`
             <section class="schema-data-switch">
-                ${radioGroup}
-                <sl-switch size="small" @sl-change="${this.showObjectsSwitch}">Show schema and
-                    object
-                </sl-switch>
+                <div class="schema-data-switch-input">
+                    <sl-switch size="small" @sl-change="${this.showObjectsSwitch}">Show validation schema and
+                        object
+                    </sl-switch>
+                </div>
+                <div class="schema-type-select">
+                    ${radioGroup}
+                </div>
             </section>
             <div class="prop-type-table">
                 <table>
                     <thead>
                     <tr>
-                        <th>Location</th>
+                        <th>Line</th>
                         <th>XPath</th>
                         <th>Reason</th>
                     </tr>

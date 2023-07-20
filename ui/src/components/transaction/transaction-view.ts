@@ -155,6 +155,13 @@ export class HttpTransactionViewComponent extends LitElement {
             const responseBodyView = new ResponseBodyViewComponent(resp);
             const requestBodyView = new RequestBodyViewComponent(req);
 
+           let requestTab: TemplateResult;
+            if (req.requestBody == null || req.requestBody.length <= 0) {
+                requestTab = html`<sl-tab slot="nav" panel="request-body" class="tab-secondary" disabled>Body</sl-tab>`;
+            } else {
+                requestTab = html`<sl-tab slot="nav" panel="request-body" class="tab-secondary">Body</sl-tab>`;
+            }
+
             const tabGroup: TemplateResult = html`
                 <sl-tab-group id="tabs" @sl-tab-show=${this.tabSelected}>
                     <sl-tab slot="nav" panel="violations" id="violation-tab" class="tab">${violations}</sl-tab>
@@ -172,7 +179,7 @@ export class HttpTransactionViewComponent extends LitElement {
                     </sl-tab-panel>
                     <sl-tab-panel name="request">
                         <sl-tab-group class="secondary-tabs" placement="start">
-                            <sl-tab slot="nav" panel="request-body" class="tab-secondary">Body</sl-tab>
+                            ${requestTab}
                             <sl-tab slot="nav" panel="request-query" class="tab">Query</sl-tab>
                             <sl-tab slot="nav" panel="request-headers" class="tab-secondary">Headers</sl-tab>
                             <sl-tab slot="nav" panel="request-cookies" class="tab-secondary">Cookies</sl-tab>
@@ -278,7 +285,7 @@ export class HttpTransactionViewComponent extends LitElement {
                         tsFormat = "+" + thisDiff + "ms";
                     }
 
-                    tsTotal = tsTotal + thisDiff + (transaction.httpResponse?.timestamp - transaction.httpRequest.timestamp);
+                    tsTotal = tsTotal + thisDiff + (transaction.httpResponse?.timestamp - transaction.httpRequest?.timestamp);
                 }
 
                 let linkIcon = 'link-45deg';

@@ -30,6 +30,7 @@ export default css`
 
   header.site-header > .logo {
     width: 170px;
+    min-width: 145px;
     padding: 10px 0 10px 10px;
     border-bottom: 1px dashed var(--secondary-color);
     height: 35px;

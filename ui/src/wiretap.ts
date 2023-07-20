@@ -68,7 +68,6 @@ export class WiretapComponent extends LitElement {
     @property({type: Number})
     complianceLevel: number = 100.0;
 
-
     constructor() {
         super();
         //configure local storage
@@ -131,7 +130,6 @@ export class WiretapComponent extends LitElement {
 
         // load previous transactions from local storage.
         this.loadHistoryFromLocalStorage().then((previousTransactions: Map<string, HttpTransaction>) => {
-
             // populate store with previous transactions.
             this._httpTransactionStore.populate(previousTransactions)
 
