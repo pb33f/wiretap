@@ -4,9 +4,15 @@ go 1.20
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/pb33f/libopenapi v0.8.5
-	github.com/pb33f/libopenapi-validator v0.0.8
+	github.com/pb33f/libopenapi v0.9.4
+	github.com/pb33f/libopenapi-validator v0.0.10
 	github.com/pb33f/ranch v0.2.2
+)
+
+require (
+	go.uber.org/atomic v1.11.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.24.0 // indirect
 )
 
 require (
@@ -16,7 +22,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/fatih/color v1.12.0 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/go-stomp/stomp/v3 v3.0.3 // indirect
 	github.com/gobwas/glob v0.2.3
 	github.com/gookit/color v1.5.3 // indirect
@@ -37,7 +43,7 @@ require (
 	github.com/pterm/pterm v0.12.59
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0 // indirect
-	github.com/sirupsen/logrus v1.8.0
+	github.com/sirupsen/logrus v1.8.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/cobra v1.7.0
@@ -54,5 +60,5 @@ require (
 	golang.org/x/text v0.9.0 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 )
