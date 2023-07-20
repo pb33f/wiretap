@@ -56,7 +56,7 @@ export default css`
     color: var(--ok-color)
   }
   .http400 {
-    color: var(--warn-300);
+    color: var(--sl-color-warning-600);
   }
   .http500 {
     color: var(--error-color);
