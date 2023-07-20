@@ -122,6 +122,9 @@ var (
 				if config.StaticIndex == "" {
 					config.StaticIndex = staticIndex
 				}
+				if config.Spec != "" {
+					spec = config.Spec
+				}
 			} else {
 
 				pterm.Info.Println("No wiretap configuration located. Using defaults")

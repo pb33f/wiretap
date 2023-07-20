@@ -139,7 +139,7 @@ export class HttpTransactionItemComponent extends LitElement {
             <div class="${tClass}" @click="${this.setActive}">
                 <header>
                     <sl-tag variant="${ExchangeMethod(req.method)}" class="method">${req.method}</sl-tag>
-                    ${decodeURI(req.url)}
+                    ${decodeURI(req.path)}
               
                 </header>
                 ${delay}

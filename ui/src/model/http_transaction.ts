@@ -39,15 +39,20 @@ export class HttpRequest {
     url?: string;
     method?: string;
     path?: string;
+    host?: string;
     query?: string;
     headers?: any;
     cookies?: any;
     requestBody?: string;
     timestamp?: number;
+    originalPath?: string;
+    droppedHeaders?: string[];
+    injectedHeaders?: any
 
     constructor() {
-        this.headers = {}
-        this.cookies = {}
+        this.headers = {};
+        this.cookies = {};
+        this.droppedHeaders = [];
     }
 
     public extractHeaders(): Map<string, string> {

@@ -41,6 +41,9 @@ export class HttpTransactionViewComponent extends LitElement {
     private readonly _requestCookiesView: KVViewComponent;
     private readonly _responseCookiesView: KVViewComponent;
     private readonly _requestQueryView: KVViewComponent;
+    private readonly _injectedHeadersView: KVViewComponent;
+    private readonly _originalDetailsView: KVViewComponent;
+
     private _linkCache: TransactionLinkCache;
 
     // into the matrix.
@@ -61,6 +64,14 @@ export class HttpTransactionViewComponent extends LitElement {
         this._responseCookiesView = new KVViewComponent();
         this._responseCookiesView.keyLabel = 'Cookie Name';
         this._requestQueryView = new KVViewComponent();
+        this._injectedHeadersView = new KVViewComponent();
+        this._injectedHeadersView.keyLabel = 'Injected Header';
+        this._injectedHeadersView.valueLabel = 'Injected Value';
+        this._originalDetailsView = new KVViewComponent();
+        this._originalDetailsView.keyLabel = 'Detail';
+        this._originalDetailsView.valueLabel = 'Mutated Value';
+
+
         this._requestQueryView.keyLabel = 'Query Key';
         this._httpTransactionStore =
             GetBagManager().getBag<HttpTransaction>(WiretapHttpTransactionStore);
@@ -82,6 +93,19 @@ export class HttpTransactionViewComponent extends LitElement {
                 this._requestHeadersView.data = value.httpRequest.extractHeaders();
                 this._requestCookiesView.data = value.httpRequest.extractCookies();
                 this._requestQueryView.data = value.httpRequest.extractQuery();
+                if (value.httpRequest?.injectedHeaders) {
+                    this._injectedHeadersView.data = new Map(Object.entries(value.httpRequest?.injectedHeaders));
+                }
+
+                // if there are original details.
+                if (value.httpRequest.originalPath != value.httpRequest.path) {
+                    this._originalDetailsView.data = new Map([
+                        ['Original Path', value.httpRequest.originalPath],
+                        ['Rewritten Path', value.httpRequest.path],
+                        ['Destination Host',value.httpRequest.host],
+                        ['Destination URL', value.httpRequest.url],
+                    ]);
+                }
             }
             if (this._responseHeadersView && value.httpResponse) {
                 this._responseHeadersView.data = value.httpResponse.extractHeaders();
@@ -126,7 +150,7 @@ export class HttpTransactionViewComponent extends LitElement {
                 ${this._httpTransaction?.responseValidation?.length > 0 ? html`<h3>Response Violations</h3>` : html``}
                 ${map(this._httpTransaction.responseValidation, (i) => {
                     return html`
-                        <wiretap-violation-view .violation="${i}" ></wiretap-violation-view>
+                        <wiretap-violation-view .violation="${i}"></wiretap-violation-view>
                     `
                 })}`;
 
@@ -155,11 +179,36 @@ export class HttpTransactionViewComponent extends LitElement {
             const responseBodyView = new ResponseBodyViewComponent(resp);
             const requestBodyView = new RequestBodyViewComponent(req);
 
-           let requestTab: TemplateResult;
+            let requestTab: TemplateResult;
             if (req.requestBody == null || req.requestBody.length <= 0) {
-                requestTab = html`<sl-tab slot="nav" panel="request-body" class="tab-secondary" disabled>Body</sl-tab>`;
+                requestTab = html`
+                    <sl-tab slot="nav" panel="request-body" class="tab-secondary" disabled>Body</sl-tab>`;
             } else {
-                requestTab = html`<sl-tab slot="nav" panel="request-body" class="tab-secondary">Body</sl-tab>`;
+                requestTab = html`
+                    <sl-tab slot="nav" panel="request-body" class="tab-secondary">Body</sl-tab>`;
+            }
+
+
+            let originalTab: TemplateResult;
+            if (req.injectedHeaders?.size > 0 || req.droppedHeaders?.length > 0 || req.path != req.originalPath) {
+                originalTab = html`
+                    <sl-tab slot="nav" panel="request-origins" class="tab-secondary">Mutations</sl-tab>`;
+            } else {
+                originalTab = html`
+                    <sl-tab slot="nav" panel="request-origins" class="tab-secondary" disabled>Mutations</sl-tab>`;
+            }
+
+            let droppedHeaders: TemplateResult;
+            if (req.droppedHeaders.length > 0) {
+                droppedHeaders = html`
+                    <h3>Dropped Headers</h3>
+                    <ul>
+                        ${req.droppedHeaders.map((h) => {
+                            return html`
+                                <li class="dropped-header">${h}</li>`
+                        })}
+                    </ul>
+                `
             }
 
             const tabGroup: TemplateResult = html`
@@ -183,6 +232,7 @@ export class HttpTransactionViewComponent extends LitElement {
                             <sl-tab slot="nav" panel="request-query" class="tab">Query</sl-tab>
                             <sl-tab slot="nav" panel="request-headers" class="tab-secondary">Headers</sl-tab>
                             <sl-tab slot="nav" panel="request-cookies" class="tab-secondary">Cookies</sl-tab>
+                            ${originalTab}
                             <sl-tab-panel name="request-headers">
                                 ${this._requestHeadersView}
                             </sl-tab-panel>
@@ -194,6 +244,15 @@ export class HttpTransactionViewComponent extends LitElement {
                             </sl-tab-panel>
                             <sl-tab-panel name="request-query">
                                 ${this._requestQueryView}
+                            </sl-tab-panel>
+
+                            <sl-tab-panel name="request-origins">
+                                ${req.injectedHeaders != null ? html`<h3>Injected
+                                    headers</h3>${this._injectedHeadersView}
+                                <hr/>` : null}
+                                ${req.originalPath != req.path ? html`<h3>Destination details</h3>${this._originalDetailsView}
+                                <hr/>` : null}
+                                ${droppedHeaders}
                             </sl-tab-panel>
                         </sl-tab-group>
                     </sl-tab-panel>
@@ -215,7 +274,6 @@ export class HttpTransactionViewComponent extends LitElement {
                             </sl-tab-panel>
                             <sl-tab-panel name="response-body">
                                 ${responseBodyView}
-
                             </sl-tab-panel>
                         </sl-tab-group>
                     </sl-tab-panel>
@@ -262,53 +320,53 @@ export class HttpTransactionViewComponent extends LitElement {
         linkMatch.siblings.forEach((sibling) => {
             const transaction = BuildLiveTransactionFromState(this._httpTransactionStore.get(sibling.id));
             //if (transaction.id !== this._httpTransaction.id) {
-                const siblingComponent = new HttpTransactionItemComponent(transaction, this._linkCache);
-                siblingComponent.hideControls = true;
-                if (this._chainTransactionView && this._chainTransactionView.httpTransaction?.id == transaction.id) {
-                    siblingComponent.setActive();
-                } else {
-                    siblingComponent.disable();
+            const siblingComponent = new HttpTransactionItemComponent(transaction, this._linkCache);
+            siblingComponent.hideControls = true;
+            if (this._chainTransactionView && this._chainTransactionView.httpTransaction?.id == transaction.id) {
+                siblingComponent.setActive();
+            } else {
+                siblingComponent.disable();
+            }
+            siblingComponent.addEventListener(HttpTransactionSelectedEvent, this.chainTransactionSelected.bind(this));
+            siblings.push(siblingComponent);
+
+            let tsFormat = "";
+            let thisDiff = transaction.httpRequest.timestamp - tsDiff;
+            if (thisDiff != transaction.httpRequest.timestamp) {
+                if (thisDiff > 1000) {
+                    tsFormat = "+" + (thisDiff / 1000).toFixed(3) + "s";
                 }
-                siblingComponent.addEventListener(HttpTransactionSelectedEvent, this.chainTransactionSelected.bind(this));
-                siblings.push(siblingComponent);
-
-                let tsFormat = "";
-                let thisDiff = transaction.httpRequest.timestamp - tsDiff;
-                if (thisDiff != transaction.httpRequest.timestamp) {
-                    if (thisDiff > 1000) {
-                        tsFormat = "+" + (thisDiff / 1000).toFixed(3) + "s";
-                    }
-                    if (thisDiff > 60000) {
-                        tsFormat = "+" + ((thisDiff / 1000)/60).toFixed(2)+ "m";
-                    }
-                    if (thisDiff <=1000) {
-                        tsFormat = "+" + thisDiff + "ms";
-                    }
-
-                    tsTotal = tsTotal + thisDiff + (transaction.httpResponse?.timestamp - transaction.httpRequest?.timestamp);
+                if (thisDiff > 60000) {
+                    tsFormat = "+" + ((thisDiff / 1000) / 60).toFixed(2) + "m";
+                }
+                if (thisDiff <= 1000) {
+                    tsFormat = "+" + thisDiff + "ms";
                 }
 
-                let linkIcon = 'link-45deg';
-                let linkCss = 'color: var(--dark-font-color);';
-                let tsCss = '';
-                if(this._httpTransaction.id == transaction.id) {
-                    linkIcon = 'arrow-right-square';
-                    linkCss = 'color: var(--primary-color);';
-                    tsCss = 'color: var(--primary-color); font-weight: bold;';
-                }
+                tsTotal = tsTotal + thisDiff + (transaction.httpResponse?.timestamp - transaction.httpRequest?.timestamp);
+            }
+
+            let linkIcon = 'link-45deg';
+            let linkCss = 'color: var(--dark-font-color);';
+            let tsCss = '';
+            if (this._httpTransaction.id == transaction.id) {
+                linkIcon = 'arrow-right-square';
+                linkCss = 'color: var(--primary-color);';
+                tsCss = 'color: var(--primary-color); font-weight: bold;';
+            }
 
 
-                // create a timeline component for each sibling
-                const timelineItem = html`
-                    <wiretap-timeline-item>
-                        <span slot="time" style="${tsCss}">${tsFormat}</span>
-                        <sl-icon name="${linkIcon}" slot="icon" style="${linkCss}"></sl-icon>
-                        <div slot="content">${siblingComponent}</div>
-                    </wiretap-timeline-item>`
+            // create a timeline component for each sibling
+            const timelineItem = html`
+                <wiretap-timeline-item>
+                    <span slot="time" style="${tsCss}">${tsFormat}</span>
+                    <sl-icon name="${linkIcon}" slot="icon" style="${linkCss}"></sl-icon>
+                    <div slot="content">${siblingComponent}</div>
+                </wiretap-timeline-item>`
 
-                timelineItems.push(timelineItem);
+            timelineItems.push(timelineItem);
 
-                tsDiff = transaction.httpResponse?.timestamp;
+            tsDiff = transaction.httpResponse?.timestamp;
             //}
         });
         let tsTotalFormat = "";
@@ -316,7 +374,7 @@ export class HttpTransactionViewComponent extends LitElement {
             tsTotalFormat = (tsTotal / 1000).toFixed(3) + " seconds";
         }
         if (tsTotal > 60000) {
-            tsTotalFormat = ((tsTotal / 1000)/60).toFixed(2) + " minutes";
+            tsTotalFormat = ((tsTotal / 1000) / 60).toFixed(2) + " minutes";
         }
         if (tsTotal <= 1000) {
             tsTotalFormat = tsDiff.toFixed(3) + " ms";

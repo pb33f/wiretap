@@ -157,7 +157,7 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	returnedResponse, returnedError = ws.callAPI(apiRequest)
 
 	if returnedResponse == nil && returnedError != nil {
-		utils.Log.Infof("[wiretap] request %s: Failed (%d)", request.HttpRequest.URL.String(), 500)
+		utils.Log.Infof("[wiretap] request %s: Failed (%d)", apiRequest.URL.String(), 500)
 		go ws.broadcastResponseError(request, cloneResponse(returnedResponse), returnedError)
 		request.HttpResponseWriter.WriteHeader(500)
 		wtError := shared.GenerateError("Unable to call API", 500, returnedError.Error(), "")

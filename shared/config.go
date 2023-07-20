@@ -27,6 +27,7 @@ type WiretapConfiguration struct {
 	Headers             *WiretapHeaderConfig          `json:"headers,omitempty" yaml:"headers,omitempty"`
 	StaticPaths         []string                      `json:"staticPaths,omitempty" yaml:"staticPaths,omitempty"`
 	Variables           map[string]string             `json:"variables,omitempty" yaml:"variables,omitempty"`
+	Spec                string                        `json:"contract,omitempty" yaml:"contract,omitempty"`
 	CompiledVariables   map[string]*CompiledVariable  `json:"-" yaml:"-"`
 	StaticPathsCompiled []glob.Glob                   `json:"-" yaml:"-"`
 	CompiledPaths       map[string]*CompiledPath      `json:"-"`

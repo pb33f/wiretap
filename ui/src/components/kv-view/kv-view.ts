@@ -32,7 +32,9 @@ export class KVViewComponent extends LitElement {
     }
 
     set data(value: Map<string, any>) {
-        this._data = value;
+        if (value.size > 0) {
+            this._data = value;
+        }
     }
 
     render() {
@@ -83,7 +85,6 @@ export class KVViewComponent extends LitElement {
         `;
 
         const output = this._data?.size > 0 ? table : noData;
-
         return html`${output}`;
     }
 }

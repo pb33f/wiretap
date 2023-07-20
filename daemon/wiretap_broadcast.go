@@ -10,10 +10,10 @@ import (
 	"net/http"
 )
 
-func (ws *WiretapService) broadcastRequestValidationErrors(request *model.Request, errors []*errors.ValidationError) {
+func (ws *WiretapService) broadcastRequestValidationErrors(request *model.Request,
+	errors []*errors.ValidationError, transaction *HttpTransaction) {
 	id, _ := uuid.NewUUID()
-
-	ht := buildRequest(request)
+	ht := transaction
 	ht.RequestValidation = errors
 
 	ws.broadcastChan.Send(&model.Message{
@@ -26,14 +26,14 @@ func (ws *WiretapService) broadcastRequestValidationErrors(request *model.Reques
 	})
 }
 
-func (ws *WiretapService) broadcastRequest(request *model.Request) {
+func (ws *WiretapService) broadcastRequest(request *model.Request, transaction *HttpTransaction) {
 	id, _ := uuid.NewUUID()
 	ws.broadcastChan.Send(&model.Message{
 		Id:            &id,
 		DestinationId: request.Id,
 		Channel:       WiretapBroadcastChan,
 		Destination:   WiretapBroadcastChan,
-		Payload:       buildRequest(request),
+		Payload:       transaction,
 		Direction:     model.ResponseDir,
 	})
 }
