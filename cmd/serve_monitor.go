@@ -66,10 +66,8 @@ func serveMonitor(wiretapConfig *shared.WiretapConfiguration) {
 		mux.HandleFunc("/", handleIndex)
 
 		// compress everything!
-		fileServer = handlers.CompressHandler(fileServer)
-
 		// handle the assets
-		mux.Handle("/assets/", http.StripPrefix("/assets", fileServer))
+		mux.Handle("/assets/", http.StripPrefix("/assets", handlers.CompressHandler(fileServer)))
 
 		pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("Monitor UI booting on port %s...", wiretapConfig.MonitorPort)))
 
