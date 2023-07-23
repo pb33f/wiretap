@@ -45,3 +45,39 @@ brews:
 
 snapshot:
   name_template: "{{ .Tag }}"
+
+upx:
+  -
+    # Whether to enable it or not.
+    enabled: true
+
+
+    # Filter by GOOS.
+    #
+    # Since: v1.19
+    goos: [ linux , darwin ]
+
+    # Filter by GOARCH.
+    #
+    # Since: v1.19
+    goarch: [ arm, amd64 ]
+
+    # Filter by GOARM.
+    #
+    # Since: v1.19
+    goarm: [ 8 ]
+
+    # Filter by GOAMD64.
+    #
+    # Since: v1.19
+    goamd64: [ v1 ]
+
+    # Compress argument.
+    # Valid options are from '1' (faster) to '9' (better), and 'best'.
+    compress: best
+
+    # Whether to try LZMA (slower).
+    lzma: true
+
+    # Whether to try all methods and filters (slow).
+    brute: true
