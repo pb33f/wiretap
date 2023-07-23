@@ -1,5 +1,5 @@
 import {customElement, property, query} from "lit/decorators.js";
-import {html, LitElement} from "lit";
+import {html, LitElement, PropertyValues} from "lit";
 import {HttpRequest, HttpResponse, HttpTransaction, HttpTransactionBase} from "./model/http_transaction";
 import {Bag, BagManager, CreateBagManager} from "@pb33f/saddlebag";
 import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Subscription} from "@pb33f/ranch";
@@ -43,6 +43,7 @@ export class WiretapComponent extends LitElement {
     private readonly _wiretapConfigChannel: Channel;
     private readonly _staticNotificationChannel: Channel;
     private readonly _wiretapPort: string;
+    private readonly _wiretapVersion: string;
     private _transactionChannelSubscription: Subscription;
     private _specChannelSubscription: Subscription;
     private _configChannelSubscription: Subscription;
@@ -79,6 +80,20 @@ export class WiretapComponent extends LitElement {
 
         // extract port from session storage.
         this._wiretapPort = sessionStorage.getItem("wiretapPort");
+
+        // extract version from session storage.
+        this._wiretapVersion = localStorage.getItem("wiretapVersion");
+
+        // wipe cache if version has changed.
+        const wipeCache = localStorage.getItem("wiretapWipeCache");
+        if (wipeCache && wipeCache == 'true') {
+            localforage.clear().then(
+                () => {
+                    console.log('new version of wiretap detected, wiping application state.');
+                    localStorage.removeItem("wiretapWipeCache");
+                }
+            );
+        }
 
         // set up bus and stores
         this._bus = CreateBus();
@@ -137,6 +152,11 @@ export class WiretapComponent extends LitElement {
             this.calculateMetricsFromState(previousTransactions);
         });
 
+
+    }
+
+    firstUpdated() {
+
         // configure wiretap broker.
         const config = {
             brokerURL: 'ws://localhost:' + this._wiretapPort + '/ranch',
@@ -146,6 +166,7 @@ export class WiretapComponent extends LitElement {
                 this.requestSpec();
             }
         }
+
         this._bus.connectToBroker(config);
     }
 
@@ -216,7 +237,7 @@ export class WiretapComponent extends LitElement {
             const wiretapMessage = msg.payload as HttpTransaction
 
             const constructedTransaction: HttpTransaction = new HttpTransaction();
-            constructedTransaction.httpRequest = Object.assign(new HttpRequest(), wiretapMessage.httpRequest);
+            constructedTransaction.httpRequest = Object.assign(new HttpRequest(), wiretapMessage?.httpRequest);
             constructedTransaction.id = wiretapMessage.id;
             constructedTransaction.requestValidation = wiretapMessage.requestValidation;
             constructedTransaction.responseValidation = wiretapMessage.responseValidation;
@@ -281,15 +302,13 @@ export class WiretapComponent extends LitElement {
 
 
     wipeData(e: CustomEvent) {
-        const store = this._storeManager.getBag(e.detail)
-        if (store) {
-            store.reset();
-        }
+        this._storeManager.resetBags();
         this.responseCount = 0;
         this.requestCount = 0;
         this.violatedTransactions = 0;
         this.violationsCount = 0;
         this.calcComplianceLevel();
+        localforage.clear()
     }
 
     render() {

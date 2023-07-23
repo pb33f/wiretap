@@ -70,13 +70,13 @@ export class WiretapControlsComponent extends LitElement {
         this.loadControlStateFromStorage().then((controls: WiretapControls) => {
             if (!controls) {
                 this._controls = {
-                    globalDelay: -1,
+                    globalDelay: 0,
                 }
             } else {
                 this._controls = controls;
             }
             // get the delay from the backend.
-            this.changeGlobalDelay(-1) // -1 won't update anything, but will return the current delay
+            this.changeGlobalDelay(0) // -1 won't update anything, but will return the current delay
         });
 
 
@@ -125,18 +125,20 @@ export class WiretapControlsComponent extends LitElement {
     }
 
     changeGlobalDelay(delay: number) {
-        this._bus.publish({
-            destination: "/pub/queue/controls",
-            body: JSON.stringify(
-                {
-                    id: RanchUtils.genUUID(),
-                    requestCommand: ChangeDelayCommand,
-                    payload: {
-                        delay: delay
+        if (this._bus.getClient()?.connected) {
+            this._bus.publish({
+                destination: "/pub/queue/controls",
+                body: JSON.stringify(
+                    {
+                        id: RanchUtils.genUUID(),
+                        requestCommand: ChangeDelayCommand,
+                        payload: {
+                            delay: delay
+                        }
                     }
-                }
-            ),
-        });
+                ),
+            });
+        }
     }
 
     openSettings() {

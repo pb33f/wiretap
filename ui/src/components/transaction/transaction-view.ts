@@ -7,7 +7,11 @@ import transactionViewComponentCss from "./transaction-view.css";
 import {KVViewComponent} from "@/components/kv-view/kv-view";
 import sharedCss from "@/components/shared.css";
 import {SlTab, SlTabGroup} from "@shoelace-style/shoelace";
-import {ExtractHTTPCodeDefinition, ExtractStatusStyleFromCode} from "@/model/extract_status";
+import {
+    ExtractHTTPCodeDefinition,
+    ExtractHTTPCodeDescription,
+    ExtractStatusStyleFromCode
+} from "@/model/extract_status";
 import {LinkMatch, TransactionLinkCache} from "@/model/link_cache";
 import {HttpTransactionItemComponent} from "@/components/transaction/transaction-item";
 import {HttpTransactionSelectedEvent, ViolationLocation} from "@/model/events";
@@ -267,7 +271,10 @@ export class HttpTransactionViewComponent extends LitElement {
                             <sl-tab slot="nav" panel="response-cookies" class="tab-secondary">Cookies</sl-tab>
                             <sl-tab-panel name="response-code">
                                 <h2 class="${ExtractStatusStyleFromCode(resp)}">${resp.statusCode}</h2>
-                                <p class="response-code">${ExtractHTTPCodeDefinition(resp)}</p>
+                                <h3>${ExtractHTTPCodeDefinition(resp)}</h3>
+                                <p class="response-code">
+                                   ${ExtractHTTPCodeDescription(resp)}
+                                </p>
                             </sl-tab-panel>
                             <sl-tab-panel name="response-headers">
                                 ${this._responseHeadersView}

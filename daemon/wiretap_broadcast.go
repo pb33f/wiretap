@@ -4,9 +4,12 @@
 package daemon
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/ranch/model"
+	"github.com/pb33f/wiretap/shared"
 	"net/http"
 )
 
@@ -52,13 +55,29 @@ func (ws *WiretapService) broadcastResponse(request *model.Request, response *ht
 
 func (ws *WiretapService) broadcastResponseError(request *model.Request, response *http.Response, err error) {
 	id, _ := uuid.NewUUID()
+	title := "Response Error"
+	code := 500
+	if response != nil {
+		title = fmt.Sprintf("Response Error %d", response.StatusCode)
+		code = response.StatusCode
+	}
+
+	respBodyString, _ := json.Marshal(&shared.WiretapError{
+		Title:  title,
+		Status: code,
+		Detail: err.Error(),
+	})
+
+	resp := buildResponse(request, response)
+	resp.Response.Body = string(respBodyString)
+
 	ws.broadcastChan.Send(&model.Message{
 		Id:            &id,
 		DestinationId: request.Id,
 		Error:         err,
 		Channel:       WiretapBroadcastChan,
 		Destination:   WiretapBroadcastChan,
-		Payload:       buildResponse(request, response),
+		Payload:       resp,
 		Direction:     model.ResponseDir,
 	})
 }

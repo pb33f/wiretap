@@ -163,4 +163,8 @@ export default css`
     color: var(--error-color);
   }
   
+  .response-code {
+    font-size: 0.8rem;
+  }
+  
 `

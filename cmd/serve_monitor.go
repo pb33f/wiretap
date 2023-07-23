@@ -47,7 +47,8 @@ func serveMonitor(wiretapConfig *shared.WiretapConfiguration) {
 		indexString := string(bytes)
 
 		// replace the port in the index.html file and serve it.
-		indexString = strings.ReplaceAll(indexString, shared.WiretapPortPlaceholder, wiretapConfig.WebSocketPort)
+		indexString = strings.ReplaceAll(strings.ReplaceAll(indexString, shared.WiretapPortPlaceholder, wiretapConfig.WebSocketPort),
+			shared.WiretapVersionPlaceholder, wiretapConfig.Version)
 
 		// handle index will serve a modified index.html from the embedded filesystem.
 		// this is so the monitor can connect to the websocket on the correct port.
@@ -65,7 +66,7 @@ func serveMonitor(wiretapConfig *shared.WiretapConfiguration) {
 		mux.HandleFunc("/", handleIndex)
 
 		// compress everything!
-		handlers.CompressHandler(fileServer)
+		fileServer = handlers.CompressHandler(fileServer)
 
 		// handle the assets
 		mux.Handle("/assets/", http.StripPrefix("/assets", fileServer))

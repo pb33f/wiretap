@@ -7,10 +7,17 @@ export default css`
   }
 
   pre {
-    max-width: calc(100vw - 135px);
-    overflow-x: auto;
+    max-width: 960px;
+    word-wrap: break-word;
+    white-space: pre-wrap;
   }
 
+
+  pre code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  
 
 
 `
