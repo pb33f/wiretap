@@ -26,6 +26,9 @@ func main() {
 	}
 	if date == "" {
 		date = time.Now().Format("Mon, 02 Jan 2006 15:04:05 MST")
+	} else {
+		parsed, _ := time.Parse(time.RFC3339, date)
+		date = parsed.Format("Mon, 02 Jan 2006 15:04:05 MST")
 	}
 
 	// run root command.
