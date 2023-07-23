@@ -47,7 +47,7 @@ export class KVViewComponent extends LitElement {
                             <tr>
                                 <td><code>${i[0]}</code></td>
                                 <td>
-                                    <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(i[1]), Prism.languages['json'], 'json'))}</pre></code>
+                                    <pre style=""><code style="white-space: pre-wrap;  word-wrap: break-word;">${unsafeHTML(Prism.highlight(JSON.stringify(i[1], null, 2), Prism.languages['json'], 'json'))}</pre></code>
                                 </td>
                             </tr>`
                     }

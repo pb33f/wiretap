@@ -7,11 +7,11 @@ import "encoding/json"
 
 // WiretapError is an rfc7807 compliant error struct
 type WiretapError struct {
-	Type     string `json:"type,omitempty"`   // URI reference to the type of problem
-	Title    string `json:"title"`            // A short description of the issue
-	Status   int    `json:"status,omitempty"` // HTTP status code.
-	Detail   string `json:"detail"`           // explanation of the issue in detail.
-	Instance string `json:"instance"`         // URI to the specific problem.
+	Type     string `json:"type,omitempty"`     // URI reference to the type of problem
+	Title    string `json:"title"`              // A short description of the issue
+	Status   int    `json:"status,omitempty"`   // HTTP status code.
+	Detail   string `json:"detail"`             // explanation of the issue in detail.
+	Instance string `json:"instance,omitempty"` // URI to the specific problem.
 }
 
 func GenerateError(title string,

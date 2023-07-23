@@ -56,7 +56,18 @@ export default css`
     font-size: 1em;
   }
   
-
+    
+  pre {
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    max-width: 760px;
+    overflow-x: auto;
+  }
+  
+  pre > code {
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
    
   
 

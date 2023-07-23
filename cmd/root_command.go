@@ -91,6 +91,9 @@ var (
 
 			var config shared.WiretapConfiguration
 
+			// set version.
+			config.Version = Version
+
 			if configFlag == "" {
 				// see if a configuration file exists in the current directory or in the user's home directory.
 				local, _ := os.Stat("wiretap.yaml")

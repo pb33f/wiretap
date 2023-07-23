@@ -85,7 +85,7 @@ export class TransactionLinkCache {
 
         // create new state map with the new filter chain
         const newState = new Map<string, Map<string, HttpTransactionLink[]>>();
-        this._filters.filterChain.forEach((chain) => {
+        this._filters?.filterChain.forEach((chain) => {
             if (!this._state.has(chain.keyword)) {
                 newState.set(chain.keyword, new Map<string, HttpTransactionLink[]>())
             } else {

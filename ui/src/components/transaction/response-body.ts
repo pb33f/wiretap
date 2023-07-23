@@ -35,10 +35,6 @@ export class ResponseBodyViewComponent extends LitElement {
         </span>`;
 
         switch (exct) {
-            case ContentTypeJSON:
-                return html`${ct}
-                <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(this._httpResponse.responseBody), null, 2),
-                        Prism.languages.json, 'json'))}</code></pre>`;
             case ContentTypeXML:
                 return html`
                     <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(this._httpResponse.responseBody), null, 2),
@@ -57,7 +53,8 @@ export class ResponseBodyViewComponent extends LitElement {
 
             default:
                 return html`${ct}
-                <pre>${this._httpResponse.responseBody}</pre>`
+                <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(this._httpResponse.responseBody), null, 2),
+                        Prism.languages.json, 'json'))}</code></pre>`;
         }
     }
 
