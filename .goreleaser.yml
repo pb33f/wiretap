@@ -81,3 +81,4 @@ upx:
 
     # Whether to try all methods and filters (slow).
     brute: true
+    
