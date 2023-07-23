@@ -1,4 +1,4 @@
-FROM node:20-bullseye-slim as builder
+FROM node:20-bookworm-slim as builder
 
 # set up ui build
 RUN mkdir -p /wt_build
@@ -11,7 +11,7 @@ WORKDIR /wt_build/ui
 RUN yarn install
 RUN yarn build
 
-FROM golang:1.20-alpine
+FROM golang:1.20
 
 WORKDIR /work
 
