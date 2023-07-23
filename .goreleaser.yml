@@ -29,7 +29,7 @@ changelog:
       - '^docs:'
       - '^test:'
 brews:
-  - tap:
+  - repository:
       owner: pb33f
       name: homebrew-taps
 
