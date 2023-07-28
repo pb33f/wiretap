@@ -11,7 +11,7 @@ async function install() {
     if (process.platform === "android") {
         console.log("Installing, may take a moment...");
         const cmd =
-            "pkg upgrade && pkg install golang git -y && git clone https://github.com/pb33f/wiertap.git && make build";
+            "pkg upgrade && pkg install golang git -y && git clone https://github.com/pb33f/wiretap.git && make build";
         execSync(cmd, { encoding: "utf-8" });
         console.log("Installation successful!");
         return;

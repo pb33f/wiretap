@@ -17,12 +17,13 @@
     "postinstall": "node ./npm-install/postinstall.js"
   },
   "bin": {
-    "wiretap": "bin/wiretap"
+    "wiretap": "bin/wiretap.js"
   },
   "files": [
     "npm-install"
   ],
   "dependencies": {
+    "global": "^4.4.0",
     "node-fetch": "^3.3.1",
     "tar": "^6.1.15"
   },
