@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 try {
-    execFileSync(path.resolve(`${__dirname}/vacuum`), process.argv.slice(2), {
+    execFileSync(path.resolve(`${__dirname}/wiretap`), process.argv.slice(2), {
         stdio: "inherit",
     });
 } catch (e) {

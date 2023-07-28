@@ -1,9 +1,9 @@
 {
   "name": "@pb33f/wiretap",
   "version": "0.0.0",
-  "description": "The world's coolest OpenAPI contract compliance API Proxy in the world.",
+  "description": "The world's coolest OpenAPI contract compliance API Proxy testing tool.",
   "type": "module",
-  "author": "Princess Beef Heavy Industries, LLC / Quobix",
+  "author": "Princess Beef Heavy Industries, LLC / Quobix / DaveShanley",
   "license": "GPL-3.0",
   "homepage": "https://pb33f.io/wiretap",
   "repository": {
