@@ -8,7 +8,7 @@ to detect OpenAPI contract violations and compliance.
 A shift left tool, for those who want to know if their applications
 are actually compliant with an API.
 
-This is an early tool and in active development, Why not try it out and give us some feedback?
+> This is an early tool and in active development, Why not try it out and give us some feedback?
 
 ![](https://github.com/pb33f/wiretap/blob/main/.github/assets/wiretap-preview.gif)
 
