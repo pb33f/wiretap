@@ -275,8 +275,8 @@ github.com/pb33f/libopenapi v0.9.7 h1:HbuWB9PPZKsRtheYbRBQkhF//Ay2Bfgg0f6gw3qq7q
 github.com/pb33f/libopenapi v0.9.7/go.mod h1:8lr9sjsI5uZxtiEvHgg1A9/p/70briQ5WUGoJiuTFPc=
 github.com/pb33f/libopenapi-validator v0.0.13 h1:UB4r6/rJ8blquu3njB1nmm5KRTF4A4wEUNnXRSeVV8Y=
 github.com/pb33f/libopenapi-validator v0.0.13/go.mod h1:NjY6ZsalzzcenfYJe9NFB4Hy9DKWjM/7DTnf4MF+n/M=
-github.com/pb33f/ranch v0.2.2 h1:pxff0FI0T+zr2o3bv5nKcTKk+41CjMX7fJr9L2tKGg4=
-github.com/pb33f/ranch v0.2.2/go.mod h1:BHhS0EZw9pkK8cNtOxvIHaPMyFVd77I9cmy1kgKKA6M=
+github.com/pb33f/ranch v0.3.0 h1:t3Mfse/TG8EXlLMOm0IefZS/zj2f7JBvPSda5BzCQDo=
+github.com/pb33f/ranch v0.3.0/go.mod h1:BHhS0EZw9pkK8cNtOxvIHaPMyFVd77I9cmy1kgKKA6M=
 github.com/pelletier/go-toml v1.9.3 h1:zeC5b1GviRUyKYd6OJPvBU/mcVDVoL1OhT17FCt5dSQ=
 github.com/pelletier/go-toml v1.9.3/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
