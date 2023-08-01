@@ -27,8 +27,11 @@ func MonitorStatic(wiretapConfig *shared.WiretapConfiguration) {
 		defer watcher.Close()
 
 		watchDir := func(path string, fi os.FileInfo, err error) error {
-			if fi.Mode().IsDir() {
+			if fi != nil && !fi.Mode().IsDir() {
 				return watcher.Add(path)
+			}
+			if fi == nil {
+				pterm.Error.Println(fmt.Sprintf("Error trying to monitor static directory: %s", err))
 			}
 			return nil
 		}
