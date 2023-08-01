@@ -209,7 +209,7 @@ export class HttpTransactionContainerComponent extends LitElement {
         let filtered: HttpTransactionItemComponent[] = this._transactionComponents;
 
         // filter by method
-        if (this._filters.filterMethod.keyword.length > 0) {
+        if (this._filters?.filterMethod.keyword.length > 0) {
             filtered = this._transactionComponents.filter(
                 (v: HttpTransactionItemComponent) => {
                     const filter = v.httpTransaction.matchesMethodFilter(this._filters);
@@ -218,7 +218,7 @@ export class HttpTransactionContainerComponent extends LitElement {
         }
 
         // re-filter by keywords
-        if (this._filters.filterKeywords.length > 0) {
+        if (this._filters?.filterKeywords.length > 0) {
             filtered = filtered.filter((v: HttpTransactionItemComponent) => {
                 const filter = v.httpTransaction.matchesKeywordFilter(this._filters);
                 return filter != false;
@@ -226,7 +226,7 @@ export class HttpTransactionContainerComponent extends LitElement {
         }
 
         // re-filter by chains
-        if (this._filters.filterChain.length > 0) {
+        if (this._filters?.filterChain.length > 0) {
             filtered = filtered.filter((v: HttpTransactionItemComponent) => {
                 const filter = v.httpTransaction.containsActiveLink(this._filters);
                 v.httpTransaction.containsChainLink = (filter != false);

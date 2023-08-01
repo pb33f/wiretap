@@ -32,7 +32,7 @@ export class KVViewComponent extends LitElement {
     }
 
     set data(value: Map<string, any>) {
-        if (value.size > 0) {
+        if (value && value.size > 0) {
             this._data = value;
         }
     }
