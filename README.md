@@ -1,5 +1,6 @@
 # wiretap
 
+
 A local and pipeline based tool to sniff API request and responses from clients and servers
 to detect OpenAPI contract violations and compliance.
 
@@ -10,6 +11,9 @@ This is an early tool and in active development.
 
 Probably best to leave this one alone for now, come back later
 when it's a little more baked.
+
+
+![](https://github.com/pb33f/wiretap/blob/main/.github/assets/wiretap-preview.gif)
 
 ## Configuring paths & rewriting them. 
 
