@@ -201,7 +201,7 @@ export class WiretapComponent extends LitElement {
     requestSpec() {
         this._bus.publish({
             destination: "/pub/queue/specs",
-            body: JSON.stringify({requestCommand: GetCurrentSpecCommand}),
+            body: JSON.stringify({request: GetCurrentSpecCommand}),
         })
     }
 
@@ -211,10 +211,12 @@ export class WiretapComponent extends LitElement {
 
     specHandler(): BusCallback<CommandResponse> {
         return (msg: CommandResponse) => {
-            const decoded = atob(msg.payload.payload);
-            this._specStore.set(WiretapCurrentSpec, decoded)
-            localforage.setItem(WiretapCurrentSpec, decoded);
-            this.requestUpdate();
+            if (msg.payload?.payload != null) {
+                const decoded = atob(msg.payload.payload);
+                this._specStore.set(WiretapCurrentSpec, decoded)
+                localforage.setItem(WiretapCurrentSpec, decoded);
+                this.requestUpdate();
+            }
         }
     }
 

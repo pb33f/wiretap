@@ -273,8 +273,8 @@ github.com/onsi/gomega v1.19.0/go.mod h1:LY+I3pBVzYsTBU1AnDwOSxaYi9WoWiqgwooUqq9
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pb33f/libopenapi v0.9.4 h1:JRuL1nJZf0+K+cysjo9jXczfy94Vlm6kMMXib6sRzas=
 github.com/pb33f/libopenapi v0.9.4/go.mod h1:8lr9sjsI5uZxtiEvHgg1A9/p/70briQ5WUGoJiuTFPc=
-github.com/pb33f/libopenapi-validator v0.0.10 h1:+8WE5TPJ35ptp0FoiurRy0gPq9/BoezSBUgk140xZNQ=
-github.com/pb33f/libopenapi-validator v0.0.10/go.mod h1:NjY6ZsalzzcenfYJe9NFB4Hy9DKWjM/7DTnf4MF+n/M=
+github.com/pb33f/libopenapi-validator v0.0.11 h1:9xNAE2R7ZJU2J98sg0ZIhlHX2emJDT42DcCvVDPJAoQ=
+github.com/pb33f/libopenapi-validator v0.0.11/go.mod h1:NjY6ZsalzzcenfYJe9NFB4Hy9DKWjM/7DTnf4MF+n/M=
 github.com/pb33f/ranch v0.2.2 h1:pxff0FI0T+zr2o3bv5nKcTKk+41CjMX7fJr9L2tKGg4=
 github.com/pb33f/ranch v0.2.2/go.mod h1:BHhS0EZw9pkK8cNtOxvIHaPMyFVd77I9cmy1kgKKA6M=
 github.com/pelletier/go-toml v1.9.3 h1:zeC5b1GviRUyKYd6OJPvBU/mcVDVoL1OhT17FCt5dSQ=
