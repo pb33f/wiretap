@@ -111,4 +111,5 @@ wiretap -u https://api.pb33f.com -s my-openapi-spec.yaml
 - [Monitor UI](https://pb33f.io/wiretap/monitor/)
 - [Serving static content](https://pb33f.io/wiretap/static-content/)
 - [GiftShop example API](https://pb33f.io/wiretap/giftshop-api/)
+- [Contributing](https://pb33f.io/wiretap/contributing/)
 
