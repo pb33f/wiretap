@@ -135,7 +135,7 @@ export class HttpTransaction extends HttpTransactionBase {
     }
 
     matchesMethodFilter(filter: WiretapFilters): Filter | boolean {
-        if (filter?.filterMethod?.keyword.toLowerCase() === this.httpRequest.method.toLowerCase()) {
+        if (filter?.filterMethod?.keyword?.toLowerCase() === this.httpRequest?.method?.toLowerCase()) {
             return filter.filterMethod;
         }
         return false;

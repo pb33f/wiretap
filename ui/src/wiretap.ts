@@ -79,7 +79,11 @@ export class WiretapComponent extends LitElement {
         });
 
         // extract port from session storage.
-        this._wiretapPort = sessionStorage.getItem("wiretapPort");
+        this._wiretapPort = localStorage.getItem("wiretapPort");
+
+        if (!this._wiretapPort) {
+            this._wiretapPort = "9092"; // default port
+        }
 
         // extract version from session storage.
         this._wiretapVersion = localStorage.getItem("wiretapVersion");
