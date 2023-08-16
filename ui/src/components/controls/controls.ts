@@ -131,7 +131,7 @@ export class WiretapControlsComponent extends LitElement {
                 body: JSON.stringify(
                     {
                         id: RanchUtils.genUUID(),
-                        requestCommand: ChangeDelayCommand,
+                        request: ChangeDelayCommand,
                         payload: {
                             delay: delay
                         }
@@ -155,7 +155,7 @@ export class WiretapControlsComponent extends LitElement {
             body: JSON.stringify(
                 {
                     id: RanchUtils.genUUID(),
-                    requestCommand: RequestReportCommand,
+                    request: RequestReportCommand,
                     payload: {}
                 }
             ),

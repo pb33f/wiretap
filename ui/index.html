@@ -6,15 +6,14 @@
     <meta name="description"
           content="wiretap is a tool that sniffs your API traffic and validates it against an OpenAPI specification.">
     <script>
-        sessionStorage.setItem('wiretapPort', '%WIRETAP_PORT%')
-        //sessionStorage.setItem('wiretapPort', '9092')
+        localStorage.setItem('wiretapPort', '%WIRETAP_PORT%')
+        //localStorage.setItem('wiretapPort', '9092');
         const version = '%WIRETAP_VERSION%';
         const existingVersion = localStorage.getItem('wiretapVersion');
         if (existingVersion !== version) {
             localStorage.setItem('wiretapVersion', version);
             localStorage.setItem('wiretapWipeCache', 'true');
         }
-
     </script>
     <script type="module" src="/src/index.ts" defer></script>
     <script type="module" src="/src/workers/link_cache_worker.ts"></script>
