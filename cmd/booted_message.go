@@ -21,8 +21,13 @@ func bootedMessage(wiretapConfig *shared.WiretapConfiguration) {
 			if !seen {
 				seen = true
 				pterm.Println()
-				b1 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("API Gateway")).Sprint(fmt.Sprintf("http://localhost:%s", wiretapConfig.Port))
-				b2 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Monitor UI")).Sprint(fmt.Sprintf("http://localhost:%s", wiretapConfig.MonitorPort))
+				protocol := "http"
+				if wiretapConfig.CertificateKey != "" && wiretapConfig.Certificate != "" {
+					protocol = "https"
+				}
+
+				b1 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("API Gateway")).Sprint(fmt.Sprintf("%s://localhost:%s", protocol, wiretapConfig.Port))
+				b2 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Monitor UI")).Sprint(fmt.Sprintf("%s://localhost:%s", protocol, wiretapConfig.MonitorPort))
 				b3 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Static files served from")).Sprint(wiretapConfig.StaticDir)
 
 				var pp *pterm.PanelPrinter

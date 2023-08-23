@@ -6,6 +6,7 @@ package daemon
 import (
 	_ "embed"
 	"fmt"
+	"github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/libopenapi-validator/parameters"
 	"github.com/pb33f/libopenapi-validator/requests"
 	"github.com/pb33f/libopenapi-validator/responses"
@@ -150,8 +151,19 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		Variables:     config.CompiledVariables,
 	})
 
-	// validate the request
-	go ws.validateRequest(request, newReq, requestValidator, paramValidator, responseValidator)
+	var requestErrors []*errors.ValidationError
+	var responseErrors []*errors.ValidationError
+
+	// check if we're going to fail hard on validation errors. (default is to skip this)
+	if ws.config.HardErrors {
+
+		// validate the request synchronously
+		requestErrors = ws.validateRequest(request, newReq, requestValidator, paramValidator, responseValidator)
+
+	} else {
+		// validate the request asynchronously
+		go ws.validateRequest(request, newReq, requestValidator, paramValidator, responseValidator)
+	}
 
 	// call the API being requested.
 	returnedResponse, returnedError = ws.callAPI(apiRequest)
@@ -163,9 +175,17 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		wtError := shared.GenerateError("Unable to call API", 500, returnedError.Error(), "")
 		_, _ = request.HttpResponseWriter.Write(shared.MarshalError(wtError))
 		return
+
 	} else {
-		// validate response
-		go ws.validateResponse(request, responseValidator, cloneResponse(returnedResponse))
+
+		// check if we're going to fail hard on validation errors. (default is to skip this)
+		if ws.config.HardErrors {
+			// validate response
+			responseErrors = ws.validateResponse(request, responseValidator, cloneResponse(returnedResponse))
+		} else {
+			// validate response async
+			go ws.validateResponse(request, responseValidator, cloneResponse(returnedResponse))
+		}
 	}
 
 	// send response back to client.
@@ -186,7 +206,20 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		request.HttpResponseWriter.Header().Set(k, fmt.Sprint(v))
 	}
 	utils.Log.Infof("[wiretap] request %s: completed (%d)", request.HttpRequest.URL.String(), returnedResponse.StatusCode)
-	// write the status code and body
-	request.HttpResponseWriter.WriteHeader(returnedResponse.StatusCode)
+
+	// if there are validation errors, set an error code
+	requestCode := config.HardErrorCode
+	returnCode := config.HardErrorReturnCode
+
+	switch {
+	case config.HardErrors && len(requestErrors) > 0 && len(responseErrors) <= 0:
+		request.HttpResponseWriter.WriteHeader(requestCode)
+	case config.HardErrors && len(requestErrors) <= 0 && len(responseErrors) > 0:
+		request.HttpResponseWriter.WriteHeader(returnCode)
+	case config.HardErrors && len(requestErrors) > 0 && len(responseErrors) > 0:
+		request.HttpResponseWriter.WriteHeader(returnCode)
+	default:
+		request.HttpResponseWriter.WriteHeader(returnedResponse.StatusCode)
+	}
 	_, _ = request.HttpResponseWriter.Write(body)
 }

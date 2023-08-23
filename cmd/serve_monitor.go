@@ -46,9 +46,14 @@ func serveMonitor(wiretapConfig *shared.WiretapConfiguration) {
 
 		indexString := string(bytes)
 
+		useTLS := "false"
+		if wiretapConfig.CertificateKey != "" && wiretapConfig.Certificate != "" {
+			useTLS = "true"
+		}
+
 		// replace the port in the index.html file and serve it.
-		indexString = strings.ReplaceAll(strings.ReplaceAll(indexString, shared.WiretapPortPlaceholder, wiretapConfig.WebSocketPort),
-			shared.WiretapVersionPlaceholder, wiretapConfig.Version)
+		indexString = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(indexString, shared.WiretapPortPlaceholder, wiretapConfig.WebSocketPort),
+			shared.WiretapVersionPlaceholder, wiretapConfig.Version), shared.WiretapTLSPlaceholder, useTLS)
 
 		// handle index will serve a modified index.html from the embedded filesystem.
 		// this is so the monitor can connect to the websocket on the correct port.
@@ -71,7 +76,15 @@ func serveMonitor(wiretapConfig *shared.WiretapConfiguration) {
 
 		pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("Monitor UI booting on port %s...", wiretapConfig.MonitorPort)))
 
-		err = http.ListenAndServe(fmt.Sprintf(":%s", wiretapConfig.MonitorPort), mux)
+		if wiretapConfig.CertificateKey != "" && wiretapConfig.Certificate != "" {
+			err = http.ListenAndServeTLS(fmt.Sprintf(":%s", wiretapConfig.MonitorPort),
+				wiretapConfig.Certificate,
+				wiretapConfig.CertificateKey,
+				handlers.CompressHandler(mux))
+		} else {
+			err = http.ListenAndServe(fmt.Sprintf(":%s", wiretapConfig.MonitorPort), mux)
+		}
+
 		if err != nil {
 			log.Fatal(err)
 		}

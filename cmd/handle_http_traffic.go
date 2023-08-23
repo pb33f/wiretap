@@ -34,11 +34,19 @@ func handleHttpTraffic(wiretapConfig *shared.WiretapConfiguration, wtService *da
 		mux.HandleFunc("/", handleTraffic)
 
 		pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("API Gateway UI booting on port %s...", wiretapConfig.Port)))
-		err := http.ListenAndServe(fmt.Sprintf(":%s", wiretapConfig.Port), handlers.CompressHandler(mux))
 
-		if err != nil {
+		var httpErr error
+		if wiretapConfig.CertificateKey != "" && wiretapConfig.Certificate != "" {
+			httpErr = http.ListenAndServeTLS(fmt.Sprintf(":%s", wiretapConfig.Port),
+				wiretapConfig.Certificate,
+				wiretapConfig.CertificateKey,
+				handlers.CompressHandler(mux))
+		} else {
+			httpErr = http.ListenAndServe(fmt.Sprintf(":%s", wiretapConfig.Port), handlers.CompressHandler(mux))
+		}
 
-			pterm.Fatal.Println(err)
+		if httpErr != nil {
+			pterm.Fatal.Println(httpErr)
 		}
 	}()
 }
