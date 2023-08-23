@@ -28,6 +28,11 @@ type WiretapConfiguration struct {
 	StaticPaths         []string                      `json:"staticPaths,omitempty" yaml:"staticPaths,omitempty"`
 	Variables           map[string]string             `json:"variables,omitempty" yaml:"variables,omitempty"`
 	Spec                string                        `json:"contract,omitempty" yaml:"contract,omitempty"`
+	Certificate         string                        `json:"certificate,omitempty" yaml:"certificate,omitempty"`
+	CertificateKey      string                        `json:"certificateKey,omitempty" yaml:"certificateKey,omitempty"`
+	HardErrors          bool                          `json:"hardValidation,omitempty" yaml:"hardValidation,omitempty"`
+	HardErrorCode       int                           `json:"hardValidationCode,omitempty" yaml:"hardValidationCode,omitempty"`
+	HardErrorReturnCode int                           `json:"hardValidationReturnCode,omitempty" yaml:"hardValidationReturnCode,omitempty"`
 	CompiledVariables   map[string]*CompiledVariable  `json:"-" yaml:"-"`
 	Version             string                        `json:"-" yaml:"-"`
 	StaticPathsCompiled []glob.Glob                   `json:"-" yaml:"-"`
@@ -121,6 +126,7 @@ func (wpc *WiretapPathConfig) Compile(key string) *CompiledPath {
 
 const ConfigKey = "config"
 const WiretapPortPlaceholder = "%WIRETAP_PORT%"
+const WiretapTLSPlaceholder = "%WIRETAP_TLS%"
 const WiretapVersionPlaceholder = "%WIRETAP_VERSION%"
 const IndexFile = "index.html"
 const UILocation = "ui/dist"

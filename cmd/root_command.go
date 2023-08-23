@@ -5,14 +5,13 @@ package cmd
 
 import (
 	"embed"
+	"github.com/pb33f/wiretap/shared"
+	"github.com/pterm/pterm"
+	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	"net/url"
 	"os"
 	"path/filepath"
-
-	"github.com/pb33f/wiretap/shared"
-	"github.com/pterm/pterm"
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -45,6 +44,29 @@ var (
 			var redirectBasePath string
 			var redirectURL string
 			var globalAPIDelay int
+
+			// certs
+			var cert string
+			var certKey string
+
+			// hard errors
+			var hardError bool
+			var hardErrorCode int
+			var hardErrorReturnCode int
+
+			certFlag, _ := cmd.Flags().GetString("cert")
+			if certFlag != "" {
+				cert = certFlag
+			}
+
+			keyFlag, _ := cmd.Flags().GetString("key")
+			if keyFlag != "" {
+				certKey = keyFlag
+			}
+
+			hardError, _ = cmd.Flags().GetBool("hard-validation")
+			hardErrorCode, _ = cmd.Flags().GetInt("hard-validation-code")
+			hardErrorReturnCode, _ = cmd.Flags().GetInt("hard-validation-return-code")
 
 			portFlag, _ := cmd.Flags().GetString("port")
 			if portFlag != "" {
@@ -197,6 +219,25 @@ var (
 			}
 			config.FS = FS
 
+			if config.HardErrors || hardError {
+				config.HardErrors = true
+
+			}
+
+			// configure hard errors if set
+			if config.HardErrors && config.HardErrorCode <= 0 {
+				config.HardErrorCode = hardErrorCode
+			}
+			if config.HardErrors && config.HardErrorReturnCode <= 0 {
+				config.HardErrorReturnCode = hardErrorReturnCode
+			}
+
+			// certs
+			if config.Certificate == "" && config.CertificateKey == "" {
+				config.Certificate = cert
+				config.CertificateKey = certKey
+			}
+
 			// variables
 			if len(config.Variables) > 0 {
 				config.CompileVariables()
@@ -209,6 +250,7 @@ var (
 				printLoadedPathConfigurations(config.PathConfigurations)
 			}
 
+			// static headers
 			if config.Headers != nil && len(config.Headers.DropHeaders) > 0 {
 				pterm.Info.Printf("Dropping the following %d %s globally:\n", len(config.Headers.DropHeaders),
 					shared.Pluralize(len(config.Headers.DropHeaders), "header", "headers"))
@@ -218,6 +260,7 @@ var (
 				pterm.Println()
 			}
 
+			// static paths
 			if len(config.StaticPaths) > 0 && config.StaticDir != "" {
 				staticPath := filepath.Join(config.StaticDir, config.StaticIndex)
 				pterm.Info.Printf("Mapping %d static %s to '%s':\n", len(config.StaticPaths),
@@ -225,6 +268,21 @@ var (
 				for _, path := range config.StaticPaths {
 					pterm.Printf("⛱️  %s\n", pterm.LightMagenta(path))
 				}
+				pterm.Println()
+			}
+
+			// hard errors
+			if config.HardErrors {
+				pterm.Printf("❌  Hard validation mode enabled. HTTP error %s for requests and error %s for responses that "+
+					"fail to pass validation.\n",
+					pterm.LightRed(config.HardErrorCode), pterm.LightRed(config.HardErrorReturnCode))
+				pterm.Println()
+			}
+
+			// using TLS?
+			if config.CertificateKey != "" && config.Certificate != "" {
+				pterm.Printf("🔐 Running over %s using certificate: %s and key: %s\n",
+					pterm.LightYellow("TLS/HTTPS"), pterm.LightMagenta(config.Certificate), pterm.LightCyan(config.CertificateKey))
 				pterm.Println()
 			}
 
@@ -257,6 +315,11 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringP("spec", "s", "", "Set the path to the OpenAPI specification to use")
 	rootCmd.Flags().StringP("static", "t", "", "Set the path to a directory of static files to serve")
 	rootCmd.Flags().StringP("static-index", "i", "index.html", "Set the index filename for static file serving (default is index.html)")
+	rootCmd.Flags().StringP("cert", "n", "", "Set the path to the TLS certificate to use for TLS/HTTPS")
+	rootCmd.Flags().StringP("key", "k", "", "Set the path to the TLS certificate key to use for TLS/HTTPS")
+	rootCmd.Flags().BoolP("hard-validation", "e", false, "Return a hard error for non-compliant request/response, default code is 400")
+	rootCmd.Flags().IntP("hard-validation-code", "q", 400, "Set a custom http error code for non-compliant requests when using the hard-error flag")
+	rootCmd.Flags().IntP("hard-validation-return-code", "y", 502, "Set a custom http error code for non-compliant responses when using the hard-error flag")
 
 	rootCmd.Flags().StringP("config", "c", "",
 		"Location of wiretap configuration file to use (default is .wiretap in current directory)")
@@ -285,7 +348,7 @@ func printLoadedPathConfigurations(configs map[string]*shared.WiretapPathConfig)
 			}
 		}
 		if v.Auth != "" {
-			pterm.Printf("🔐 Basic authentication implemented for '%s'\n", pterm.LightMagenta(k))
+			pterm.Printf("🔒 Basic authentication implemented for '%s'\n", pterm.LightMagenta(k))
 		}
 		pterm.Println()
 	}

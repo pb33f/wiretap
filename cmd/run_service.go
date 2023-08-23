@@ -56,6 +56,16 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 		DisableTimestamp: true,
 	}
 
+	// running TLS?
+	if wiretapConfig.CertificateKey != "" && wiretapConfig.Certificate != "" {
+		tlsConfig := &server.TLSCertConfig{
+			CertFile:                  wiretapConfig.Certificate,
+			KeyFile:                   wiretapConfig.CertificateKey,
+			SkipCertificateValidation: true,
+		}
+		ranchConfig.TLSCertConfig = tlsConfig
+	}
+
 	// create an application fabric configuration for the ranch server.
 	ranchConfig.FabricConfig = &server.FabricBrokerConfig{
 		FabricEndpoint: "/ranch",

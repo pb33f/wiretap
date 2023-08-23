@@ -7,7 +7,9 @@
           content="wiretap is a tool that sniffs your API traffic and validates it against an OpenAPI specification.">
     <script>
         localStorage.setItem('wiretapPort', '%WIRETAP_PORT%')
+        localStorage.setItem('wiretapTLS', '%WIRETAP_TLS%')
         //localStorage.setItem('wiretapPort', '9092');
+        //localStorage.setItem('wiretapTLS', 'true');
         const version = '%WIRETAP_VERSION%';
         const existingVersion = localStorage.getItem('wiretapVersion');
         if (existingVersion !== version) {

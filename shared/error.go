@@ -12,6 +12,7 @@ type WiretapError struct {
 	Status   int    `json:"status,omitempty"`   // HTTP status code.
 	Detail   string `json:"detail"`             // explanation of the issue in detail.
 	Instance string `json:"instance,omitempty"` // URI to the specific problem.
+	Payload  any    `json:"payload,omitempty"`  // if added, this is the payload that caused the error
 }
 
 func GenerateError(title string,

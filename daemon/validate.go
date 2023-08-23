@@ -16,7 +16,7 @@ import (
 func (ws *WiretapService) validateResponse(
 	request *model.Request,
 	responseValidator responses.ResponseBodyValidator,
-	returnedResponse *http.Response) {
+	returnedResponse *http.Response) []*errors.ValidationError {
 
 	var validationErrors []*errors.ValidationError
 
@@ -43,6 +43,7 @@ func (ws *WiretapService) validateResponse(
 	} else {
 		ws.broadcastResponse(request, returnedResponse)
 	}
+	return validationErrors
 }
 
 func (ws *WiretapService) validateRequest(
@@ -50,7 +51,7 @@ func (ws *WiretapService) validateRequest(
 	httpRequest *http.Request,
 	requestValidator requests.RequestBodyValidator,
 	paramValidator parameters.ParameterValidator,
-	responseValidator responses.ResponseBodyValidator) {
+	responseValidator responses.ResponseBodyValidator) []*errors.ValidationError {
 
 	var validationErrors, cleanedErrors []*errors.ValidationError
 
@@ -106,4 +107,5 @@ func (ws *WiretapService) validateRequest(
 	} else {
 		ws.broadcastRequest(modelRequest, transaction)
 	}
+	return cleanedErrors
 }
