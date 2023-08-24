@@ -36,9 +36,19 @@ export class WiretapComponent extends LitElement {
     private readonly _linkCacheStore: Bag<Map<string, Map<string, HttpTransactionBase[]>>>;
     private readonly _specStore: Bag<string>;
     private readonly _bus: Bus;
-    private readonly _useTLS: boolean = false;
+    private readonly _wiretapChannel: Channel;
+    private readonly _wiretapSpecChannel: Channel;
+    private readonly _wiretapControlsChannel: Channel;
+    private readonly _wiretapReportChannel: Channel;
+    private readonly _wiretapConfigChannel: Channel;
+    private readonly _staticNotificationChannel: Channel;
     private readonly _wiretapPort: string;
     private readonly _wiretapVersion: string;
+    private _transactionChannelSubscription: Subscription;
+    private _specChannelSubscription: Subscription;
+    private _configChannelSubscription: Subscription;
+    private _staticChannelSubscription: Subscription;
+    private _useTLS: boolean = false;
 
     private _transactionContainer: HttpTransactionContainerComponent;
 
@@ -72,14 +82,15 @@ export class WiretapComponent extends LitElement {
         // extract port from session storage.
         this._wiretapPort = localStorage.getItem("wiretapPort");
 
+        if (!this._wiretapPort) {
+            this._wiretapPort = "9092"; // default port
+        }
+
         const useTLS = localStorage.getItem("wiretapTLS");
         if (useTLS && useTLS == 'true') {
             this._useTLS = true;
         }
 
-        if (!this._wiretapPort) {
-            this._wiretapPort = "9092"; // default port
-        }
 
         // extract version from session storage.
         this._wiretapVersion = localStorage.getItem("wiretapVersion");
@@ -120,6 +131,13 @@ export class WiretapComponent extends LitElement {
         this._linkCacheStore =
             this._storeManager.createBag<Map<string, Map<string, HttpTransactionBase[]>>>(WiretapLinkCacheStore);
 
+        // set up wiretap channels
+        this._wiretapChannel = this._bus.createChannel(WiretapChannel);
+        this._wiretapSpecChannel = this._bus.createChannel(SpecChannel);
+        this._wiretapControlsChannel = this._bus.createChannel(WiretapControlsChannel);
+        this._wiretapReportChannel = this._bus.createChannel(WiretapReportChannel);
+        this._wiretapConfigChannel = this._bus.createChannel(WiretapConfigurationChannel);
+        this._staticNotificationChannel = this._bus.createChannel(WiretapStaticChannel);
 
         // map local bus channels to broker destinations.
         this._bus.mapChannelToBrokerDestination(TopicPrefix + WiretapChannel, WiretapChannel);
@@ -128,6 +146,12 @@ export class WiretapComponent extends LitElement {
         this._bus.mapChannelToBrokerDestination(QueuePrefix + WiretapReportChannel, WiretapReportChannel);
         this._bus.mapChannelToBrokerDestination(QueuePrefix + WiretapConfigurationChannel, WiretapConfigurationChannel);
         this._bus.mapChannelToBrokerDestination(TopicPrefix + WiretapStaticChannel, WiretapStaticChannel);
+
+        // handle incoming messages on different channels.
+        this._transactionChannelSubscription = this._wiretapChannel.subscribe(this.wireTransactionHandler());
+        this._specChannelSubscription = this._wiretapSpecChannel.subscribe(this.specHandler());
+        this._configChannelSubscription = this._wiretapConfigChannel.subscribe(this.configHandler());
+        this._staticChannelSubscription = this._staticNotificationChannel.subscribe(this.staticHandler());
 
 
         // load previous transactions from local storage.
