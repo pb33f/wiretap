@@ -1,5 +1,5 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL
 
 package config
 
@@ -186,5 +186,31 @@ paths:
 
 	path := RewritePath("/en-US/burgerd/__raw/noKetchupPlease/nobody/yummy/yum?onions=true", &c)
 	assert.Equal(t, "http://localhost:80/noKetchupPlease/-/yummy/yum?onions=true", path)
+
+}
+
+func TestLocatePathDelay(t *testing.T) {
+
+	config := `pathDelays:
+  /pb33f/test/**: 1000
+  /pb33f/cakes/123: 2000
+  /*/test/123: 3000`
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &c)
+
+	c.CompilePathDelays()
+
+	delay := FindPathDelay("/pb33f/test/burgers/fries?1234=no", &c)
+	assert.Equal(t, 1000, delay)
+
+	delay = FindPathDelay("/pb33f/cakes/123", &c)
+	assert.Equal(t, 2000, delay)
+
+	delay = FindPathDelay("/roastbeef/test/123", &c)
+	assert.Equal(t, 3000, delay)
+
+	delay = FindPathDelay("/not-registered", &c)
+	assert.Equal(t, 0, delay)
 
 }

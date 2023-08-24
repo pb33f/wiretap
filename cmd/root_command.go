@@ -1,5 +1,5 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL
 
 package cmd
 
@@ -250,6 +250,12 @@ var (
 				printLoadedPathConfigurations(config.PathConfigurations)
 			}
 
+			// path delays
+			if len(config.PathDelays) > 0 {
+				config.CompilePathDelays()
+				printLoadedPathDelayConfigurations(config.PathDelays)
+			}
+
 			// static headers
 			if config.Headers != nil && len(config.Headers.DropHeaders) > 0 {
 				pterm.Info.Printf("Dropping the following %d %s globally:\n", len(config.Headers.DropHeaders),
@@ -352,6 +358,17 @@ func printLoadedPathConfigurations(configs map[string]*shared.WiretapPathConfig)
 		}
 		pterm.Println()
 	}
+}
+
+func printLoadedPathDelayConfigurations(pathDelays map[string]int) {
+	pterm.Info.Printf("Loaded %d path %s:\n", len(pathDelays),
+		shared.Pluralize(len(pathDelays), "delay", "delays"))
+
+	for k, v := range pathDelays {
+		pterm.Printf("⏱️ %sms --> %s\n", pterm.LightCyan(v), pterm.LightMagenta(k))
+	}
+	pterm.Println()
+
 }
 
 func printLoadedVariables(variables map[string]string) {

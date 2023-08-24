@@ -1,5 +1,5 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL
 
 package shared
 
@@ -33,6 +33,8 @@ type WiretapConfiguration struct {
 	HardErrors          bool                          `json:"hardValidation,omitempty" yaml:"hardValidation,omitempty"`
 	HardErrorCode       int                           `json:"hardValidationCode,omitempty" yaml:"hardValidationCode,omitempty"`
 	HardErrorReturnCode int                           `json:"hardValidationReturnCode,omitempty" yaml:"hardValidationReturnCode,omitempty"`
+	PathDelays          map[string]int                `json:"pathDelays,omitempty" yaml:"pathDelays,omitempty"`
+	CompiledPathDelays  map[string]*CompiledPathDelay `json:"-" yaml:"-"`
 	CompiledVariables   map[string]*CompiledVariable  `json:"-" yaml:"-"`
 	Version             string                        `json:"-" yaml:"-"`
 	StaticPathsCompiled []glob.Glob                   `json:"-" yaml:"-"`
@@ -51,6 +53,17 @@ func (wtc *WiretapConfiguration) CompilePaths() {
 			comp[x] = glob.MustCompile(path)
 		}
 		wtc.StaticPathsCompiled = comp
+	}
+}
+
+func (wtc *WiretapConfiguration) CompilePathDelays() {
+	wtc.CompiledPathDelays = make(map[string]*CompiledPathDelay)
+	for k, v := range wtc.PathDelays {
+		compiled := &CompiledPathDelay{
+			CompiledPathDelay: glob.MustCompile(wtc.ReplaceWithVariables(k)),
+			PathDelayValue:    v,
+		}
+		wtc.CompiledPathDelays[k] = compiled
 	}
 }
 
@@ -90,6 +103,11 @@ type CompiledPath struct {
 	CompiledKey         glob.Glob
 	CompiledTarget      glob.Glob
 	CompiledPathRewrite map[string]*regexp.Regexp
+}
+
+type CompiledPathDelay struct {
+	CompiledPathDelay glob.Glob
+	PathDelayValue    int
 }
 
 type CompiledVariable struct {

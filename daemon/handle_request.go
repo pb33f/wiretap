@@ -1,5 +1,5 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL
 
 package daemon
 
@@ -188,11 +188,16 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		}
 	}
 
-	// send response back to client.
-
-	if config.GlobalAPIDelay > 0 {
-		time.Sleep(time.Duration(config.GlobalAPIDelay) * time.Millisecond) // simulate a slow response.
+	// check if this path has a delay set.
+	delay := configModel.FindPathDelay(request.HttpRequest.URL.Path, config)
+	if delay > 0 {
+		time.Sleep(time.Duration(delay) * time.Millisecond) // simulate a slow response, configured for path.
+	} else {
+		if config.GlobalAPIDelay > 0 {
+			time.Sleep(time.Duration(config.GlobalAPIDelay) * time.Millisecond) // simulate a slow response.
+		}
 	}
+
 	body, _ := io.ReadAll(returnedResponse.Body)
 	headers := extractHeaders(returnedResponse)
 

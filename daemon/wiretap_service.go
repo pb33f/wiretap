@@ -1,5 +1,5 @@
 // Copyright 2023 Princess Beef Heavy Industries LLC
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL
 
 package daemon
 
