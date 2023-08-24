@@ -1,5 +1,5 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL
 
 package config
 
@@ -17,6 +17,16 @@ func FindPaths(path string, configuration *shared.WiretapConfiguration) []*share
 		}
 	}
 	return foundConfigurations
+}
+
+func FindPathDelay(path string, configuration *shared.WiretapConfiguration) int {
+	var foundMatch int
+	for key := range configuration.CompiledPathDelays {
+		if configuration.CompiledPathDelays[key].CompiledPathDelay.Match(path) {
+			foundMatch = configuration.CompiledPathDelays[key].PathDelayValue
+		}
+	}
+	return foundMatch
 }
 
 func RewritePath(path string, configuration *shared.WiretapConfiguration) string {
