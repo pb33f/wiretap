@@ -4,6 +4,8 @@
 package mock
 
 import (
+	"bytes"
+	"encoding/json"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi-validator/helpers"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
@@ -13,17 +15,20 @@ import (
 	"testing"
 )
 
-var doc *v3.Document
+// var doc *v3.Document
+var specBytes []byte
 
-func init() {
-	resp, err := http.Get("https://api.pb33f.io/wiretap/giftshop-openapi.yaml")
-	if err != nil {
-		panic(err)
+func resetState() *v3.Document {
+	if len(specBytes) <= 0 {
+		resp, err := http.Get("https://api.pb33f.io/wiretap/giftshop-openapi.yaml")
+		if err != nil {
+			panic(err)
+		}
+		specBytes, _ = io.ReadAll(resp.Body)
 	}
-	spec, _ := io.ReadAll(resp.Body)
-	d, _ := libopenapi.NewDocument(spec)
+	d, _ := libopenapi.NewDocument(specBytes)
 	compiled, _ := d.BuildV3Model()
-	doc = &compiled.Model
+	return &compiled.Model
 }
 
 /*
@@ -44,29 +49,31 @@ func init() {
 */
 
 func TestNewMockEngine_findPath(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
 
-	path, errors := me.findPath(request)
+	path, _ := me.findPath(request)
 	assert.NotNil(t, path)
-	assert.Len(t, errors, 0)
 }
 
 func TestNewMockEngine_findPathNegative(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/invalid", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
 
 	path, errors := me.findPath(request)
 	assert.Nil(t, path)
-	assert.Len(t, errors, 1)
+	assert.Error(t, errors)
 }
 
 func TestNewMockEngine_findOperation(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -78,7 +85,8 @@ func TestNewMockEngine_findOperation(t *testing.T) {
 }
 
 func TestNewMockEngine_findOperationNegative(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPatch, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -89,7 +97,8 @@ func TestNewMockEngine_findOperationNegative(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_FailAPIKey_Header(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -101,7 +110,8 @@ func TestNewMockEngine_ValidateSecurity_FailAPIKey_Header(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_PassAPIKey_Header(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -113,7 +123,8 @@ func TestNewMockEngine_ValidateSecurity_PassAPIKey_Header(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_FailAPIKey_Query(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -130,7 +141,8 @@ func TestNewMockEngine_ValidateSecurity_FailAPIKey_Query(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_PassAPIKey_Query(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products?pizza-burger-cake=123", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -146,7 +158,8 @@ func TestNewMockEngine_ValidateSecurity_PassAPIKey_Query(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_FailAPIKey_Cookie(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -163,7 +176,8 @@ func TestNewMockEngine_ValidateSecurity_FailAPIKey_Cookie(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_PassAPIKey_Cookie(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -183,7 +197,8 @@ func TestNewMockEngine_ValidateSecurity_PassAPIKey_Cookie(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_FailHTTP_Bearer(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -201,7 +216,8 @@ func TestNewMockEngine_ValidateSecurity_FailHTTP_Bearer(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_PassHTTP_Bearer(t *testing.T) {
-	me := NewMockEngine(doc)
+	doc := resetState()
+	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -216,4 +232,119 @@ func TestNewMockEngine_ValidateSecurity_PassHTTP_Bearer(t *testing.T) {
 
 	err := me.ValidateSecurity(request, operation)
 	assert.NoError(t, err)
+}
+
+func TestNewMockEngine_BuildResponse_SimpleValid(t *testing.T) {
+	doc := resetState()
+	me := NewMockEngine(doc, false)
+
+	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
+	request.Header.Set(helpers.ContentTypeHeader, "application/json")
+
+	b, status, err := me.GenerateResponse(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 200, status)
+
+	var decoded []map[string]any
+	_ = json.Unmarshal(b, &decoded)
+
+	assert.Equal(t, "pb0001", decoded[0]["shortCode"])
+	assert.Equal(t, 19.99, decoded[0]["price"])
+}
+
+func TestNewMockEngine_BuildResponse_MissingPath_404(t *testing.T) {
+	doc := resetState()
+	me := NewMockEngine(doc, false)
+
+	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/minky/monkey/moo", nil)
+	request.Header.Set(helpers.ContentTypeHeader, "application/json")
+
+	b, status, err := me.GenerateResponse(request)
+
+	assert.Error(t, err)
+	assert.Equal(t, 404, status)
+
+	var decoded map[string]any
+	_ = json.Unmarshal(b, &decoded)
+
+	assert.Equal(t, "Path / operation not found (404)", decoded["title"])
+	assert.Equal(t, "Unable to locate the path '/minky/monkey/moo' with the method 'GET'. "+
+		"Error: GET Path '/minky/monkey/moo' not found, Reason: The GET request contains a path of '/minky/monkey/moo' "+
+		"however that path, or the GET method for that path does not exist in the specification", decoded["detail"])
+}
+
+func TestNewMockEngine_BuildResponse_MissingOperation_404(t *testing.T) {
+	doc := resetState()
+	me := NewMockEngine(doc, false)
+
+	request, _ := http.NewRequest(http.MethodPatch, "https://api.pb33f.io/wiretap/giftshop/products", nil)
+	request.Header.Set(helpers.ContentTypeHeader, "application/json")
+
+	b, status, err := me.GenerateResponse(request)
+
+	assert.Error(t, err)
+	assert.Equal(t, 404, status)
+
+	var decoded map[string]any
+	_ = json.Unmarshal(b, &decoded)
+
+	assert.Equal(t, "Path / operation not found (404)", decoded["title"])
+	assert.Equal(t, "Unable to locate the path '/wiretap/giftshop/products' with the method 'PATCH'. "+
+		"Error: PATCH Path '/wiretap/giftshop/products' not found, Reason: The PATCH request contains a path of "+
+		"'/wiretap/giftshop/products' however that path, or the PATCH method for that path does not exist in the "+
+		"specification", decoded["detail"])
+}
+
+func TestNewMockEngine_BuildResponse_CreateProduct_NoSecurity_Invalid(t *testing.T) {
+
+	doc := resetState()
+	me := NewMockEngine(doc, false)
+
+	product := make(map[string]any)
+	product["price"] = 400.23
+	product["shortCode"] = "pb0001"
+	payload, _ := json.Marshal(product)
+
+	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", bytes.NewBuffer(payload))
+	request.Header.Set(helpers.ContentTypeHeader, "application/json")
+
+	b, status, err := me.GenerateResponse(request)
+
+	assert.Error(t, err)
+	assert.Equal(t, 401, status)
+
+	var decoded map[string]any
+	_ = json.Unmarshal(b, &decoded)
+
+	assert.Equal(t, "authentication", decoded["code"])
+	assert.Equal(t, "This request requires authentication. You are not authenticated.", decoded["message"])
+
+}
+
+func TestNewMockEngine_BuildResponse_CreateProduct_WithSecurity_Invalid(t *testing.T) {
+
+	doc := resetState()
+	me := NewMockEngine(doc, false)
+
+	product := make(map[string]any)
+	product["price"] = 400.23
+	product["shortCode"] = "pb0001"
+	payload, _ := json.Marshal(product)
+
+	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", bytes.NewBuffer(payload))
+	request.Header.Set(helpers.ContentTypeHeader, "application/json")
+	request.Header.Set("X-API-Key", "doesnotmatter")
+
+	b, status, err := me.GenerateResponse(request)
+
+	assert.Error(t, err)
+	assert.Equal(t, 422, status)
+
+	var decoded map[string]any
+	_ = json.Unmarshal(b, &decoded)
+
+	assert.Equal(t, "Invalid request (422)", decoded["title"])
+	assert.Len(t, decoded["payload"].([]any), 1)
+
 }

@@ -4,234 +4,343 @@
 package mock
 
 import (
-    "errors"
-    "fmt"
-    libopenapierrs "github.com/pb33f/libopenapi-validator/errors"
-    "github.com/pb33f/libopenapi-validator/helpers"
-    "github.com/pb33f/libopenapi-validator/paths"
-    "github.com/pb33f/libopenapi/datamodel/high/v3"
-    "github.com/pb33f/wiretap/validation"
-    "net/http"
-    "strconv"
-    "strings"
+	"encoding/json"
+	"errors"
+	"fmt"
+	libopenapierrs "github.com/pb33f/libopenapi-validator/errors"
+	"github.com/pb33f/libopenapi-validator/helpers"
+	"github.com/pb33f/libopenapi-validator/paths"
+	"github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/pb33f/libopenapi/renderer"
+	"github.com/pb33f/wiretap/shared"
+	"github.com/pb33f/wiretap/validation"
+	"net/http"
+	"strconv"
+	"strings"
 )
 
 type ResponseMockEngine struct {
-    doc       *v3.Document
-    validator validation.HttpValidator
+	doc        *v3.Document
+	validator  validation.HttpValidator
+	mockEngine *renderer.MockGenerator
+	pretty     bool
 }
 
-func NewMockEngine(document *v3.Document) *ResponseMockEngine {
-    return &ResponseMockEngine{
-        doc:       document,
-        validator: validation.NewHttpValidator(document),
-    }
+func NewMockEngine(document *v3.Document, pretty bool) *ResponseMockEngine {
+	me := renderer.NewMockGenerator(renderer.JSON)
+	if pretty {
+		me.SetPretty()
+	}
+	return &ResponseMockEngine{
+		doc:        document,
+		validator:  validation.NewHttpValidator(document),
+		mockEngine: me,
+		pretty:     pretty,
+	}
 }
 
-func (rme *ResponseMockEngine) extractMediaTypeHeader(request *http.Request) string {
-    // extract the content type header from the request.
-    contentType := request.Header.Get(helpers.ContentTypeHeader)
-
-    // extract the media type from the content type header.
-    mediaTypeSting, _, _ := helpers.ExtractContentType(contentType)
-
-    if mediaTypeSting == "" {
-        mediaTypeSting = "application/json"
-    }
-    return mediaTypeSting
-}
-
-func (rme *ResponseMockEngine) findPath(request *http.Request) (*v3.PathItem, error) {
-    path, errs, _ := paths.FindPath(request, rme.doc)
-    return path, rme.packErrors(errs)
-}
-
-func (rme *ResponseMockEngine) findOperation(request *http.Request, pathItem *v3.PathItem) *v3.Operation {
-    if pathItem == nil {
-        return nil
-    }
-    ops := pathItem.GetOperations()
-    if len(ops) > 0 {
-        op := pathItem.GetOperations()[strings.ToLower(request.Method)]
-        return op
-    }
-    return nil
+func (rme *ResponseMockEngine) GenerateResponse(request *http.Request) ([]byte, int, error) {
+	return rme.runWorkflow(request)
 }
 
 func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation *v3.Operation) error {
-    // get out early if there is nothing to do.
-    if len(rme.doc.Components.SecuritySchemes) <= 0 {
-        return nil
-    }
+	// get out early if there is nothing to do.
+	if len(rme.doc.Components.SecuritySchemes) <= 0 {
+		return nil
+	}
 
-    mustApply := make(map[string][]string)
+	mustApply := make(map[string][]string)
 
-    // global security
-    if len(rme.doc.Security) > 0 {
-        for _, securityRequirement := range rme.doc.Security {
-            for key, scopes := range securityRequirement.Requirements {
-                mustApply[key] = scopes
-            }
-        }
-    }
+	// global security
+	if len(rme.doc.Security) > 0 {
+		for _, securityRequirement := range rme.doc.Security {
+			for key, scopes := range securityRequirement.Requirements {
+				mustApply[key] = scopes
+			}
+		}
+	}
 
-    // operation security
-    if len(operation.Security) > 0 {
-        for _, securityRequirement := range operation.Security {
-            for key, scopes := range securityRequirement.Requirements {
-                mustApply[key] = scopes
-            }
-        }
-    }
+	// operation security
+	if len(operation.Security) > 0 {
+		for _, securityRequirement := range operation.Security {
+			for key, scopes := range securityRequirement.Requirements {
+				mustApply[key] = scopes
+			}
+		}
+	}
 
-    // check if we have any security requirements to apply.
-    if len(mustApply) > 0 {
-        // locate the security schemes components from the document.
+	// check if we have any security requirements to apply.
+	if len(mustApply) > 0 {
+		// locate the security schemes components from the document.
 
-        for scope, _ := range mustApply {
+		for scope, _ := range mustApply {
 
-            securityComponent := rme.doc.Components.SecuritySchemes[scope]
-            if securityComponent != nil {
+			securityComponent := rme.doc.Components.SecuritySchemes[scope]
+			if securityComponent != nil {
 
-                // check if we have a security scheme that matches the type.
-                switch securityComponent.Type {
-                case "http":
-                    // check if we have a bearer scheme.
-                    if securityComponent.Scheme == "bearer" || securityComponent.Scheme == "basic" {
-                        // check if we have a bearer token.
-                        if request.Header.Get("Authorization") == "" {
-                            return fmt.Errorf("bearer token not found, no `Authorization` header found in request")
-                        }
-                    }
+				// check if we have a security scheme that matches the type.
+				switch securityComponent.Type {
+				case "http":
+					// check if we have a bearer scheme.
+					if securityComponent.Scheme == "bearer" || securityComponent.Scheme == "basic" {
+						// check if we have a bearer token.
+						if request.Header.Get("Authorization") == "" {
+							return fmt.Errorf("bearer token not found, no `Authorization` header found in request")
+						}
+					}
 
-                case "apiKey":
-                    // check if the api key is being used in the header
-                    if securityComponent.In == "header" {
-                        // check if we have a bearer token.
-                        if request.Header.Get(securityComponent.Name) == "" {
-                            return fmt.Errorf("apiKey not found, no `%s` header found in request",
-                                securityComponent.Name)
-                        }
-                    }
-                    if securityComponent.In == "query" {
-                        if request.URL.Query().Get(securityComponent.Name) == "" {
-                            return fmt.Errorf("apiKey not found, no `%s` query parameter found in request",
-                                securityComponent.Name)
-                        }
-                    }
-                    if securityComponent.In == "cookie" {
-                        cookie, _ := request.Cookie(securityComponent.Name)
-                        if cookie == nil {
-                            return fmt.Errorf("apiKey not found, no `%s` cookie found in request",
-                                securityComponent.Name)
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return nil
+				case "apiKey":
+					// check if the api key is being used in the header
+					if securityComponent.In == "header" {
+						// check if we have a bearer token.
+						if request.Header.Get(securityComponent.Name) == "" {
+							return fmt.Errorf("apiKey not found, no `%s` header found in request",
+								securityComponent.Name)
+						}
+					}
+					if securityComponent.In == "query" {
+						if request.URL.Query().Get(securityComponent.Name) == "" {
+							return fmt.Errorf("apiKey not found, no `%s` query parameter found in request",
+								securityComponent.Name)
+						}
+					}
+					if securityComponent.In == "cookie" {
+						cookie, _ := request.Cookie(securityComponent.Name)
+						if cookie == nil {
+							return fmt.Errorf("apiKey not found, no `%s` cookie found in request",
+								securityComponent.Name)
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (rme *ResponseMockEngine) extractMediaTypeHeader(request *http.Request) string {
+	// extract the content type header from the request.
+	contentType := request.Header.Get(helpers.ContentTypeHeader)
+
+	// extract the media type from the content type header.
+	mediaTypeSting, _, _ := helpers.ExtractContentType(contentType)
+
+	if mediaTypeSting == "" {
+		mediaTypeSting = "application/json"
+	}
+	return mediaTypeSting
+}
+
+func (rme *ResponseMockEngine) findPath(request *http.Request) (*v3.PathItem, error) {
+	path, errs, _ := paths.FindPath(request, rme.doc)
+	return path, rme.packErrors(errs)
+}
+
+func (rme *ResponseMockEngine) findOperation(request *http.Request, pathItem *v3.PathItem) *v3.Operation {
+	if pathItem == nil {
+		return nil
+	}
+	ops := pathItem.GetOperations()
+	if len(ops) > 0 {
+		op := pathItem.GetOperations()[strings.ToLower(request.Method)]
+		return op
+	}
+	return nil
 }
 
 func (rme *ResponseMockEngine) packErrors(errs []*libopenapierrs.ValidationError) error {
-    var err error
-    for _, e := range errs {
-        err = errors.Join(err, e)
-    }
-    return err
+	var err error
+	for _, e := range errs {
+		err = errors.Join(err, e)
+	}
+	return err
 }
 
-func (rme *ResponseMockEngine) validateRequest(request *http.Request, pathItem *v3.PathItem) (*v3.Operation, error) {
+func (rme *ResponseMockEngine) lookForFirstResponseCode(operation *v3.Operation, codes []string) (*v3.Response, string) {
+	for _, code := range codes {
+		if operation.Responses.Codes[code] != nil {
+			return operation.Responses.Codes[code], code
+		}
+	}
+	return nil, ""
+}
 
-    // get operation
-    operation := rme.findOperation(request, pathItem)
-    if operation == nil {
-        return nil, fmt.Errorf("could not find operation for request: %s (%s)",
-            request.URL.Path, request.Method)
-    }
+func (rme *ResponseMockEngine) render(obj any) []byte {
+	if obj == nil {
+		return []byte{}
+	}
+	var b []byte
+	var err error
+	if !rme.pretty {
+		b, err = json.Marshal(obj)
+	} else {
+		b, err = json.MarshalIndent(obj, "", "  ")
+	}
+	if err != nil {
+		return []byte{}
+	}
+	return b
+}
 
-    return nil, nil
+func (rme *ResponseMockEngine) buildErrorObject(status int, title, msg, hash string) *shared.WiretapError {
+	return &shared.WiretapError{
+		Type:   fmt.Sprintf("https://pb33f.io/wiretap/errors#%s", hash),
+		Title:  fmt.Sprintf("%s (%d)", title, status),
+		Status: status,
+		Detail: msg,
+	}
+}
 
-    // process security
-    // check if
-    //
-    //if len(operation.Security) > 0 {
-    //
-    //	for _, securityRequirement := range operation.Security {
-    //
-    //		if securityRequirement.
-    //
-    //
-    //	}
-    //
-    //
-    //}
-    //
-    //
-    //// validate the request against the document.
-    //_, errs = rme.validator.ValidateHttpRequest(request)
+func (rme *ResponseMockEngine) buildError(status int, title, msg, hash string) []byte {
+	return rme.render(rme.buildErrorObject(status, title, msg, hash))
+}
 
-    //var err error
-    //if path == nil {
-    //	err = fmt.Errorf("could not find path for request: %s", httpRequest.URL.Path)
-    //	return ws.buildMockError(404, err), 404, err
-    //}
-    //
-    //var operation = path.GetOperations()[strings.ToLower(httpRequest.Method)]
-    //if operation == nil {
-    //	err = fmt.Errorf("could not find operation for request: %s (%s)", httpRequest.URL.Path,
-    //		httpRequest.Method)
-    //	return ws.buildMockError(404, err), 404, err
-    //}
-    //
+func (rme *ResponseMockEngine) buildErrorWithPayload(status int, title, msg, hash string, payload any) []byte {
+	wte := rme.buildErrorObject(status, title, msg, hash)
+	wte.Payload = payload
+	return rme.render(wte)
+}
 
+func (rme *ResponseMockEngine) extractPreferred(request *http.Request) string {
+	return request.Header.Get(helpers.Preferred)
+}
+
+func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, error) {
+
+	// get path, not valid? return 404
+	path, err := rme.findPath(request)
+	if err != nil {
+		return rme.buildError(
+			404,
+			"Path / operation not found",
+			fmt.Sprintf("Unable to locate the path '%s' with the method '%s'. %s",
+				request.URL.Path, request.Method, err.Error()),
+			"not_found",
+		), 404, err
+
+	}
+
+	// find operation, not valid? return 404
+	operation := rme.findOperation(request, path) // missing operation is cauight by
+
+	// check the request is valid against security requirements.
+	err = rme.ValidateSecurity(request, operation)
+	if err != nil {
+		mt, _ := rme.lookForResponseCodes(operation, request, []string{"401"})
+		if mt != nil {
+			mock, mockErr := rme.mockEngine.GenerateMock(mt, rme.extractPreferred(request))
+			if mockErr != nil {
+				return rme.buildError(
+					500,
+					"Unable to build mock (401)",
+					fmt.Sprintf("Errors occurred while generating an error 401 mock response: %s",
+						errors.Join(err, mockErr)),
+					"build_mock_error",
+				), 500, mockErr
+			}
+			return mock, 401, err
+		} else {
+			return rme.buildError(
+				401,
+				"Unauthorized (401)",
+				fmt.Sprintf("Unable to call '%s' on '%s', you are not authorized to access this resource",
+					request.Method, request.URL.Path),
+				"build_mock_error",
+			), 401, err
+		}
+	}
+
+	// validate the request against the document.
+	_, validationErrors := rme.validator.ValidateHttpRequest(request)
+	if len(validationErrors) > 0 {
+		mt, _ := rme.lookForResponseCodes(operation, request, []string{"422", "400"})
+		if mt == nil {
+			// no default, no valid response, inform use with a 500
+			return rme.buildErrorWithPayload(
+				500,
+				"Invalid request, specification is insufficient",
+				fmt.Sprint("The request failed validation, and the specification does not contain a "+
+					"'422' or '400' response for this operation. Check payload for validation errors."),
+				"validation_failed_and_spec_insufficient_error",
+				validationErrors,
+			), 500, rme.packErrors(validationErrors)
+		}
+		return rme.buildErrorWithPayload(
+			422,
+			"Invalid request",
+			fmt.Sprint("The request failed validation, Check payload for validation errors."),
+			"validation_failed_error",
+			validationErrors,
+		), 422, rme.packErrors(validationErrors)
+
+	}
+
+	// get the lowest success code
+	lo := rme.findLowestSuccessCode(operation)
+
+	// find the lowest success code.
+	mt, _ := rme.lookForResponseCodes(operation, request, []string{lo})
+	if mt == nil {
+		return rme.buildError(
+			500,
+			"There is no valid response for this operation",
+			fmt.Sprint("Cannot find a 2XX response for this operation, and there is no default response"),
+			"build_mock_error",
+		), 500, nil
+	}
+	mock, mockErr := rme.mockEngine.GenerateMock(mt, rme.extractPreferred(request))
+	if mockErr != nil {
+		return rme.buildError(
+			500,
+			"Unable to build mock (422)",
+			fmt.Sprintf("Errors occurred while generating an error 422 mock response: %s",
+				errors.Join(err, mockErr)),
+			"build_mock_error",
+		), 500, mockErr
+	}
+	c, _ := strconv.Atoi(lo)
+	return mock, c, nil
 }
 
 func (rme *ResponseMockEngine) findLowestSuccessCode(operation *v3.Operation) string {
-    var lowestCode = 299
-    for key := range operation.Responses.Codes {
-        code, _ := strconv.Atoi(key)
-        if code < lowestCode && code >= 200 {
-            lowestCode = code
-        }
-    }
-    if lowestCode == 299 {
-        lowestCode = 200
-    }
-    return fmt.Sprintf("%d", lowestCode)
+	var lowestCode = 299
+	for key := range operation.Responses.Codes {
+		code, _ := strconv.Atoi(key)
+		if code < lowestCode && code >= 200 {
+			lowestCode = code
+		}
+	}
+	if lowestCode == 299 {
+		lowestCode = 200
+	}
+	return fmt.Sprintf("%d", lowestCode)
 }
 
-func (rme *ResponseMockEngine) lookForAppropriateResponse(
-    response, defaultResponse *v3.Response, request *http.Request) *v3.MediaType {
+func (rme *ResponseMockEngine) lookForResponseCodes(
+	op *v3.Operation,
+	request *http.Request,
+	resultCodes []string) (*v3.MediaType, bool) {
 
-    // extract the content type header from the request.
-    contentType := request.Header.Get(helpers.ContentTypeHeader)
+	mediaTypeString := rme.extractMediaTypeHeader(request)
 
-    // extract the media type from the content type header.
-    mediaTypeSting, _, _ := helpers.ExtractContentType(contentType)
+	// check if the media type exists in the response.
+	for _, code := range resultCodes {
 
-    // if there is no media type, let's default to json.
-    if mediaTypeSting == "" {
-        mediaTypeSting = "application/json"
-    }
+		resp := op.Responses.Codes[code]
+		if resp == nil {
+			continue
+		}
+		responseBody := resp.Content[mediaTypeString]
+		if responseBody != nil {
+			return responseBody, false
+		}
+	}
 
-    // check
+	if op.Responses.Default != nil && op.Responses.Default.Content != nil {
+		if op.Responses.Default.Content[mediaTypeString] != nil {
+			return op.Responses.Default.Content[mediaTypeString], false
+		}
+	}
 
-    // check if the media type exists in the response.
-    responseBody := response.Content[mediaTypeSting]
-    if responseBody == nil {
-
-        // look through error codes until we find something we can use, in order of granularity
-        resultCodes := []string{"415", "422", "400"}
-
-        for _, code := range resultCodes {
-            responseBody = response.Content[code]
-            if responseBody != nil {
-                return responseBody
-            }
-        }
-    }
-
-    // lets check if this request passes security validation.
-    return nil
+	return nil, true
 }
