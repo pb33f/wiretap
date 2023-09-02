@@ -48,7 +48,7 @@ func (ws *WiretapService) broadcastResponse(request *model.Request, response *ht
 		DestinationId: request.Id,
 		Channel:       WiretapBroadcastChan,
 		Destination:   WiretapBroadcastChan,
-		Payload:       buildResponse(request, response),
+		Payload:       BuildResponse(request, response),
 		Direction:     model.ResponseDir,
 	})
 }
@@ -68,7 +68,7 @@ func (ws *WiretapService) broadcastResponseError(request *model.Request, respons
 		Detail: err.Error(),
 	})
 
-	resp := buildResponse(request, response)
+	resp := BuildResponse(request, response)
 	resp.Response.Body = string(respBodyString)
 
 	ws.broadcastChan.Send(&model.Message{
@@ -85,7 +85,7 @@ func (ws *WiretapService) broadcastResponseError(request *model.Request, respons
 func (ws *WiretapService) broadcastResponseValidationErrors(request *model.Request, response *http.Response, errors []*errors.ValidationError) {
 	id, _ := uuid.NewUUID()
 
-	ht := buildResponse(request, response)
+	ht := BuildResponse(request, response)
 	ht.ResponseValidation = errors
 
 	ws.broadcastChan.Send(&model.Message{

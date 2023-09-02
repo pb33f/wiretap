@@ -5,23 +5,18 @@ package daemon
 
 import (
 	"github.com/pb33f/libopenapi-validator/errors"
-	"github.com/pb33f/libopenapi-validator/parameters"
-	"github.com/pb33f/libopenapi-validator/paths"
-	"github.com/pb33f/libopenapi-validator/requests"
-	"github.com/pb33f/libopenapi-validator/responses"
 	"github.com/pb33f/ranch/model"
 	"net/http"
 )
 
 func (ws *WiretapService) validateResponse(
 	request *model.Request,
-	responseValidator responses.ResponseBodyValidator,
 	returnedResponse *http.Response) []*errors.ValidationError {
 
 	var validationErrors []*errors.ValidationError
 
 	if ws.document != nil && ws.docModel != nil {
-		_, validationErrors = responseValidator.ValidateResponseBody(request.HttpRequest, returnedResponse)
+		_, validationErrors = ws.validator.ValidateHttpResponse(request.HttpRequest, returnedResponse)
 	}
 
 	// wipe out any path not found errors, they are not relevant to the response.
@@ -32,7 +27,7 @@ func (ws *WiretapService) validateResponse(
 		}
 	}
 
-	transaction := buildResponse(request, returnedResponse)
+	transaction := BuildResponse(request, returnedResponse)
 	if len(cleanedErrors) > 0 {
 		transaction.ResponseValidation = cleanedErrors
 	}
@@ -48,39 +43,13 @@ func (ws *WiretapService) validateResponse(
 
 func (ws *WiretapService) validateRequest(
 	modelRequest *model.Request,
-	httpRequest *http.Request,
-	requestValidator requests.RequestBodyValidator,
-	paramValidator parameters.ParameterValidator,
-	responseValidator responses.ResponseBodyValidator) []*errors.ValidationError {
+	httpRequest *http.Request) []*errors.ValidationError {
 
 	var validationErrors, cleanedErrors []*errors.ValidationError
 
 	if ws.document != nil && ws.docModel != nil {
-
-		// find path and populate validators.
-		path, pathErrors, pv := paths.FindPath(httpRequest, ws.docModel)
-		requestValidator.SetPathItem(path, pv)
-		paramValidator.SetPathItem(path, pv)
-		responseValidator.SetPathItem(path, pv)
-
-		// record any path errors.
-		validationErrors = append(validationErrors, pathErrors...)
-
-		// validate params
-		_, queryParams := paramValidator.ValidateQueryParams(httpRequest)
-		_, headerParams := paramValidator.ValidateHeaderParams(httpRequest)
-		_, cookieParams := paramValidator.ValidateCookieParams(httpRequest)
-		_, pathParams := paramValidator.ValidatePathParams(httpRequest)
-
-		validationErrors = append(validationErrors, queryParams...)
-		validationErrors = append(validationErrors, headerParams...)
-		validationErrors = append(validationErrors, cookieParams...)
-		validationErrors = append(validationErrors, pathParams...)
-
-		// validate modelRequest
-		_, requestErrors := requestValidator.ValidateRequestBody(httpRequest)
-		validationErrors = append(validationErrors, requestErrors...)
-
+		validator := ws.validator
+		_, validationErrors = validator.ValidateHttpRequest(httpRequest)
 	}
 
 	pm := false
@@ -95,7 +64,14 @@ func (ws *WiretapService) validateRequest(
 		}
 	}
 	// record results
-	transaction := buildRequest(modelRequest, httpRequest)
+	buildTransConfig := HttpTransactionConfig{
+		OriginalRequest:   modelRequest.HttpRequest,
+		NewRequest:        httpRequest,
+		ID:                modelRequest.Id,
+		TransactionConfig: ws.config,
+	}
+
+	transaction := BuildHttpTransaction(buildTransConfig)
 	if len(cleanedErrors) > 0 {
 		transaction.RequestValidation = cleanedErrors
 	}

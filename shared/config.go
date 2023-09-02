@@ -34,6 +34,8 @@ type WiretapConfiguration struct {
 	HardErrorCode       int                           `json:"hardValidationCode,omitempty" yaml:"hardValidationCode,omitempty"`
 	HardErrorReturnCode int                           `json:"hardValidationReturnCode,omitempty" yaml:"hardValidationReturnCode,omitempty"`
 	PathDelays          map[string]int                `json:"pathDelays,omitempty" yaml:"pathDelays,omitempty"`
+	MockMode            bool                          `json:"mockMode,omitempty" yaml:"mockMode,omitempty"`
+	MockModePretty      bool                          `json:"mockModePretty,omitempty" yaml:"mockModePretty,omitempty"`
 	CompiledPathDelays  map[string]*CompiledPathDelay `json:"-" yaml:"-"`
 	CompiledVariables   map[string]*CompiledVariable  `json:"-" yaml:"-"`
 	Version             string                        `json:"-" yaml:"-"`

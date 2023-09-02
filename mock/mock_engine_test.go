@@ -16,23 +16,37 @@ import (
 )
 
 // var doc *v3.Document
-var specBytes []byte
+var giftshopBytes []byte
+var petstoreBytes []byte
 
-func resetState() *v3.Document {
-	if len(specBytes) <= 0 {
+func resetGiftshopState() *v3.Document {
+	if len(giftshopBytes) <= 0 {
 		resp, err := http.Get("https://api.pb33f.io/wiretap/giftshop-openapi.yaml")
 		if err != nil {
 			panic(err)
 		}
-		specBytes, _ = io.ReadAll(resp.Body)
+		giftshopBytes, _ = io.ReadAll(resp.Body)
 	}
-	d, _ := libopenapi.NewDocument(specBytes)
+	d, _ := libopenapi.NewDocument(giftshopBytes)
+	compiled, _ := d.BuildV3Model()
+	return &compiled.Model
+}
+
+func resetPetstoreState() *v3.Document {
+	if len(petstoreBytes) <= 0 {
+		resp, err := http.Get("https://raw.githubusercontent.com/swagger-api/swagger-petstore/master/src/main/resources/openapi.yaml")
+		if err != nil {
+			panic(err)
+		}
+		petstoreBytes, _ = io.ReadAll(resp.Body)
+	}
+	d, _ := libopenapi.NewDocument(petstoreBytes)
 	compiled, _ := d.BuildV3Model()
 	return &compiled.Model
 }
 
 func TestNewMockEngine_findPath(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -43,7 +57,7 @@ func TestNewMockEngine_findPath(t *testing.T) {
 }
 
 func TestNewMockEngine_findPathNegative(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/invalid", nil)
@@ -55,7 +69,7 @@ func TestNewMockEngine_findPathNegative(t *testing.T) {
 }
 
 func TestNewMockEngine_findOperation(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -68,7 +82,7 @@ func TestNewMockEngine_findOperation(t *testing.T) {
 }
 
 func TestNewMockEngine_findOperationNegative(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPatch, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -80,7 +94,7 @@ func TestNewMockEngine_findOperationNegative(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_FailAPIKey_Header(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -93,7 +107,7 @@ func TestNewMockEngine_ValidateSecurity_FailAPIKey_Header(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_PassAPIKey_Header(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -106,7 +120,7 @@ func TestNewMockEngine_ValidateSecurity_PassAPIKey_Header(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_FailAPIKey_Query(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -124,7 +138,7 @@ func TestNewMockEngine_ValidateSecurity_FailAPIKey_Query(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_PassAPIKey_Query(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products?pizza-burger-cake=123", nil)
@@ -141,7 +155,7 @@ func TestNewMockEngine_ValidateSecurity_PassAPIKey_Query(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_FailAPIKey_Cookie(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -159,7 +173,7 @@ func TestNewMockEngine_ValidateSecurity_FailAPIKey_Cookie(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_PassAPIKey_Cookie(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -180,7 +194,7 @@ func TestNewMockEngine_ValidateSecurity_PassAPIKey_Cookie(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_FailHTTP_Bearer(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -199,7 +213,7 @@ func TestNewMockEngine_ValidateSecurity_FailHTTP_Bearer(t *testing.T) {
 }
 
 func TestNewMockEngine_ValidateSecurity_PassHTTP_Bearer(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -218,7 +232,7 @@ func TestNewMockEngine_ValidateSecurity_PassHTTP_Bearer(t *testing.T) {
 }
 
 func TestNewMockEngine_BuildResponse_SimpleValid(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -236,11 +250,12 @@ func TestNewMockEngine_BuildResponse_SimpleValid(t *testing.T) {
 	assert.Equal(t, 19.99, decoded[0]["price"])
 }
 
-func TestNewMockEngine_BuildResponse_SimpleInvalid_NoContentType(t *testing.T) {
-	doc := resetState()
+func TestNewMockEngine_BuildResponse_SimpleInvalid_BadContentType(t *testing.T) {
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
+	request.Header.Set(helpers.ContentTypeHeader, "cup/tea")
 	b, status, err := me.GenerateResponse(request)
 
 	assert.NoError(t, err)
@@ -250,11 +265,11 @@ func TestNewMockEngine_BuildResponse_SimpleInvalid_NoContentType(t *testing.T) {
 	_ = json.Unmarshal(b, &decoded)
 
 	assert.Equal(t, "Media type not supported (415)", decoded["title"])
-	assert.Equal(t, "The media type requested '' is not supported by this operation", decoded["detail"])
+	assert.Equal(t, "The media type requested 'cup/tea' is not supported by this operation", decoded["detail"])
 }
 
 func TestNewMockEngine_BuildResponse_SimpleValid_Pretty(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products/pb0001", nil)
@@ -270,7 +285,7 @@ func TestNewMockEngine_BuildResponse_SimpleValid_Pretty(t *testing.T) {
 }
 
 func TestNewMockEngine_BuildResponse_MissingPath_404(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/minky/monkey/moo", nil)
@@ -291,7 +306,7 @@ func TestNewMockEngine_BuildResponse_MissingPath_404(t *testing.T) {
 }
 
 func TestNewMockEngine_BuildResponse_MissingOperation_404(t *testing.T) {
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	request, _ := http.NewRequest(http.MethodPatch, "https://api.pb33f.io/wiretap/giftshop/products", nil)
@@ -314,7 +329,7 @@ func TestNewMockEngine_BuildResponse_MissingOperation_404(t *testing.T) {
 
 func TestNewMockEngine_BuildResponse_CreateProduct_NoSecurity_Invalid(t *testing.T) {
 
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	product := make(map[string]any)
@@ -340,7 +355,7 @@ func TestNewMockEngine_BuildResponse_CreateProduct_NoSecurity_Invalid(t *testing
 
 func TestNewMockEngine_BuildResponse_CreateProduct_WithSecurity_Invalid(t *testing.T) {
 
-	doc := resetState()
+	doc := resetGiftshopState()
 	me := NewMockEngine(doc, false)
 
 	product := make(map[string]any)
@@ -363,4 +378,25 @@ func TestNewMockEngine_BuildResponse_CreateProduct_WithSecurity_Invalid(t *testi
 	assert.Equal(t, "Invalid request (422)", decoded["title"])
 	assert.Len(t, decoded["payload"].([]any), 1)
 
+}
+
+func TestNewMockEngine_BuildResponse_Petstore_Sexurirt(t *testing.T) {
+	doc := resetGiftshopState()
+	me := NewMockEngine(doc, false)
+
+	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/minky/monkey/moo", nil)
+	request.Header.Set(helpers.ContentTypeHeader, "application/json")
+
+	b, status, err := me.GenerateResponse(request)
+
+	assert.Error(t, err)
+	assert.Equal(t, 404, status)
+
+	var decoded map[string]any
+	_ = json.Unmarshal(b, &decoded)
+
+	assert.Equal(t, "Path / operation not found (404)", decoded["title"])
+	assert.Equal(t, "Unable to locate the path '/minky/monkey/moo' with the method 'GET'. "+
+		"Error: GET Path '/minky/monkey/moo' not found, Reason: The GET request contains a path of '/minky/monkey/moo' "+
+		"however that path, or the GET method for that path does not exist in the specification", decoded["detail"])
 }

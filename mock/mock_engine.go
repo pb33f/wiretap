@@ -125,9 +125,13 @@ func (rme *ResponseMockEngine) extractMediaTypeHeader(request *http.Request) str
 	// extract the media type from the content type header.
 	mediaTypeSting, _, _ := helpers.ExtractContentType(contentType)
 
-	//if mediaTypeSting == "" {
-	//	mediaTypeSting = "application/json"
-	//}
+	if mediaTypeSting == "" {
+		mediaTypeSting = contentType // anything?
+	}
+	if mediaTypeSting == "" {
+		mediaTypeSting = "application/json" // default
+	}
+
 	return mediaTypeSting
 }
 
@@ -154,15 +158,6 @@ func (rme *ResponseMockEngine) packErrors(errs []*libopenapierrs.ValidationError
 		err = errors.Join(err, e)
 	}
 	return err
-}
-
-func (rme *ResponseMockEngine) lookForFirstResponseCode(operation *v3.Operation, codes []string) (*v3.Response, string) {
-	for _, code := range codes {
-		if operation.Responses.Codes[code] != nil {
-			return operation.Responses.Codes[code], code
-		}
-	}
-	return nil, ""
 }
 
 func (rme *ResponseMockEngine) render(obj any) []byte {
@@ -292,12 +287,12 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 	mock, mockErr := rme.mockEngine.GenerateMock(mt, rme.extractPreferred(request))
 	if mockErr != nil {
 		return rme.buildError(
-			500,
+			422,
 			"Unable to build mock (422)",
 			fmt.Sprintf("Errors occurred while generating an error 422 mock response: %s",
 				errors.Join(err, mockErr)),
 			"build_mock_error",
-		), 500, mockErr
+		), 422, mockErr
 	}
 	c, _ := strconv.Atoi(lo)
 	return mock, c, nil

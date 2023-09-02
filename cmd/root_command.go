@@ -54,6 +54,9 @@ var (
 			var hardErrorCode int
 			var hardErrorReturnCode int
 
+			// mock mode
+			var mockMode bool
+
 			certFlag, _ := cmd.Flags().GetString("cert")
 			if certFlag != "" {
 				cert = certFlag
@@ -64,6 +67,7 @@ var (
 				certKey = keyFlag
 			}
 
+			mockMode, _ = cmd.Flags().GetBool("mock-mode")
 			hardError, _ = cmd.Flags().GetBool("hard-validation")
 			hardErrorCode, _ = cmd.Flags().GetInt("hard-validation-code")
 			hardErrorReturnCode, _ = cmd.Flags().GetInt("hard-validation-return-code")
@@ -159,10 +163,19 @@ var (
 			if spec == "" {
 				pterm.Println()
 				pterm.Warning.Println("No OpenAPI specification provided. " +
-					"Please provide a path to an OpenAPI specification using the --spec or -s flags.")
-				pterm.Warning.Println("Without an OpenAPI specification, wiretap will not be able to validate " +
+					"Please provide a path to an OpenAPI specification using the --spec or -s flags. \n" +
+					"Without an OpenAPI specification, wiretap will not be able to validate " +
 					"requests and responses")
 				pterm.Println()
+			}
+
+			if mockMode && spec == "" {
+				pterm.Println()
+				pterm.Error.Println("Cannot enable mock mode, no OpenAPI specification provided!\n" +
+					"Please provide a path to an OpenAPI specification using the --spec or -s flags.\n" +
+					"Without an OpenAPI specification, wiretap will not be able to generate mock responses")
+				pterm.Println()
+				return nil
 			}
 
 			if redirectURL == "" {
@@ -285,10 +298,17 @@ var (
 				pterm.Println()
 			}
 
+			// mock mode
+			if config.MockMode {
+				pterm.Printf("Ⓜ️ %s. All responses will be mocked and no traffic will be sent to the target API.\n",
+					pterm.LightCyan("Mock mode enabled"))
+				pterm.Println()
+			}
+
 			// using TLS?
 			if config.CertificateKey != "" && config.Certificate != "" {
 				pterm.Printf("🔐 Running over %s using certificate: %s and key: %s\n",
-					pterm.LightYellow("TLS/HTTPS"), pterm.LightMagenta(config.Certificate), pterm.LightCyan(config.CertificateKey))
+					pterm.LightYellow("TLS/HTTPS & HTTP/2"), pterm.LightMagenta(config.Certificate), pterm.LightCyan(config.CertificateKey))
 				pterm.Println()
 			}
 
@@ -323,9 +343,10 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringP("static-index", "i", "index.html", "Set the index filename for static file serving (default is index.html)")
 	rootCmd.Flags().StringP("cert", "n", "", "Set the path to the TLS certificate to use for TLS/HTTPS")
 	rootCmd.Flags().StringP("key", "k", "", "Set the path to the TLS certificate key to use for TLS/HTTPS")
-	rootCmd.Flags().BoolP("hard-validation", "e", false, "Return a hard error for non-compliant request/response, default code is 400")
+	rootCmd.Flags().BoolP("hard-validation", "e", false, "Return a HTTP error for non-compliant request/response")
 	rootCmd.Flags().IntP("hard-validation-code", "q", 400, "Set a custom http error code for non-compliant requests when using the hard-error flag")
 	rootCmd.Flags().IntP("hard-validation-return-code", "y", 502, "Set a custom http error code for non-compliant responses when using the hard-error flag")
+	rootCmd.Flags().BoolP("mock-mode", "x", false, "Run in mock mode, responses are mocked and no traffic is sent to the target API (requires OpenAPI spec)")
 
 	rootCmd.Flags().StringP("config", "c", "",
 		"Location of wiretap configuration file to use (default is .wiretap in current directory)")
