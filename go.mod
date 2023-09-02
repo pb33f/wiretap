@@ -3,16 +3,17 @@ module github.com/pb33f/wiretap
 go 1.20
 
 require (
-	github.com/google/uuid v1.3.0
-	github.com/pb33f/libopenapi v0.9.7
-	github.com/pb33f/libopenapi-validator v0.0.15
+	github.com/google/uuid v1.3.1
+	github.com/pb33f/libopenapi v0.10.1
+	github.com/pb33f/libopenapi-validator v0.0.16
 	github.com/pb33f/ranch v0.3.0
 )
 
 require (
-	go.uber.org/atomic v1.11.0 // indirect
+	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.24.0 // indirect
+	go.uber.org/zap v1.25.0 // indirect
+	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb // indirect
 )
 
 require (
@@ -50,7 +51,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.8.1
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
