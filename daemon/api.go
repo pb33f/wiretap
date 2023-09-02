@@ -62,7 +62,7 @@ func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 	if req.Header.Get("Referer") != "" {
 		// retain original referer for logging
 		req.Header.Set("X-Original-Referer", req.Header.Get("Referer"))
-		req.Header.Set("Referer", reconstructURL(req,
+		req.Header.Set("Referer", ReconstructURL(req,
 			wiretapConfig.RedirectProtocol,
 			wiretapConfig.RedirectHost,
 			wiretapConfig.RedirectPort))

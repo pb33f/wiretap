@@ -10,7 +10,9 @@ import (
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/wiretap/controls"
+	"github.com/pb33f/wiretap/mock"
 	"github.com/pb33f/wiretap/shared"
+	"github.com/pb33f/wiretap/validation"
 	"net/http"
 	"time"
 )
@@ -33,6 +35,8 @@ type WiretapService struct {
 	transactionStore bus.BusStore
 	config           *shared.WiretapConfiguration
 	fs               http.Handler
+	mockEngine       *mock.ResponseMockEngine
+	validator        validation.HttpValidator
 }
 
 func NewWiretapService(document libopenapi.Document, config *shared.WiretapConfiguration) *WiretapService {
@@ -53,9 +57,16 @@ func NewWiretapService(document libopenapi.Document, config *shared.WiretapConfi
 	}
 	if document != nil {
 		m, _ := document.BuildV3Model()
+		docModel := &m.Model
 		wts.document = document
-		wts.docModel = &m.Model
+		wts.docModel = docModel
+
+		// create a new validator
+		wts.validator = validation.NewHttpValidator(docModel)
 	}
+
+	// create a new mock engine
+	wts.mockEngine = mock.NewMockEngine(wts.docModel, config.MockModePretty)
 
 	// hard-wire the config, change this later if needed.
 	wts.config = config
