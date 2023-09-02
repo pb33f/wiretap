@@ -125,9 +125,9 @@ func (rme *ResponseMockEngine) extractMediaTypeHeader(request *http.Request) str
 	// extract the media type from the content type header.
 	mediaTypeSting, _, _ := helpers.ExtractContentType(contentType)
 
-	if mediaTypeSting == "" {
-		mediaTypeSting = "application/json"
-	}
+	//if mediaTypeSting == "" {
+	//	mediaTypeSting = "application/json"
+	//}
 	return mediaTypeSting
 }
 
@@ -259,8 +259,8 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 			return rme.buildErrorWithPayload(
 				500,
 				"Invalid request, specification is insufficient",
-				fmt.Sprint("The request failed validation, and the specification does not contain a "+
-					"'422' or '400' response for this operation. Check payload for validation errors."),
+				"The request failed validation, and the specification does not contain a "+
+					"'422' or '400' response for this operation. Check payload for validation errors.",
 				"validation_failed_and_spec_insufficient_error",
 				validationErrors,
 			), 500, rme.packErrors(validationErrors)
@@ -268,7 +268,7 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 		return rme.buildErrorWithPayload(
 			422,
 			"Invalid request",
-			fmt.Sprint("The request failed validation, Check payload for validation errors."),
+			"The request failed validation, Check payload for validation errors.",
 			"validation_failed_error",
 			validationErrors,
 		), 422, rme.packErrors(validationErrors)
@@ -281,12 +281,13 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 	// find the lowest success code.
 	mt, _ := rme.lookForResponseCodes(operation, request, []string{lo})
 	if mt == nil {
+		mtString := rme.extractMediaTypeHeader(request)
 		return rme.buildError(
-			500,
-			"There is no valid response for this operation",
-			fmt.Sprint("Cannot find a 2XX response for this operation, and there is no default response"),
+			415,
+			"Media type not supported",
+			fmt.Sprintf("The media type requested '%s' is not supported by this operation", mtString),
 			"build_mock_error",
-		), 500, nil
+		), 415, nil
 	}
 	mock, mockErr := rme.mockEngine.GenerateMock(mt, rme.extractPreferred(request))
 	if mockErr != nil {

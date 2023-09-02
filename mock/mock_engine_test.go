@@ -31,23 +31,6 @@ func resetState() *v3.Document {
 	return &compiled.Model
 }
 
-/*
-   // build a request
-   	request, _ := http.NewRequest(http.MethodPost, "https://things.com/burgers/createBurger", bytes.NewReader(badJson))
-   	request.Header.Set(helpers.ContentTypeHeader, "application/json")
-
-   	// simulate a request/response
-   	res := httptest.NewRecorder()
-   	handler := func(w http.ResponseWriter, r *http.Request) {
-   		w.Header().Set(helpers.ContentTypeHeader, r.Header.Get(helpers.ContentTypeHeader))
-   		w.WriteHeader(http.StatusOK)
-   		_, _ = w.Write(badJson)
-   	}
-
-   	// fire the request
-   	handler(res, request)
-*/
-
 func TestNewMockEngine_findPath(t *testing.T) {
 	doc := resetState()
 	me := NewMockEngine(doc, false)
@@ -251,6 +234,39 @@ func TestNewMockEngine_BuildResponse_SimpleValid(t *testing.T) {
 
 	assert.Equal(t, "pb0001", decoded[0]["shortCode"])
 	assert.Equal(t, 19.99, decoded[0]["price"])
+}
+
+func TestNewMockEngine_BuildResponse_SimpleInvalid_NoContentType(t *testing.T) {
+	doc := resetState()
+	me := NewMockEngine(doc, false)
+
+	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
+	b, status, err := me.GenerateResponse(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 415, status)
+
+	var decoded map[string]any
+	_ = json.Unmarshal(b, &decoded)
+
+	assert.Equal(t, "Media type not supported (415)", decoded["title"])
+	assert.Equal(t, "The media type requested '' is not supported by this operation", decoded["detail"])
+}
+
+func TestNewMockEngine_BuildResponse_SimpleValid_Pretty(t *testing.T) {
+	doc := resetState()
+	me := NewMockEngine(doc, true)
+
+	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products/pb0001", nil)
+	request.Header.Set(helpers.ContentTypeHeader, "application/json")
+
+	b, status, err := me.GenerateResponse(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 200, status)
+	assert.Equal(t, "{\n  \"category\": \"shirts\",\n  \"description\": \"A t-shirt with the pb33f logo on the"+
+		" front\",\n  \"id\": \"d1404c5c-69bd-4cd2-a4cf-b47c79a30112\",\n  \"image\": \"https://pb33f.io/images/t-shirt.png\",\n "+
+		" \"name\": \"pb33f t-shirt\",\n  \"price\": 19.99,\n  \"shortCode\": \"pb0001\"\n}", string(b))
 }
 
 func TestNewMockEngine_BuildResponse_MissingPath_404(t *testing.T) {
