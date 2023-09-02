@@ -27,10 +27,6 @@ func init() {
 
 func TestNewValidator(t *testing.T) {
 
-	validator := NewValidator(doc)
+	validator := NewHttpValidator(doc)
 	assert.NotNil(t, validator)
-	assert.NotNil(t, validator.doc)
-	assert.NotNil(t, validator.requestValidator)
-	assert.NotNil(t, validator.responseValidator)
-	assert.NotNil(t, validator.paramValidator)
 }
