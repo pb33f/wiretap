@@ -154,10 +154,19 @@ var (
 				if config.Spec != "" {
 					spec = config.Spec
 				}
+				if mockMode {
+					if !config.MockMode {
+						config.MockMode = true
+					}
+				}
+
 			} else {
 
 				pterm.Info.Println("No wiretap configuration located. Using defaults")
 				config.StaticIndex = staticIndex
+				if mockMode {
+					config.MockMode = true
+				}
 			}
 
 			if spec == "" {
@@ -178,7 +187,7 @@ var (
 				return nil
 			}
 
-			if redirectURL == "" {
+			if !mockMode && redirectURL == "" {
 				pterm.Println()
 				pterm.Error.Println("No redirect URL provided. " +
 					"Please provide a URL to redirect API traffic to using the --url or -u flags.")
@@ -186,25 +195,28 @@ var (
 				return nil
 			}
 
-			parsedURL, e := url.Parse(redirectURL)
-			if e != nil {
-				pterm.Println()
-				pterm.Error.Printf("URL is not valid. "+
-					"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
-				pterm.Println()
-				return nil
+			if redirectURL != "" {
+
+				parsedURL, e := url.Parse(redirectURL)
+				if e != nil {
+					pterm.Println()
+					pterm.Error.Printf("URL is not valid. "+
+						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
+					pterm.Println()
+					return nil
+				}
+				if parsedURL.Scheme == "" || parsedURL.Host == "" {
+					pterm.Println()
+					pterm.Error.Printf("URL is not valid. "+
+						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
+					pterm.Println()
+					return nil
+				}
+				redirectHost = parsedURL.Hostname()
+				redirectPort = parsedURL.Port()
+				redirectScheme = parsedURL.Scheme
+				redirectBasePath = parsedURL.Path
 			}
-			if parsedURL.Scheme == "" || parsedURL.Host == "" {
-				pterm.Println()
-				pterm.Error.Printf("URL is not valid. "+
-					"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
-				pterm.Println()
-				return nil
-			}
-			redirectHost = parsedURL.Hostname()
-			redirectPort = parsedURL.Port()
-			redirectScheme = parsedURL.Scheme
-			redirectBasePath = parsedURL.Path
 
 			if spec != "" {
 				config.Contract = spec
