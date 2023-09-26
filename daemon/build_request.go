@@ -6,15 +6,16 @@ package daemon
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/pb33f/wiretap/config"
-	"github.com/pb33f/wiretap/shared"
-	"github.com/pterm/pterm"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/pb33f/wiretap/config"
+	"github.com/pb33f/wiretap/shared"
+	"github.com/pterm/pterm"
 )
 
 type HttpTransactionConfig struct {
@@ -153,10 +154,13 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 	}
 }
 
-func ReconstructURL(r *http.Request, protocol, host, port string) string {
+func ReconstructURL(r *http.Request, protocol, host, basepath string, port string) string {
 	url := fmt.Sprintf("%s://%s", protocol, host)
 	if port != "" {
 		url += fmt.Sprintf(":%s", port)
+	}
+	if basepath != "" {
+		url += basepath
 	}
 	if r.URL.Path != "" {
 		url += r.URL.Path

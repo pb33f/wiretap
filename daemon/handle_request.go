@@ -6,17 +6,18 @@ package daemon
 import (
 	_ "embed"
 	"fmt"
-	"github.com/pb33f/libopenapi-validator/errors"
-	"github.com/pb33f/ranch/model"
-	"github.com/pb33f/ranch/plank/utils"
-	configModel "github.com/pb33f/wiretap/config"
-	"github.com/pb33f/wiretap/shared"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"text/template"
 	"time"
+
+	"github.com/pb33f/libopenapi-validator/errors"
+	"github.com/pb33f/ranch/model"
+	"github.com/pb33f/ranch/plank/utils"
+	configModel "github.com/pb33f/wiretap/config"
+	"github.com/pb33f/wiretap/shared"
 )
 
 //go:embed templates/socket-include.html
@@ -136,6 +137,7 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		Request:       request.HttpRequest,
 		Protocol:      config.RedirectProtocol,
 		Host:          config.RedirectHost,
+		BasePath:      config.RedirectBasePath,
 		Port:          config.RedirectPort,
 		DropHeaders:   dropHeaders,
 		InjectHeaders: injectHeaders,
