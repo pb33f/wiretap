@@ -7,16 +7,18 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/pb33f/wiretap/shared"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/pb33f/wiretap/shared"
 )
 
 type CloneRequest struct {
 	Request       *http.Request
 	Protocol      string
 	Host          string
+	BasePath      string
 	Port          string
 	PathTarget    string
 	DropHeaders   []string
@@ -33,7 +35,7 @@ func CloneExistingRequest(request CloneRequest) *http.Request {
 
 	var newURL string
 	var newReq *http.Request
-	newURL = ReconstructURL(request.Request, request.Protocol, request.Host, request.Port)
+	newURL = ReconstructURL(request.Request, request.Protocol, request.Host, request.BasePath, request.Port)
 
 	// create cloned request
 	newReq, _ = http.NewRequest(request.Request.Method, newURL, io.NopCloser(bytes.NewBuffer(b)))

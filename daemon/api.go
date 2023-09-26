@@ -5,10 +5,11 @@ package daemon
 
 import (
 	"crypto/tls"
-	"github.com/pb33f/wiretap/config"
-	"github.com/pterm/pterm"
 	"net/http"
 	"net/url"
+
+	"github.com/pb33f/wiretap/config"
+	"github.com/pterm/pterm"
 
 	"github.com/pb33f/wiretap/shared"
 )
@@ -65,6 +66,7 @@ func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 		req.Header.Set("Referer", ReconstructURL(req,
 			wiretapConfig.RedirectProtocol,
 			wiretapConfig.RedirectHost,
+			wiretapConfig.RedirectBasePath,
 			wiretapConfig.RedirectPort))
 	}
 	resp, err := client.Do(req)
