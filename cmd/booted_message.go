@@ -52,11 +52,11 @@ func bootedMessage(wiretapConfig *shared.WiretapConfiguration) {
 
 				pterm.Println()
 				if wiretapConfig.MockMode {
-					pterm.Info.Printf("Ⓜ️ wiretap is not proxying any traffic, all responses are %s.\n",
+					pterm.Info.Printf("Ⓜ️ Mock mode: wiretap is not proxying any traffic, all responses are %s.\n",
 						pterm.LightMagenta("generated mocks/simulations"))
 
 				} else {
-					pterm.Info.Printf("wiretap is now proxying all traffic to '%s'\n",
+					pterm.Info.Printf("wiretap is proxying all traffic to '%s'\n",
 						pterm.LightMagenta(wiretapConfig.RedirectURL))
 				}
 
