@@ -108,6 +108,12 @@ var (
 			redirectURLFlag, _ := cmd.Flags().GetString("url")
 			if redirectURLFlag != "" {
 				redirectURL = redirectURLFlag
+			} else {
+				pterm.Println()
+				pterm.Error.Println("No redirect URL provided. " +
+					"Please provide a URL to redirect API traffic to using the --url or -u flags.")
+				pterm.Println()
+				return nil
 			}
 
 			globalAPIDelayFlag, _ := cmd.Flags().GetInt("delay")
