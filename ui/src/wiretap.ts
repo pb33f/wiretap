@@ -49,6 +49,8 @@ export class WiretapComponent extends LitElement {
     private _configChannelSubscription: Subscription;
     private _staticChannelSubscription: Subscription;
     private _useTLS: boolean = false;
+    private _headerStatsDefaultPrecision: number = 0;
+    private _complianceStatPrecision: number = 2;
 
     private _transactionContainer: HttpTransactionContainerComponent;
 
@@ -355,11 +357,11 @@ export class WiretapComponent extends LitElement {
             return html`
             <wiretap-header
                     @wipeData=${this.wipeData}
-                    requests="${this.requestCount}"
-                    responses="${this.responseCount}"
-                    violations="${this.violationsCount}"
-                    violationsDelta="${this.violatedTransactions}"
-                    compliance="${this.complianceLevel}"
+                    requests="${this.requestCount.toFixed(this._headerStatsDefaultPrecision)}"
+                    responses="${this.responseCount.toFixed(this._headerStatsDefaultPrecision)}"
+                    violations="${this.violationsCount.toFixed(this._headerStatsDefaultPrecision)}"
+                    violationsDelta="${this.violatedTransactions.toFixed(this._headerStatsDefaultPrecision)}"
+                    compliance="${this.complianceLevel.toFixed(this._complianceStatPrecision)}"
                     noSpec>
             </wiretap-header>
             ${transaction}`
@@ -367,11 +369,11 @@ export class WiretapComponent extends LitElement {
         return html`
             <wiretap-header
                     @wipeData=${this.wipeData}
-                    requests="${this.requestCount}"
-                    responses="${this.responseCount}"
-                    violations="${this.violationsCount}"
-                    violationsDelta="${this.violatedTransactions}"
-                    compliance="${this.complianceLevel}">
+                    requests="${this.requestCount.toFixed(this._headerStatsDefaultPrecision)}"
+                    responses="${this.responseCount.toFixed(this._headerStatsDefaultPrecision)}"
+                    violations="${this.violationsCount.toFixed(this._headerStatsDefaultPrecision)}"
+                    violationsDelta="${this.violatedTransactions.toFixed(this._headerStatsDefaultPrecision)}"
+                    compliance="${this.complianceLevel.toFixed(this._complianceStatPrecision)}">
             </wiretap-header>
             ${transaction}`
     }
