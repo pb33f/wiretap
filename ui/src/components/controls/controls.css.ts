@@ -30,5 +30,11 @@ export default css`
     font-family: var(--font-stack);
   }
   
+  .filters-badge::part(base) {
+    font-size: 0.5rem;
+    margin-top: 5px;
+    margin-right: 5px;
+    background-color: var(--primary-color);
+  }
   
 `
