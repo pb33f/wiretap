@@ -36,6 +36,7 @@ type WiretapConfiguration struct {
 	PathDelays          map[string]int                `json:"pathDelays,omitempty" yaml:"pathDelays,omitempty"`
 	MockMode            bool                          `json:"mockMode,omitempty" yaml:"mockMode,omitempty"`
 	MockModePretty      bool                          `json:"mockModePretty,omitempty" yaml:"mockModePretty,omitempty"`
+	Base                string                        `json:"base,omitempty" yaml:"base,omitempty"`
 	CompiledPathDelays  map[string]*CompiledPathDelay `json:"-" yaml:"-"`
 	CompiledVariables   map[string]*CompiledVariable  `json:"-" yaml:"-"`
 	Version             string                        `json:"-" yaml:"-"`
