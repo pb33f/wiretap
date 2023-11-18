@@ -11,7 +11,7 @@ WORKDIR /wt_build/ui
 RUN yarn install
 RUN yarn build
 
-FROM golang:1.20-bookworm
+FROM golang:1.21-bookworm
 
 WORKDIR /work
 
