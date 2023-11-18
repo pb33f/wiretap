@@ -27,7 +27,7 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 	var err error
 	// load the openapi spec
 	if wiretapConfig.Contract != "" {
-		doc, err = loadOpenAPISpec(wiretapConfig.Contract)
+		doc, err = loadOpenAPISpec(wiretapConfig.Contract, wiretapConfig.Base)
 		if err != nil {
 			return nil, err
 		}

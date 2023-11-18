@@ -6,15 +6,17 @@ package cmd
 import (
 	"fmt"
 	"github.com/pb33f/libopenapi"
+	"github.com/pb33f/libopenapi/datamodel"
 	"github.com/pterm/pterm"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 )
 
-func loadOpenAPISpec(contract string) (libopenapi.Document, error) {
+func loadOpenAPISpec(contract, base string) (libopenapi.Document, error) {
 	var specBytes []byte
 
 	if strings.HasPrefix(contract, "http://") || strings.HasPrefix(contract, "https://") {
@@ -47,5 +49,26 @@ func loadOpenAPISpec(contract string) (libopenapi.Document, error) {
 	if len(specBytes) <= 0 {
 		return nil, fmt.Errorf("no bytes in OpenAPI Specification")
 	}
-	return libopenapi.NewDocument(specBytes)
+
+	docConfig := datamodel.NewDocumentConfiguration()
+	docConfig.AllowFileReferences = true
+	docConfig.AllowRemoteReferences = true
+	if base != "" {
+		if strings.HasPrefix(base, "http") {
+			u, _ := url.Parse(base)
+			if u != nil {
+				pterm.Info.Printf("Setting OpenAPI reference base URL to: '%s'\n", u.String())
+				docConfig.BaseURL = u
+			}
+		} else {
+			pterm.Info.Printf("Setting OpenAPI reference base path to: '%s'\n", base)
+			docConfig.BasePath = base
+		}
+	}
+
+	handler := pterm.NewSlogHandler(&pterm.DefaultLogger)
+	docConfig.Logger = slog.New(handler)
+	pterm.DefaultLogger.Level = pterm.LogLevelError
+
+	return libopenapi.NewDocumentWithConfiguration(specBytes, docConfig)
 }

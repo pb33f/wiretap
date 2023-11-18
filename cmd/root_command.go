@@ -21,11 +21,10 @@ var (
 	FS      embed.FS
 
 	rootCmd = &cobra.Command{
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		Use:           "wiretap",
-		Short:         "wiretap is a tool for detecting API compliance against an OpenAPI contract, by sniffing network traffic.",
-		Long:          `wiretap is a tool for detecting API compliance against an OpenAPI contract, by sniffing network traffic.`,
+		SilenceUsage: true,
+		Use:          "wiretap",
+		Short:        "wiretap is a tool for detecting API compliance against an OpenAPI contract, by sniffing network traffic.",
+		Long:         `wiretap is a tool for detecting API compliance against an OpenAPI contract, by sniffing network traffic.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			PrintBanner()
@@ -66,7 +65,7 @@ var (
 			if keyFlag != "" {
 				certKey = keyFlag
 			}
-
+			base, _ := cmd.Flags().GetString("base")
 			mockMode, _ = cmd.Flags().GetBool("mock-mode")
 			hardError, _ = cmd.Flags().GetBool("hard-validation")
 			hardErrorCode, _ = cmd.Flags().GetInt("hard-validation-code")
@@ -159,6 +158,9 @@ var (
 						config.MockMode = true
 					}
 				}
+				if base != config.Base {
+					config.Base = base
+				}
 
 			} else {
 
@@ -166,6 +168,9 @@ var (
 				config.StaticIndex = staticIndex
 				if mockMode {
 					config.MockMode = true
+				}
+				if base != "" {
+					config.Base = base
 				}
 			}
 
@@ -359,9 +364,9 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().IntP("hard-validation-code", "q", 400, "Set a custom http error code for non-compliant requests when using the hard-error flag")
 	rootCmd.Flags().IntP("hard-validation-return-code", "y", 502, "Set a custom http error code for non-compliant responses when using the hard-error flag")
 	rootCmd.Flags().BoolP("mock-mode", "x", false, "Run in mock mode, responses are mocked and no traffic is sent to the target API (requires OpenAPI spec)")
-
 	rootCmd.Flags().StringP("config", "c", "",
 		"Location of wiretap configuration file to use (default is .wiretap in current directory)")
+	rootCmd.Flags().StringP("base", "b", "", "Set a base path to resolve relative file references from, or a overriding base URL to resolve remote references from")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
