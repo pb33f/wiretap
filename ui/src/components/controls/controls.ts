@@ -86,13 +86,13 @@ export class WiretapControlsComponent extends LitElement {
 
         this._filtersStore.subscribe(WiretapFiltersKey, (filters: WiretapFilters) => {
             let numFilters = 0;
-            if (filters.filterKeywords) {
+            if (filters?.filterKeywords) {
                 numFilters += filters.filterKeywords.length;
             }
-            if (filters.filterChain) {
+            if (filters?.filterChain) {
                 numFilters += filters.filterChain.length;
             }
-            if (filters.filterMethod.keyword != "") {
+            if (filters?.filterMethod?.keyword != "") {
                 numFilters += 1;
             }
             this.numFilters = numFilters;
