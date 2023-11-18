@@ -129,7 +129,12 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 	replaced := config.RewritePath(build.NewRequest.URL.Path, cf)
 	var newUrl = build.NewRequest.URL
 	if replaced != "" {
-		newUrl, _ = url.Parse(replaced)
+		var e error
+		newUrl, e = url.Parse(replaced)
+		if e != nil {
+			newUrl = build.NewRequest.URL
+			pterm.Error.Printf("major configuration problem: cannot parse URL: `%s`: %s", replaced, e.Error())
+		}
 		if build.NewRequest.URL.RawQuery != "" {
 			newUrl.RawQuery = build.NewRequest.URL.RawQuery
 		}
@@ -155,6 +160,12 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 }
 
 func ReconstructURL(r *http.Request, protocol, host, basepath string, port string) string {
+	if host == "" {
+		host = r.Host
+	}
+	if protocol == "" {
+		protocol = "http"
+	}
 	url := fmt.Sprintf("%s://%s", protocol, host)
 	if port != "" {
 		url += fmt.Sprintf(":%s", port)
