@@ -4,6 +4,7 @@
 package daemon
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
 	"io"
@@ -248,9 +249,19 @@ func (ws *WiretapService) handleMockRequest(
 	setCORSHeaders(headers)
 	headers["Content-Type"] = "application/json"
 
+	buff := bytes.NewBuffer(mock)
+
+	// create a simulated response to send up to the monitor UI.
+	resp := &http.Response{
+		StatusCode: mockStatus,
+		Body:       io.NopCloser(buff),
+	}
+	header := http.Header{}
+	resp.Header = header
 	// write headers
 	for k, v := range headers {
 		request.HttpResponseWriter.Header().Set(k, fmt.Sprint(v))
+		header.Add(k, fmt.Sprint(v))
 	}
 
 	// if there was an error building the mock, return a 404
@@ -261,6 +272,9 @@ func (ws *WiretapService) handleMockRequest(
 		_, _ = request.HttpResponseWriter.Write(shared.MarshalError(wtError))
 		return
 	}
+
+	// validate response async
+	ws.broadcastResponse(request, resp)
 
 	// if the mock is empty
 	request.HttpResponseWriter.WriteHeader(mockStatus)
