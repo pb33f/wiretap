@@ -50,11 +50,9 @@ func serveMonitor(wiretapConfig *shared.WiretapConfiguration) {
 		if wiretapConfig.CertificateKey != "" && wiretapConfig.Certificate != "" {
 			useTLS = "true"
 		}
-
 		// replace the port in the index.html file and serve it.
-		indexString = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(indexString, shared.WiretapPortPlaceholder, wiretapConfig.WebSocketPort),
-			shared.WiretapVersionPlaceholder, wiretapConfig.Version), shared.WiretapTLSPlaceholder, useTLS)
-
+		indexString = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(indexString, shared.WiretapPortPlaceholder, wiretapConfig.WebSocketPort),
+			shared.WiretapVersionPlaceholder, wiretapConfig.Version), shared.WiretapTLSPlaceholder, useTLS), shared.WiretapHostPlaceholder, wiretapConfig.WebSocketHost)
 		// handle index will serve a modified index.html from the embedded filesystem.
 		// this is so the monitor can connect to the websocket on the correct port.
 		handleIndex := func(w http.ResponseWriter, r *http.Request) {

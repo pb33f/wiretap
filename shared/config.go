@@ -19,6 +19,7 @@ type WiretapConfiguration struct {
 	RedirectURL         string                        `json:"redirectURL,omitempty" yaml:"redirectURL,omitempty"`
 	Port                string                        `json:"port,omitempty" yaml:"port,omitempty"`
 	MonitorPort         string                        `json:"monitorPort,omitempty" yaml:"monitorPort,omitempty"`
+	WebSocketHost       string                        `json:"webSocketHost,omitempty" yaml:"webSocketHost,omitempty"`
 	WebSocketPort       string                        `json:"webSocketPort,omitempty" yaml:"webSocketPort,omitempty"`
 	GlobalAPIDelay      int                           `json:"globalAPIDelay,omitempty" yaml:"globalAPIDelay,omitempty"`
 	StaticDir           string                        `json:"staticDir,omitempty" yaml:"staticDir,omitempty"`
@@ -146,6 +147,7 @@ func (wpc *WiretapPathConfig) Compile(key string) *CompiledPath {
 }
 
 const ConfigKey = "config"
+const WiretapHostPlaceholder = "%WIRETAP_HOST%"
 const WiretapPortPlaceholder = "%WIRETAP_PORT%"
 const WiretapTLSPlaceholder = "%WIRETAP_TLS%"
 const WiretapVersionPlaceholder = "%WIRETAP_VERSION%"
