@@ -10,7 +10,7 @@
 <script type="module">
     import { Client } from '@stomp/stompjs';
     const client = new Client({
-        brokerURL: 'ws://localhost:{{ .WebSocketPort }}/ranch',
+        brokerURL: 'ws:// {{ .WebSocketHost }} : {{ .WebSocketPort }}/ranch',
         onConnect: () => {
             client.subscribe("/topic/wiretap-static-change", message => {
                 window.location.reload();

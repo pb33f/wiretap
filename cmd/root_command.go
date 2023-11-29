@@ -43,6 +43,7 @@ var (
 			var redirectBasePath string
 			var redirectURL string
 			var globalAPIDelay int
+			var wsHost string
 
 			// certs
 			var cert string
@@ -96,6 +97,13 @@ var (
 			}
 
 			staticIndex, _ = cmd.Flags().GetString("static-index")
+
+			wsHostFlag, _ := cmd.Flags().GetString("ws-host")
+			if wsHostFlag != "" {
+				wsHost = wsHostFlag
+			} else {
+				wsHost = "localhost"
+			}
 
 			wsPortFlag, _ := cmd.Flags().GetString("ws-port")
 			if wsPortFlag != "" {
@@ -241,6 +249,9 @@ var (
 			if config.WebSocketPort == "" {
 				config.WebSocketPort = wsPort
 			}
+			if config.WebSocketHost == "" {
+				config.WebSocketHost = wsHost
+			}
 			if config.GlobalAPIDelay == 0 {
 				config.GlobalAPIDelay = globalAPIDelay
 			}
@@ -355,6 +366,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringP("port", "p", "", "Set port on which to listen for HTTP traffic (default is 9090)")
 	rootCmd.Flags().StringP("monitor-port", "m", "", "Set port on which to serve the monitor UI (default is 9091)")
 	rootCmd.Flags().StringP("ws-port", "w", "", "Set port on which to serve the monitor UI websocket (default is 9092)")
+	rootCmd.Flags().StringP("ws-host", "v", "localhost", "Set the backend hostname for wiretap, for remotely deployed service")
 	rootCmd.Flags().StringP("spec", "s", "", "Set the path to the OpenAPI specification to use")
 	rootCmd.Flags().StringP("static", "t", "", "Set the path to a directory of static files to serve")
 	rootCmd.Flags().StringP("static-index", "i", "index.html", "Set the index filename for static file serving (default is index.html)")

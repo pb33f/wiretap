@@ -43,6 +43,7 @@ export class WiretapComponent extends LitElement {
     private readonly _wiretapConfigChannel: Channel;
     private readonly _staticNotificationChannel: Channel;
     private readonly _wiretapPort: string;
+    private readonly _wiretapHost: string;
     private readonly _wiretapVersion: string;
     private _transactionChannelSubscription: Subscription;
     private _specChannelSubscription: Subscription;
@@ -83,9 +84,14 @@ export class WiretapComponent extends LitElement {
 
         // extract port from session storage.
         this._wiretapPort = localStorage.getItem("wiretapPort");
+        this._wiretapHost = localStorage.getItem("wiretapHost");
 
         if (!this._wiretapPort) {
             this._wiretapPort = "9092"; // default port
+        }
+
+        if (!this._wiretapHost) {
+            this._wiretapHost = "localhost"; // default host
         }
 
         const useTLS = localStorage.getItem("wiretapTLS");
@@ -177,7 +183,7 @@ export class WiretapComponent extends LitElement {
 
         // configure wiretap broker.
         const config = {
-            brokerURL: protocol + 'localhost:' + this._wiretapPort + '/ranch',
+            brokerURL: protocol + this._wiretapHost + ':' + this._wiretapPort + '/ranch',
             heartbeatIncoming: 0,
             heartbeatOutgoing: 0,
             onConnect: () => {
