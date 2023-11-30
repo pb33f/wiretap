@@ -7,9 +7,9 @@ require (
 	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
 	github.com/pb33f/libopenapi v0.13.15
 	github.com/pb33f/libopenapi-validator v0.0.31
-	github.com/pb33f/ranch v0.3.0
-	github.com/pterm/pterm v0.12.70
-	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
+	github.com/pb33f/ranch v0.4.0
+	github.com/pterm/pterm v0.12.71
+	golang.org/x/exp v0.0.0-20231127185646-65229373498e // indirect
 )
 
 require (
@@ -29,7 +29,6 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/lithammer/fuzzysearch v1.1.8 // indirect
-	github.com/magefile/mage v1.10.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
@@ -39,7 +38,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1 // indirect
-	github.com/sirupsen/logrus v1.8.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/cobra v1.7.0
@@ -62,4 +60,5 @@ require (
 require (
 	atomicgo.dev/schedule v0.1.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	golang.org/x/net v0.14.0 // indirect
 )
