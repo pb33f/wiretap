@@ -274,8 +274,8 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 	lo := rme.findLowestSuccessCode(operation)
 
 	// find the lowest success code.
-	mt, _ := rme.lookForResponseCodes(operation, request, []string{lo})
-	if mt == nil {
+	mt, noMT := rme.lookForResponseCodes(operation, request, []string{lo})
+	if mt == nil && noMT {
 		mtString := rme.extractMediaTypeHeader(request)
 		return rme.buildError(
 			415,
@@ -284,6 +284,7 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 			"build_mock_error",
 		), 415, nil
 	}
+
 	mock, mockErr := rme.mockEngine.GenerateMock(mt, rme.extractPreferred(request))
 	if mockErr != nil {
 		return rme.buildError(
@@ -328,6 +329,10 @@ func (rme *ResponseMockEngine) lookForResponseCodes(
 		}
 		responseBody := resp.Content[mediaTypeString]
 		if responseBody != nil {
+			// try and extract a default JSON response
+			return responseBody, false
+		} else {
+			responseBody = resp.Content["application/json"]
 			return responseBody, false
 		}
 	}
