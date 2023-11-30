@@ -9,6 +9,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -67,6 +68,11 @@ var (
 				certKey = keyFlag
 			}
 			base, _ := cmd.Flags().GetString("base")
+
+			har, _ := cmd.Flags().GetString("har")
+			harValidate, _ := cmd.Flags().GetBool("har-validate")
+
+			debug, _ := cmd.Flags().GetBool("debug")
 			mockMode, _ = cmd.Flags().GetBool("mock-mode")
 			hardError, _ = cmd.Flags().GetBool("hard-validation")
 			hardErrorCode, _ = cmd.Flags().GetInt("hard-validation-code")
@@ -169,6 +175,12 @@ var (
 				if base != config.Base {
 					config.Base = base
 				}
+				if har != config.HAR {
+					config.HAR = har
+				}
+				if harValidate != config.HARValidate {
+					config.HARValidate = harValidate
+				}
 
 			} else {
 
@@ -180,6 +192,8 @@ var (
 				if base != "" {
 					config.Base = base
 				}
+				config.HAR = har
+				config.HARValidate = harValidate
 			}
 
 			if spec == "" {
@@ -200,7 +214,7 @@ var (
 				return nil
 			}
 
-			if !mockMode && redirectURL == "" {
+			if !mockMode && redirectURL == "" && har == "" {
 				pterm.Println()
 				pterm.Error.Println("No redirect URL provided. " +
 					"Please provide a URL to redirect API traffic to using the --url or -u flags.")
@@ -340,6 +354,66 @@ var (
 				pterm.Println()
 			}
 
+			// check if we're using a HAR file instead of sniffing traffic.
+			if config.HAR != "" {
+				pterm.Printf("📦 Loading HAR file: %s\n", pterm.LightMagenta(config.HAR))
+				// can we read the har file?
+				_, err := os.Stat(config.HAR)
+				if err != nil {
+					pterm.Error.Printf("Cannot read HAR file: %s (%s)\n", config.HAR, err.Error())
+					return nil
+				}
+				pterm.Println()
+
+			}
+
+			// check if we want to validate the HAR file against the OpenAPI spec.
+			// but only if we're not in mock mode and there is a spec provided
+			if config.HARValidate && !config.MockMode && config.Contract != "" {
+				pterm.Printf("🔍 Validating HAR file against OpenAPI specification: %s\n", pterm.LightMagenta(config.Contract))
+				pterm.Println()
+			} else {
+				// we can't use this mode, print an error and return
+				if config.HARValidate && config.MockMode {
+					pterm.Println()
+					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification in mock mode!")
+					pterm.Println()
+					return nil
+				}
+
+				// if there is no spec, print an error
+				if config.HARValidate && config.Contract == "" {
+					pterm.Println()
+					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification, no specification provided, use '-s'")
+					pterm.Println()
+					return nil
+				}
+
+			}
+
+			// lets create a logger first.
+			logLevel := pterm.LogLevelError
+			if debug {
+				logLevel = pterm.LogLevelDebug
+			}
+
+			ptermLog := &pterm.Logger{
+				Formatter:  pterm.LogFormatterColorful,
+				Writer:     os.Stdout,
+				Level:      logLevel,
+				ShowTime:   true,
+				TimeFormat: "2006-01-02 15:04:05",
+				MaxWidth:   180,
+				KeyStyles: map[string]pterm.Style{
+					"error":  *pterm.NewStyle(pterm.FgRed, pterm.Bold),
+					"err":    *pterm.NewStyle(pterm.FgRed, pterm.Bold),
+					"caller": *pterm.NewStyle(pterm.FgGray, pterm.Bold),
+				},
+			}
+
+			handler := pterm.NewSlogHandler(ptermLog)
+			config.Logger = slog.New(handler)
+
 			// ready to boot, let's go!
 			_, pErr := runWiretapService(&config)
 
@@ -379,6 +453,9 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringP("config", "c", "",
 		"Location of wiretap configuration file to use (default is .wiretap in current directory)")
 	rootCmd.Flags().StringP("base", "b", "", "Set a base path to resolve relative file references from, or a overriding base URL to resolve remote references from")
+	rootCmd.Flags().BoolP("debug", "l", false, "Enable debug logging")
+	rootCmd.Flags().StringP("har", "z", "", "Load a HAR file instead of sniffing traffic")
+	rootCmd.Flags().BoolP("har-validate", "v", false, "Load a HAR file instead of sniffing traffic, and validate against the OpenAPI specification (requires -s)")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
