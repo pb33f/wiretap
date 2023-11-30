@@ -455,7 +455,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringP("base", "b", "", "Set a base path to resolve relative file references from, or a overriding base URL to resolve remote references from")
 	rootCmd.Flags().BoolP("debug", "l", false, "Enable debug logging")
 	rootCmd.Flags().StringP("har", "z", "", "Load a HAR file instead of sniffing traffic")
-	rootCmd.Flags().BoolP("har-validate", "v", false, "Load a HAR file instead of sniffing traffic, and validate against the OpenAPI specification (requires -s)")
+	rootCmd.Flags().BoolP("har-validate", "g", false, "Load a HAR file instead of sniffing traffic, and validate against the OpenAPI specification (requires -s)")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
