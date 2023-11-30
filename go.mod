@@ -5,8 +5,8 @@ go 1.21
 require (
 	github.com/google/uuid v1.4.0
 	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
-	github.com/pb33f/libopenapi v0.13.11
-	github.com/pb33f/libopenapi-validator v0.0.28
+	github.com/pb33f/libopenapi v0.13.15
+	github.com/pb33f/libopenapi-validator v0.0.31
 	github.com/pb33f/ranch v0.3.0
 	github.com/pterm/pterm v0.12.70
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
