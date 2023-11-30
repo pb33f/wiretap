@@ -16,7 +16,6 @@ import (
 
 	"github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/ranch/model"
-	"github.com/pb33f/ranch/plank/utils"
 	configModel "github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/shared"
 )
@@ -73,12 +72,17 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 				// execute the new template
 				_ = tmpl.Execute(tmpFile, m)
 
+				ws.config.Logger.Info("[wiretap] static file request", "url", request.HttpRequest.URL.String(), "code", 200)
+
 				// serve it.
 				http.ServeFile(request.HttpResponseWriter, request.HttpRequest, tmpFile.Name())
 				return
 			}
 
 			if !localStat.IsDir() {
+
+				ws.config.Logger.Info("[wiretap] static file request", "url", request.HttpRequest.URL.String(), "code", 200)
+
 				http.ServeFile(request.HttpResponseWriter, request.HttpRequest, fp)
 				return
 			}
@@ -149,6 +153,8 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	var requestErrors []*errors.ValidationError
 	var responseErrors []*errors.ValidationError
 
+	ws.config.Logger.Info("[wiretap] handling API request", "url", request.HttpRequest.URL.String())
+
 	// check if we're going to fail hard on validation errors. (default is to skip this)
 	if ws.config.HardErrors {
 
@@ -170,10 +176,10 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	returnedResponse, returnedError = ws.callAPI(apiRequest)
 
 	if returnedResponse == nil && returnedError != nil {
-		utils.Log.Infof("[wiretap] request %s: Failed (%d)", apiRequest.URL.String(), 500)
+		config.Logger.Info("[wiretap] request failed", "url", apiRequest.URL.String(), "code", 500)
 		go ws.broadcastResponseError(request, CloneExistingResponse(returnedResponse), returnedError)
 		request.HttpResponseWriter.WriteHeader(500)
-		wtError := shared.GenerateError("Unable to call API", 500, returnedError.Error(), "")
+		wtError := shared.GenerateError("Unable to call API", 500, returnedError.Error(), "", returnedResponse)
 		_, _ = request.HttpResponseWriter.Write(shared.MarshalError(wtError))
 		return
 
@@ -209,7 +215,7 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	for k, v := range headers {
 		request.HttpResponseWriter.Header().Set(k, fmt.Sprint(v))
 	}
-	utils.Log.Infof("[wiretap] request %s: completed (%d)", request.HttpRequest.URL.String(), returnedResponse.StatusCode)
+	config.Logger.Info("[wiretap] request completed", "url", request.HttpRequest.URL.String(), "code", returnedResponse.StatusCode)
 
 	// if there are validation errors, set an error code
 	requestCode := config.HardErrorCode
@@ -266,9 +272,18 @@ func (ws *WiretapService) handleMockRequest(
 
 	// if there was an error building the mock, return a 404
 	if mockErr != nil && len(mock) == 0 {
-		utils.Log.Infof("[wiretap] mock mode request %s: error (%d)", newReq.URL.String(), 404)
+		config.Logger.Info("[wiretap] mock mode request error", "url", newReq.URL.String(), "code", 404)
 		request.HttpResponseWriter.WriteHeader(404)
-		wtError := shared.GenerateError("[mock error] unable to generate mock for request", 404, mockErr.Error(), "")
+		wtError := shared.GenerateError("[mock error] unable to generate mock for request", 404, mockErr.Error(), "", mock)
+		_, _ = request.HttpResponseWriter.Write(shared.MarshalError(wtError))
+		return
+	}
+
+	// if the mock exists, but there was an error, return the error
+	if mockErr != nil && len(mock) > 0 {
+		config.Logger.Info("[wiretap] mock mode request error", "url", newReq.URL.String(), "code", mockStatus)
+		request.HttpResponseWriter.WriteHeader(mockStatus)
+		wtError := shared.GenerateError("unable to serve mocked response", mockStatus, mockErr.Error(), "", nil)
 		_, _ = request.HttpResponseWriter.Write(shared.MarshalError(wtError))
 		return
 	}

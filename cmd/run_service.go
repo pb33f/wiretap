@@ -8,7 +8,6 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/plank/pkg/server"
-	"github.com/pb33f/ranch/plank/utils"
 	"github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/controls"
 	"github.com/pb33f/wiretap/daemon"
@@ -52,9 +51,7 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 	ranchConfig, _ := server.CreateServerConfig()
 	ranchConfig.Port, _ = strconv.Atoi(wiretapConfig.WebSocketPort)
 	ranchConfig.FabricConfig.EndpointConfig.Heartbeat = 0
-	ranchConfig.LogConfig.FormatOptions = &utils.LogFormatOption{
-		DisableTimestamp: true,
-	}
+	ranchConfig.Logger = wiretapConfig.Logger
 
 	// running TLS?
 	if wiretapConfig.CertificateKey != "" && wiretapConfig.Certificate != "" {

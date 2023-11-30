@@ -46,7 +46,7 @@ func handleHttpTraffic(wiretapConfig *shared.WiretapConfiguration, wtService *da
 		}
 
 		if httpErr != nil {
-			pterm.Fatal.Println(httpErr)
+			pterm.Error.Println(httpErr)
 		}
 	}()
 }

@@ -18,13 +18,14 @@ type WiretapError struct {
 func GenerateError(title string,
 	status int,
 	detail string,
-	instance string) *WiretapError {
+	instance string, payload any) *WiretapError {
 	return &WiretapError{
 		Type:     "https://pb33f.io/wiretap/error",
 		Title:    title,
 		Status:   status,
 		Detail:   detail,
 		Instance: instance,
+		Payload:  payload,
 	}
 }
 
