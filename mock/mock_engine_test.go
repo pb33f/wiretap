@@ -250,23 +250,26 @@ func TestNewMockEngine_BuildResponse_SimpleValid(t *testing.T) {
 	assert.Equal(t, 19.99, decoded[0]["price"])
 }
 
-func TestNewMockEngine_BuildResponse_SimpleInvalid_BadContentType(t *testing.T) {
-	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+// test disabled because I have updated the mock engine to drop down to 'application/json' if the content type is not
+// found.
 
-	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
-	request.Header.Set(helpers.ContentTypeHeader, "cup/tea")
-	b, status, err := me.GenerateResponse(request)
-
-	assert.NoError(t, err)
-	assert.Equal(t, 415, status)
-
-	var decoded map[string]any
-	_ = json.Unmarshal(b, &decoded)
-
-	assert.Equal(t, "Media type not supported (415)", decoded["title"])
-	assert.Equal(t, "The media type requested 'cup/tea' is not supported by this operation", decoded["detail"])
-}
+//func TestNewMockEngine_BuildResponse_SimpleInvalid_BadContentType(t *testing.T) {
+//	doc := resetGiftshopState()
+//	me := NewMockEngine(doc, false)
+//
+//	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
+//	request.Header.Set(helpers.ContentTypeHeader, "cup/tea")
+//	b, status, err := me.GenerateResponse(request)
+//
+//	assert.NoError(t, err)
+//	assert.Equal(t, 415, status)
+//
+//	var decoded map[string]any
+//	_ = json.Unmarshal(b, &decoded)
+//
+//	assert.Equal(t, "Media type not supported (415)", decoded["title"])
+//	assert.Equal(t, "The media type requested 'cup/tea' is not supported by this operation", decoded["detail"])
+//}
 
 func TestNewMockEngine_BuildResponse_SimpleValid_Pretty(t *testing.T) {
 	doc := resetGiftshopState()

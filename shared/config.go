@@ -7,6 +7,7 @@ import (
 	"embed"
 	"fmt"
 	"github.com/gobwas/glob"
+	"log/slog"
 	"regexp"
 )
 
@@ -38,12 +39,15 @@ type WiretapConfiguration struct {
 	MockMode            bool                          `json:"mockMode,omitempty" yaml:"mockMode,omitempty"`
 	MockModePretty      bool                          `json:"mockModePretty,omitempty" yaml:"mockModePretty,omitempty"`
 	Base                string                        `json:"base,omitempty" yaml:"base,omitempty"`
+	HAR                 string                        `json:"har,omitempty" yaml:"har,omitempty"`
+	HARValidate         bool                          `json:"harValidate,omitempty" yaml:"harValidate,omitempty"`
 	CompiledPathDelays  map[string]*CompiledPathDelay `json:"-" yaml:"-"`
 	CompiledVariables   map[string]*CompiledVariable  `json:"-" yaml:"-"`
 	Version             string                        `json:"-" yaml:"-"`
 	StaticPathsCompiled []glob.Glob                   `json:"-" yaml:"-"`
 	CompiledPaths       map[string]*CompiledPath      `json:"-"`
 	FS                  embed.FS                      `json:"-"`
+	Logger              *slog.Logger
 }
 
 func (wtc *WiretapConfiguration) CompilePaths() {
