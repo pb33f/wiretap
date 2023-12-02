@@ -57,6 +57,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
+require github.com/pb33f/harhar v0.0.0-20231130150228-142bcffba0f8
+
 require (
 	atomicgo.dev/schedule v0.1.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
