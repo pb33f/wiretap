@@ -28,11 +28,12 @@ export default css`
   
   sl-button::part(base) {
     font-family: var(--font-stack);
+    margin-top: 6px;
   }
   
   .filters-badge::part(base) {
     font-size: 0.5rem;
-    margin-top: 5px;
+    margin-top: 17px;
     margin-right: 5px;
     background-color: var(--primary-color);
   }

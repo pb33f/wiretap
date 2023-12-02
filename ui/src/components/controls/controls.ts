@@ -202,12 +202,12 @@ export class WiretapControlsComponent extends LitElement {
         }
 
         return html`
-            <sl-button @click=${this.openFilters} variant="default" size="medium" class="gear" circle outline>
-                <sl-icon name="funnel" label="filters" class="gear"></sl-icon>
+            <sl-button @click=${this.openFilters} variant="default" size="medium" circle outline>
+                <sl-icon name="funnel" label="filters"></sl-icon>
                 ${filtersBadge}
             </sl-button>
-            <sl-button @click=${this.openSettings} variant="default" size="medium" class="gear" circle outline>
-                <sl-icon name="gear" label="controls" class="gear"></sl-icon>
+            <sl-button @click=${this.openSettings} variant="default" size="medium" circle outline>
+                <sl-icon name="gear" label="controls" ></sl-icon>
             </sl-button>
             <sl-drawer label="wiretap controls" class="drawer-focus" id="controls-drawer">
                 <a id="downloadReport" style="display:none"></a>
