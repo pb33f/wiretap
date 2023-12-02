@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.4.0
 	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
 	github.com/pb33f/libopenapi v0.13.17
-	github.com/pb33f/libopenapi-validator v0.0.31
+	github.com/pb33f/libopenapi-validator v0.0.33
 	github.com/pb33f/ranch v0.4.0
 	github.com/pterm/pterm v0.12.71
 	golang.org/x/exp v0.0.0-20231127185646-65229373498e // indirect
