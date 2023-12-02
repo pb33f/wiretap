@@ -156,14 +156,16 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	ws.config.Logger.Info("[wiretap] handling API request", "url", request.HttpRequest.URL.String())
 
 	// check if we're going to fail hard on validation errors. (default is to skip this)
-	if ws.config.HardErrors {
+	if ws.config.HardErrors && !ws.config.MockMode {
 
 		// validate the request synchronously
 		requestErrors = ws.validateRequest(request, newReq)
 
 	} else {
 		// validate the request asynchronously
-		go ws.validateRequest(request, newReq)
+		if !ws.config.MockMode {
+			go ws.validateRequest(request, newReq)
+		}
 	}
 
 	// short-circuit if we're using mock mode, there is no API call to make.
@@ -176,7 +178,8 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	returnedResponse, returnedError = ws.callAPI(apiRequest)
 
 	if returnedResponse == nil && returnedError != nil {
-		config.Logger.Info("[wiretap] request failed", "url", apiRequest.URL.String(), "code", 500)
+		config.Logger.Info("[wiretap] request failed", "url", apiRequest.URL.String(), "code", 500,
+			"error", returnedError.Error())
 		go ws.broadcastResponseError(request, CloneExistingResponse(returnedResponse), returnedError)
 		request.HttpResponseWriter.WriteHeader(500)
 		wtError := shared.GenerateError("Unable to call API", 500, returnedError.Error(), "", returnedResponse)
@@ -246,6 +249,8 @@ func (ws *WiretapService) handleMockRequest(
 		}
 	}
 
+	ws.validateRequest(request, newReq)
+
 	// build a mock based on the request.
 	mock, mockStatus, mockErr := ws.mockEngine.GenerateResponse(request.HttpRequest)
 
@@ -272,24 +277,33 @@ func (ws *WiretapService) handleMockRequest(
 
 	// if there was an error building the mock, return a 404
 	if mockErr != nil && len(mock) == 0 {
-		config.Logger.Info("[wiretap] mock mode request error", "url", newReq.URL.String(), "code", 404)
+		config.Logger.Error("[wiretap] mock mode request error", "url", newReq.URL.String(), "code", 404, "error", mockErr.Error())
 		request.HttpResponseWriter.WriteHeader(404)
 		wtError := shared.GenerateError("[mock error] unable to generate mock for request", 404, mockErr.Error(), "", mock)
 		_, _ = request.HttpResponseWriter.Write(shared.MarshalError(wtError))
+
+		// validate response async
+		resp.StatusCode = mockStatus
+		go ws.broadcastResponse(request, resp)
 		return
 	}
 
 	// if the mock exists, but there was an error, return the error
 	if mockErr != nil && len(mock) > 0 {
-		config.Logger.Info("[wiretap] mock mode request error", "url", newReq.URL.String(), "code", mockStatus)
+		config.Logger.Warn("[wiretap] mock mode request problem", "url", newReq.URL.String(), "code", mockStatus, "violation", mockErr.Error())
 		request.HttpResponseWriter.WriteHeader(mockStatus)
 		wtError := shared.GenerateError("unable to serve mocked response", mockStatus, mockErr.Error(), "", nil)
 		_, _ = request.HttpResponseWriter.Write(shared.MarshalError(wtError))
+
+		// validate response async
+		resp.StatusCode = mockStatus
+		go ws.broadcastResponse(request, resp)
 		return
 	}
 
 	// validate response async
-	ws.broadcastResponse(request, resp)
+	resp.StatusCode = mockStatus
+	go ws.broadcastResponse(request, resp)
 
 	// if the mock is empty
 	request.HttpResponseWriter.WriteHeader(mockStatus)
