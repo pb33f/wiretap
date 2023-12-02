@@ -139,7 +139,7 @@ export class HttpTransactionContainerComponent extends LitElement {
 
     handleSpecChange(value: string) {
         this._specValue = value;
-        if (this, this._specEditor) {
+        if (this?._specEditor && value) {
             this._specEditor.setValue(value)
         }
     }
