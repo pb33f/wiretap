@@ -392,7 +392,7 @@ var (
 			}
 
 			// lets create a logger first.
-			logLevel := pterm.LogLevelError
+			logLevel := pterm.LogLevelWarn
 			if debug {
 				logLevel = pterm.LogLevelDebug
 			}
