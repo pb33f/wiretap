@@ -277,10 +277,10 @@ github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAl
 github.com/onsi/gomega v1.19.0 h1:4ieX6qQjPP/BfC3mpsAtIGGlxTWPeA3Inl/7DtXw1tw=
 github.com/onsi/gomega v1.19.0/go.mod h1:LY+I3pBVzYsTBU1AnDwOSxaYi9WoWiqgwooUqq9yPro=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
-github.com/pb33f/libopenapi v0.13.17 h1:FbY5Nx3xmALZf7TtdITXRSyeNZhB7U3COYbkAisX2eY=
-github.com/pb33f/libopenapi v0.13.17/go.mod h1:Lv2eEtsAtbRFlF8hjH82L8SIGoUNgemMVoKoB6A9THk=
-github.com/pb33f/libopenapi-validator v0.0.33 h1:5kyFYpimhSQDBCaNuxS8aPKtHvvOYIOdtJIqIPQKQ3o=
-github.com/pb33f/libopenapi-validator v0.0.33/go.mod h1:IBlvH/gJvBpcFHzxtVQBI3brd1LFZwBJtArAgwRKSug=
+github.com/pb33f/libopenapi v0.13.21 h1:xT0Av3TdK5C3wC+SidpUMTQedA+ZE8C2RCIM6XQbRAE=
+github.com/pb33f/libopenapi v0.13.21/go.mod h1:Lv2eEtsAtbRFlF8hjH82L8SIGoUNgemMVoKoB6A9THk=
+github.com/pb33f/libopenapi-validator v0.0.34 h1:Vaag5XVZkcgi9gzaskqec+osgboe3isgd3cOFJg3KxY=
+github.com/pb33f/libopenapi-validator v0.0.34/go.mod h1:IBlvH/gJvBpcFHzxtVQBI3brd1LFZwBJtArAgwRKSug=
 github.com/pb33f/ranch v0.4.0 h1:fve9Lozc9m0IGkygWD3EFkBtbRua+2gyi9yxYHvufh4=
 github.com/pb33f/ranch v0.4.0/go.mod h1:LfZITTWTb1quxakzKr2RErDdSGOrxV/dpai9DK4Aa6k=
 github.com/pelletier/go-toml v1.9.3 h1:zeC5b1GviRUyKYd6OJPvBU/mcVDVoL1OhT17FCt5dSQ=
@@ -384,8 +384,8 @@ golang.org/x/exp v0.0.0-20191227195350-da58074b4299/go.mod h1:2RIsYlXP63K8oxa1u0
 golang.org/x/exp v0.0.0-20200119233911-0405dc783f0a/go.mod h1:2RIsYlXP63K8oxa1u096TMicItID8zy7Y6sNkU49FU4=
 golang.org/x/exp v0.0.0-20200207192155-f17229e696bd/go.mod h1:J/WKrq2StrnmMY6+EHIKF9dgMWnmCNThgcyBT1FY9mM=
 golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6/go.mod h1:3jZMyOhIsHpP37uCMkUooju7aAi5cS1Q23tOzKc+0MU=
-golang.org/x/exp v0.0.0-20231127185646-65229373498e h1:Gvh4YaCaXNs6dKTlfgismwWZKyjVZXwOPfIyUaqU3No=
-golang.org/x/exp v0.0.0-20231127185646-65229373498e/go.mod h1:iRJReGqOEeBhDZGkGbynYwcHlctCvnjTYIamk7uXpHI=
+golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb h1:c0vyKkb6yr3KR7jEfJaOSv4lG7xPkbN6r52aJz1d8a8=
+golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb/go.mod h1:iRJReGqOEeBhDZGkGbynYwcHlctCvnjTYIamk7uXpHI=
 golang.org/x/image v0.0.0-20190227222117-0694c2d4d067/go.mod h1:kZ7UVZpmo3dzQBMxlp+ypCbDeSB+sBbTgSJuh5dn5js=
 golang.org/x/image v0.0.0-20190802002840-cff245a6509b/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
 golang.org/x/lint v0.0.0-20181026193005-c67002cb31c3/go.mod h1:UVdnD1Gm6xHRNCYTkRU2/jEulfH38KcIWyp/GAMgvoE=
