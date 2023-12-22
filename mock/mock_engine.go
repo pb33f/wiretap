@@ -45,7 +45,7 @@ func (rme *ResponseMockEngine) GenerateResponse(request *http.Request) ([]byte, 
 
 func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation *v3.Operation) error {
 	// get out early if there is nothing to do.
-	if len(rme.doc.Components.SecuritySchemes) <= 0 {
+	if rme.doc.Components.SecuritySchemes.Len() <= 0 {
 		return nil
 	}
 
@@ -54,7 +54,9 @@ func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation
 	// global security
 	if len(rme.doc.Security) > 0 {
 		for _, securityRequirement := range rme.doc.Security {
-			for key, scopes := range securityRequirement.Requirements {
+			for securityPairs := securityRequirement.Requirements.First(); securityPairs != nil; securityPairs = securityPairs.Next() {
+				key := securityPairs.Key()
+				scopes := securityPairs.Value()
 				mustApply[key] = scopes
 			}
 		}
@@ -63,7 +65,9 @@ func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation
 	// operation security
 	if len(operation.Security) > 0 {
 		for _, securityRequirement := range operation.Security {
-			for key, scopes := range securityRequirement.Requirements {
+			for securityPairs := securityRequirement.Requirements.First(); securityPairs != nil; securityPairs = securityPairs.Next() {
+				key := securityPairs.Key()
+				scopes := securityPairs.Value()
 				mustApply[key] = scopes
 			}
 		}
@@ -75,7 +79,7 @@ func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation
 
 		for scope, _ := range mustApply {
 
-			securityComponent := rme.doc.Components.SecuritySchemes[scope]
+			securityComponent := rme.doc.Components.SecuritySchemes.GetOrZero(scope)
 			if securityComponent != nil {
 
 				// check if we have a security scheme that matches the type.
@@ -145,8 +149,8 @@ func (rme *ResponseMockEngine) findOperation(request *http.Request, pathItem *v3
 		return nil
 	}
 	ops := pathItem.GetOperations()
-	if len(ops) > 0 {
-		op := pathItem.GetOperations()[strings.ToLower(request.Method)]
+	if ops.Len() > 0 {
+		op := pathItem.GetOperations().GetOrZero(strings.ToLower(request.Method))
 		return op
 	}
 	return nil
@@ -301,8 +305,9 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 
 func (rme *ResponseMockEngine) findLowestSuccessCode(operation *v3.Operation) string {
 	var lowestCode = 299
-	for key := range operation.Responses.Codes {
-		code, _ := strconv.Atoi(key)
+
+	for codePairs := operation.Responses.Codes.First(); codePairs != nil; codePairs = codePairs.Next() {
+		code, _ := strconv.Atoi(codePairs.Key())
 		if code < lowestCode && code >= 200 {
 			lowestCode = code
 		}
@@ -323,23 +328,23 @@ func (rme *ResponseMockEngine) lookForResponseCodes(
 	// check if the media type exists in the response.
 	for _, code := range resultCodes {
 
-		resp := op.Responses.Codes[code]
+		resp := op.Responses.Codes.GetOrZero(code)
 		if resp == nil {
 			continue
 		}
-		responseBody := resp.Content[mediaTypeString]
+		responseBody := resp.Content.GetOrZero(mediaTypeString)
 		if responseBody != nil {
 			// try and extract a default JSON response
 			return responseBody, false
 		} else {
-			responseBody = resp.Content["application/json"]
+			responseBody = resp.Content.GetOrZero("application/json")
 			return responseBody, false
 		}
 	}
 
 	if op.Responses.Default != nil && op.Responses.Default.Content != nil {
-		if op.Responses.Default.Content[mediaTypeString] != nil {
-			return op.Responses.Default.Content[mediaTypeString], false
+		if op.Responses.Default.Content.GetOrZero(mediaTypeString) != nil {
+			return op.Responses.Default.Content.GetOrZero(mediaTypeString), false
 		}
 	}
 
