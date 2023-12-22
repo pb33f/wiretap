@@ -129,8 +129,8 @@ func TestNewMockEngine_ValidateSecurity_FailAPIKey_Query(t *testing.T) {
 	operation := me.findOperation(request, path)
 
 	// mutate securityScheme to be a query param
-	doc.Components.SecuritySchemes["ApiKeyAuth"].In = "query"
-	doc.Components.SecuritySchemes["ApiKeyAuth"].Name = "pizza-cake-burger"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").In = "query"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").Name = "pizza-cake-burger"
 
 	err := me.ValidateSecurity(request, operation)
 	assert.Error(t, err)
@@ -147,8 +147,8 @@ func TestNewMockEngine_ValidateSecurity_PassAPIKey_Query(t *testing.T) {
 	operation := me.findOperation(request, path)
 
 	// mutate securityScheme to be a query param
-	doc.Components.SecuritySchemes["ApiKeyAuth"].In = "query"
-	doc.Components.SecuritySchemes["ApiKeyAuth"].Name = "pizza-burger-cake"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").In = "query"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").Name = "pizza-burger-cake"
 
 	err := me.ValidateSecurity(request, operation)
 	assert.NoError(t, err)
@@ -164,8 +164,8 @@ func TestNewMockEngine_ValidateSecurity_FailAPIKey_Cookie(t *testing.T) {
 	operation := me.findOperation(request, path)
 
 	// mutate securityScheme to be a query param
-	doc.Components.SecuritySchemes["ApiKeyAuth"].In = "cookie"
-	doc.Components.SecuritySchemes["ApiKeyAuth"].Name = "burger-chips-beer"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").In = "cookie"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").Name = "burger-chips-beer"
 
 	err := me.ValidateSecurity(request, operation)
 	assert.Error(t, err)
@@ -186,8 +186,8 @@ func TestNewMockEngine_ValidateSecurity_PassAPIKey_Cookie(t *testing.T) {
 	operation := me.findOperation(request, path)
 
 	// mutate securityScheme to be a query param
-	doc.Components.SecuritySchemes["ApiKeyAuth"].In = "cookie"
-	doc.Components.SecuritySchemes["ApiKeyAuth"].Name = "burger-chips-beer"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").In = "cookie"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").Name = "burger-chips-beer"
 
 	err := me.ValidateSecurity(request, operation)
 	assert.NoError(t, err)
@@ -204,8 +204,8 @@ func TestNewMockEngine_ValidateSecurity_FailHTTP_Bearer(t *testing.T) {
 	operation := me.findOperation(request, path)
 
 	// mutate securityScheme to be a query param
-	doc.Components.SecuritySchemes["ApiKeyAuth"].Type = "http"
-	doc.Components.SecuritySchemes["ApiKeyAuth"].Scheme = "bearer"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").Type = "http"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").Scheme = "bearer"
 
 	err := me.ValidateSecurity(request, operation)
 	assert.Error(t, err)
@@ -224,8 +224,8 @@ func TestNewMockEngine_ValidateSecurity_PassHTTP_Bearer(t *testing.T) {
 	operation := me.findOperation(request, path)
 
 	// mutate securityScheme to be a query param
-	doc.Components.SecuritySchemes["ApiKeyAuth"].Type = "http"
-	doc.Components.SecuritySchemes["ApiKeyAuth"].Scheme = "bearer"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").Type = "http"
+	doc.Components.SecuritySchemes.GetOrZero("ApiKeyAuth").Scheme = "bearer"
 
 	err := me.ValidateSecurity(request, operation)
 	assert.NoError(t, err)
