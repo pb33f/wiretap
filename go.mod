@@ -3,13 +3,13 @@ module github.com/pb33f/wiretap
 go 1.21
 
 require (
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
-	github.com/pb33f/libopenapi v0.13.21
-	github.com/pb33f/libopenapi-validator v0.0.34
+	github.com/pb33f/libopenapi v0.14.4
+	github.com/pb33f/libopenapi-validator v0.0.37
 	github.com/pb33f/ranch v0.4.0
-	github.com/pterm/pterm v0.12.71
-	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
+	github.com/pterm/pterm v0.12.72
+	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848 // indirect
 )
 
 require (
@@ -49,9 +49,9 @@ require (
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
