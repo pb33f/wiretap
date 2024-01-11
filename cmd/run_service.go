@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"errors"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/plank/pkg/server"
@@ -14,7 +13,6 @@ import (
 	"github.com/pb33f/wiretap/report"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
-	"github.com/pterm/pterm"
 	"os"
 	"reflect"
 	"strconv"
@@ -24,23 +22,6 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.Platf
 
 	var doc libopenapi.Document
 	var err error
-	// load the openapi spec
-	if wiretapConfig.Contract != "" {
-		doc, err = loadOpenAPISpec(wiretapConfig.Contract, wiretapConfig.Base)
-		if err != nil {
-			return nil, err
-		}
-
-		// build a model
-		_, errs := doc.BuildV3Model()
-		if len(errs) > 0 {
-			return nil, errors.Join(errs...)
-		}
-	}
-
-	if doc != nil {
-		pterm.Info.Printf("OpenAPI Specification: '%s' parsed and read\n", wiretapConfig.Contract)
-	}
 
 	// create a store and put the wiretapConfig in it.
 	storeManager := bus.GetBus().GetStoreManager()
