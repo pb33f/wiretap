@@ -31,7 +31,7 @@ func FindPathDelay(path string, configuration *shared.WiretapConfiguration) int 
 
 func RewritePath(path string, configuration *shared.WiretapConfiguration) string {
 	paths := FindPaths(path, configuration)
-	var replaced string
+	var replaced string = path
 	if len(paths) > 0 {
 		// extract first path
 		pathConfig := paths[0]

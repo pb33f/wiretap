@@ -249,10 +249,16 @@ func (ws *WiretapService) handleMockRequest(
 		}
 	}
 
-	ws.validateRequest(request, newReq)
-
 	// build a mock based on the request.
 	mock, mockStatus, mockErr := ws.mockEngine.GenerateResponse(request.HttpRequest)
+
+	ws.validateRequest(request, newReq)
+
+	//for i := range validationErrs {
+	//	for y := range validationErrs[i].SchemaValidationErrors {
+	//		validationErrs[i].SchemaValidationErrors[y].ReferenceExample = ws.mockEngine.
+	//	}
+	//}
 
 	headers := make(map[string]any)
 
