@@ -49,16 +49,21 @@ export class HeaderComponent extends LitElement {
                 </wiretap-header-metrics>`
         }
 
+        // return html`
+        //     <header class="site-header">
+        //         <div class="logo">
+        //             <span class="caret">$</span>
+        //             <span class="name"><a href="https://pb33f.io?ref=wiretap-ui">wiretap</a></span>
+        //         </div>
+        //         <div class="header-space">
+        //             ${headerMetrics}
+        //         </div>
+        //         <wiretap-controls></wiretap-controls>
+        //     </header>`
+
         return html`
-            <header class="site-header">
-                <div class="logo">
-                    <span class="caret">$</span>
-                    <span class="name"><a href="https://pb33f.io?ref=wiretap-ui">wiretap</a></span>
-                </div>
-                <div class="header-space">
-                    ${headerMetrics}
-                </div>
-                <wiretap-controls></wiretap-controls>
-            </header>`
+            ${headerMetrics}
+            <wiretap-controls></wiretap-controls>
+        `
     }
 }

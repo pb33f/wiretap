@@ -16,9 +16,11 @@ import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-xml-doc';
 import 'prismjs/themes/prism-okaidia.css';
 import sharedCss from "@/components/shared.css";
-import {KVViewComponent} from "@/components/kv-view/kv-view";
-import {PropertyViewComponent} from "@/components/property-view/property-view";
+import {KVViewComponent} from "@pb33f/cowboy-components/components/kv-view/kv-view";
+import {HttpPropertyViewComponent} from "@pb33f/cowboy-components/components/http-property-view/http-property-view";
 import requestViewCss from "./request-body.css";
+import {languages} from "monaco-editor";
+import json = languages.json;
 
 @customElement('request-body-view')
 export class RequestBodyViewComponent extends LitElement {
@@ -52,15 +54,24 @@ export class RequestBodyViewComponent extends LitElement {
             Content Type: <strong>${exct}</strong>
         </span>`;
 
+        let jsonBody = '[unable to parse JSON body]';
+        let parsedBody = null;
+        try {
+            parsedBody = JSON.parse(req.requestBody);
+            JSON.stringify(parsedBody, null, 2)
+        } catch (e) {
+            jsonBody += ": " + e.message;
+        }
+
         switch (exct) {
             case ContentTypeJSON:
                 return html`${ct}
-                <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(req.requestBody), null, 2),
+                <pre><code>${unsafeHTML(Prism.highlight(jsonBody,
                         Prism.languages.json, 'json'))}</code></pre>`;
 
             case ContentTypeXML:
                 return html`${ct}
-                <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(req.requestBody), null, 2),
+                <pre><code>${unsafeHTML(Prism.highlight(jsonBody,
                         Prism.languages.xml, 'xml'))}</code></pre>`;
 
             case ContentTypeOctetStream:
@@ -72,7 +83,7 @@ export class RequestBodyViewComponent extends LitElement {
                 </div>`;
             case ContentTypeHtml:
                 return html`${ct}
-                <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(req.requestBody), null, 2),
+                <pre><code>${unsafeHTML(Prism.highlight(jsonBody,
                         Prism.languages.xml, 'xml'))}</code></pre>`;
 
             case ContentTypeFormEncoded:
@@ -82,12 +93,12 @@ export class RequestBodyViewComponent extends LitElement {
                 return html`${ct}${kv}`
 
             case ContentTypeMultipartForm:
-                const formProps = new PropertyViewComponent()
+                const formProps = new HttpPropertyViewComponent()
                 formProps.propertyLabel = "Form Key";
                 formProps.typeLabel = "Type";
 
                 // extract pre-rendered form data from wiretap
-                const parts: FormPart[] = JSON.parse(req.requestBody) as FormPart[];
+                const parts: FormPart[] = parsedBody as FormPart[];
                 for (const part of parts) {
                     if (part.value?.length > 0) {
                         part.type = 'field';

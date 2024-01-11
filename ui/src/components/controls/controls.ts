@@ -202,13 +202,13 @@ export class WiretapControlsComponent extends LitElement {
         }
 
         return html`
-            <sl-button @click=${this.openFilters} variant="default" size="medium" circle outline>
-                <sl-icon name="funnel" label="filters"></sl-icon>
+          
+            <sl-icon-button @click=${this.openFilters} name="funnel" label="filers">
                 ${filtersBadge}
-            </sl-button>
-            <sl-button @click=${this.openSettings} variant="default" size="medium" circle outline>
-                <sl-icon name="gear" label="controls" ></sl-icon>
-            </sl-button>
+            </sl-icon-button>
+            <sl-icon-button @click=${this.openSettings} name="gear" label="controls">
+            </sl-icon-button>
+            <pb33f-theme-switcher></pb33f-theme-switcher>
             <sl-drawer label="wiretap controls" class="drawer-focus" id="controls-drawer">
                 <a id="downloadReport" style="display:none"></a>
                 <wiretap-controls-settings globalDelay=${this._controls?.globalDelay}

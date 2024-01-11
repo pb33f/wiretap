@@ -361,19 +361,22 @@ export class WiretapComponent extends LitElement {
 
         if (noSpec) {
             return html`
-            <wiretap-header
-                    @wipeData=${this.wipeData}
-                    requests="${this.requestCount.toFixed(this._headerStatsDefaultPrecision)}"
-                    responses="${this.responseCount.toFixed(this._headerStatsDefaultPrecision)}"
-                    violations="${this.violationsCount.toFixed(this._headerStatsDefaultPrecision)}"
-                    violationsDelta="${this.violatedTransactions.toFixed(this._headerStatsDefaultPrecision)}"
-                    compliance="${this.complianceLevel.toFixed(this._complianceStatPrecision)}"
-                    noSpec>
-            </wiretap-header>
-            ${transaction}`
+                <pb33f-header name="wiretap" url="https://pb33f.io/wiretap/?ref=wiretap">
+                    <wiretap-header
+                            @wipeData=${this.wipeData}
+                            requests="${this.requestCount.toFixed(this._headerStatsDefaultPrecision)}"
+                            responses="${this.responseCount.toFixed(this._headerStatsDefaultPrecision)}"
+                            violations="${this.violationsCount.toFixed(this._headerStatsDefaultPrecision)}"
+                            violationsDelta="${this.violatedTransactions.toFixed(this._headerStatsDefaultPrecision)}"
+                            compliance="${this.complianceLevel.toFixed(this._complianceStatPrecision)}"
+                            noSpec>
+                    </wiretap-header>
+                </pb33f-header>
+                ${transaction}`
         }
         return html`
-            <wiretap-header
+            <pb33f-header name="wiretap" url="https://pb33f.io/wiretap/?ref=wiretap">
+                <wiretap-header
                     @wipeData=${this.wipeData}
                     requests="${this.requestCount.toFixed(this._headerStatsDefaultPrecision)}"
                     responses="${this.responseCount.toFixed(this._headerStatsDefaultPrecision)}"
@@ -381,6 +384,9 @@ export class WiretapComponent extends LitElement {
                     violationsDelta="${this.violatedTransactions.toFixed(this._headerStatsDefaultPrecision)}"
                     compliance="${this.complianceLevel.toFixed(this._complianceStatPrecision)}">
             </wiretap-header>
+                
+            </pb33f-header>
+            
             ${transaction}`
     }
 }

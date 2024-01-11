@@ -86,7 +86,7 @@ export default css`
   .token.attr-value,
   .token.function,
   .token.class-name {
-    color: var(--terminal-green);
+    color: var(--terminal-text);
   }
 
   .token.keyword {
