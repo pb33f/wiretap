@@ -4,8 +4,8 @@
 package har
 
 import (
-	"encoding/json"
 	"fmt"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/pb33f/harhar"
 )
 
@@ -14,7 +14,9 @@ func BuildHAR(har []byte) (*harhar.HAR, error) {
 		return nil, fmt.Errorf("HAR bytes are empty")
 	}
 
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
 	var harFile harhar.HAR
+
 	err := json.Unmarshal(har, &harFile)
 	if err != nil {
 		return nil, err

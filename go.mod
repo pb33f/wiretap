@@ -5,11 +5,12 @@ go 1.21
 require (
 	github.com/google/uuid v1.5.0
 	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
+	github.com/pb33f/harhar v0.0.0-20240111233202-e393c2a39a60
 	github.com/pb33f/libopenapi v0.14.4
-	github.com/pb33f/libopenapi-validator v0.0.37
+	github.com/pb33f/libopenapi-validator v0.0.39-0.20240111232943-e6f013207fcc
 	github.com/pb33f/ranch v0.4.0
-	github.com/pterm/pterm v0.12.72
-	golang.org/x/exp v0.0.0-20231219180239-dc181d75b848 // indirect
+	github.com/pterm/pterm v0.12.74
+	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e // indirect
 )
 
 require (
@@ -57,10 +58,15 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/pb33f/harhar v0.0.0-20231130150228-142bcffba0f8
-
 require (
 	atomicgo.dev/schedule v0.1.0 // indirect
+	github.com/bahlo/generic-list-go v0.2.0 // indirect
+	github.com/buger/jsonparser v1.1.1 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	golang.org/x/net v0.14.0 // indirect
 )
