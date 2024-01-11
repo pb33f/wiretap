@@ -1,11 +1,12 @@
-import {customElement, state, property} from "lit/decorators.js";
+import {customElement, state} from "lit/decorators.js";
 import {map} from "lit/directives/map.js";
 
 import {LitElement, TemplateResult} from "lit";
 import {html} from "lit";
 
-import sharedCss from "@/components/shared.css";
-import propertyViewComponentCss from "@/components/property-view/property-view.css";
+import sharedCss from "../shared.css";
+// @ts-ignore
+import propertyViewComponentCss from "@pb33f/cowboy-components/components/http-property-view/http-property-view.css.js";
 import {SchemaValidationFailure} from "@/model/http_transaction";
 import {ViolationLocation, ViolationLocationSelectionEvent} from "@/model/events";
 import violationCss from "@/components/violation/violation.css";
@@ -20,7 +21,8 @@ import {SlRadioButton, SlRadioGroup, SlSwitch} from "@shoelace-style/shoelace";
 
 enum SchemaType {
     SCHEMA = 'schema',
-    OBJECT = 'object'
+    OBJECT = 'object',
+    EXAMPLE = 'example'
 }
 
 @customElement('violation-details-view')
@@ -33,7 +35,6 @@ export class ViolationDetailsComponent extends LitElement {
 
     @state()
     private showSchemaObjects = false;
-
 
     @state()
     private _data: SchemaValidationFailure[];
@@ -68,12 +69,6 @@ export class ViolationDetailsComponent extends LitElement {
                 rb.disabled = !this.showSchemaObjects;
             }
         )
-
-        // console.log(sw?.checked);
-
-        // const sw: SlSwitch = this.renderRoot.querySelector('sl-switch') as SlSwitch;
-        // this.showSchemaObjects = sw.checked;
-
     }
 
     schemaViolationObjectSwitch() {
@@ -108,6 +103,9 @@ export class ViolationDetailsComponent extends LitElement {
                 <sl-radio-button class="schema-radio-button" size="small" value='${SchemaType.OBJECT}'
                                  ${!this.showSchemaObjects ? html`disabled` : html`disabled`}>Validated Object
                 </sl-radio-button>
+                <sl-radio-button class="schema-radio-button" size="small" value='${SchemaType.EXAMPLE}'
+                                 ${!this.showSchemaObjects ? html`disabled` : html`disabled`}>Example Object
+                </sl-radio-button>
             </sl-radio-group>`
 
 
@@ -140,6 +138,19 @@ export class ViolationDetailsComponent extends LitElement {
                                 <pre><code>${unsafeHTML(Prism.highlight(i.referenceObject,
                                         Prism.languages.json, 'json'))}</code></pre>
                             </div>`
+                    }
+
+
+                    if (this.selectedViolationView === SchemaType.EXAMPLE) {
+                        // schemaView = html`
+                        //     <div class="schema-violation-object">
+                        //         <pre><code>${unsafeHTML(Prism.highlight(JSON.stringify(JSON.parse(i.referenceExample),null, 2),
+                        //         Prism.languages.json, 'json'))}</code></pre>
+                        //     </div>
+                        // `
+                        schemaView = html`
+                            not yet implemented!
+                        `
                     }
 
                     if (this.showSchemaObjects) {

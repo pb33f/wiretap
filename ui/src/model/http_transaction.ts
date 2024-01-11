@@ -19,6 +19,7 @@ export interface SchemaValidationFailure {
     location?: string;
     referenceSchema?: string;
     referenceObject?: string;
+    referenceExample?: string;
     line?: number;
     column?: number;
 }

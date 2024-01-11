@@ -4,7 +4,7 @@ import {map} from "lit/directives/map.js";
 import {LitElement, TemplateResult} from "lit";
 import {BuildLiveTransactionFromState, HttpTransaction} from "@/model/http_transaction";
 import transactionViewComponentCss from "./transaction-view.css";
-import {KVViewComponent} from "@/components/kv-view/kv-view";
+import {KVViewComponent} from "@pb33f/cowboy-components/components/kv-view/kv-view";
 import sharedCss from "@/components/shared.css";
 import {SlTab, SlTabGroup} from "@shoelace-style/shoelace";
 import {
@@ -368,11 +368,11 @@ export class HttpTransactionViewComponent extends LitElement {
 
             // create a timeline component for each sibling
             const timelineItem = html`
-                <wiretap-timeline-item>
+                <pb33f-timeline-item>
                     <span slot="time" style="${tsCss}">${tsFormat}</span>
                     <sl-icon name="${linkIcon}" slot="icon" style="${linkCss}"></sl-icon>
                     <div slot="content">${siblingComponent}</div>
-                </wiretap-timeline-item>`
+                </pb33f-timeline-item>`
 
             timelineItems.push(timelineItem);
 
@@ -400,9 +400,9 @@ export class HttpTransactionViewComponent extends LitElement {
                     <span class="total-time"><span class="time-value">${tsTotalFormat}</span></span>
                 </div>
             </div>
-            <wiretap-timeline>
+            <pb33f-timeline>
                 ${timelineItems.reverse()}
-            </wiretap-timeline>
+            </pb33f-timeline>
             <div>${siblings.length <= 0 ? this.noOtherLinks() : null}</div>`
     }
 

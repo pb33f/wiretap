@@ -36,7 +36,7 @@ export default css`
   h3 {
     margin-top: 5px;
     margin-bottom: 15px;
-    font-family: var(--font-stack-heading);
+    font-family: var(--font-stack-heading), monospace;
     color: var(--primary-color);
   }
 

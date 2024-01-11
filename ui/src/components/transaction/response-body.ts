@@ -3,7 +3,6 @@ import {html, LitElement} from "lit";
 import {HttpResponse} from "@/model/http_transaction";
 import {
     ContentTypeHtml,
-    ContentTypeJSON,
     ContentTypeOctetStream,
     ContentTypeXML,
     ExtractContentTypeFromResponse
@@ -14,7 +13,7 @@ import Prism from "prismjs";
 import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-xml-doc';
 import 'prismjs/themes/prism-okaidia.css';
-import sharedCss from "@/components/shared.css";
+import sharedCss from "../shared.css";
 import responseBodyCss from "./response-body.css";
 
 @customElement('response-body-view')

@@ -66,7 +66,7 @@ export default css`
     background: var(--background-color);
     border-radius: 0;
     text-align: center;
-    font-family: var(--font-stack);
+    font-family: var(--font-stack), monospace;
     width:100%;
   }
 

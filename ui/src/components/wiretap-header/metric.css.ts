@@ -16,12 +16,12 @@ export default css`
   
   .title {
     font-size: 0.7rem;
-    color: var(--dark-font-color)
+    color: var(--font-color-sub2)
   }
   
   .value {
     font-size: 1.3rem;
-    font-weight: bold;
+    font-family: var(--font-stack-bold), sans-serif;
   }
   
   .error {
@@ -45,6 +45,6 @@ export default css`
   }
 
   .ok {
-    color: var(--terminal-green);
+    color: var(--terminal-text);
   }
 `

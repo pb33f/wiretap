@@ -15,14 +15,14 @@ export default css`
   }
   
   .transaction:hover{
-    background: var(--transaction-background-color-hover);
+    //background: var(--transaction-background-color-hover);
     cursor: pointer;
     border-bottom: 1px dashed var(--secondary-color);
     border-top: 1px dashed var(--secondary-color);
   }
 
   .transaction:active {
-    background: var(--transaction-background-color-active);
+    //background: var(--transaction-background-color-active);
     border-bottom: 1px dashed var(--primary-color);
     border-top: 1px dashed var(--primary-color);
     color: var(--primary-color);
@@ -36,8 +36,7 @@ export default css`
     color: var(--primary-color);
   }
   
-
-
+    
   .tab::part(base) {
     font: var(--font-stack);
   }
@@ -62,14 +61,14 @@ export default css`
   }
 
   .valid {
-    color: var(--terminal-green);
+    color: var(--terminal-text);
     font-size: 25px;
     margin-top: 2px;
     margin-right: 12px;
   }
 
   .failed {
-    color: var(--dark-font-color);
+    color: var(--font-color-sub2);
     font-size: 25px;
     margin-top: 2px;
     margin-right: 12px;
@@ -99,7 +98,7 @@ export default css`
   .chain sl-icon {
     vertical-align: bottom;
     font-size: 21px;
-    color: var(--dark-font-color);
+    color: var(--font-color-sub2);
   }
 
   .chain sl-icon:hover {
@@ -122,7 +121,7 @@ export default css`
   .request-time sl-icon {
     vertical-align: bottom;
     font-size: 15px;
-    color: var(--dark-font-color);
+    color: var(--font-color-sub2);
   }
   
 

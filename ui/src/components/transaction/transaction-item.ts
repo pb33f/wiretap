@@ -2,7 +2,7 @@ import {customElement, property, state} from "lit/decorators.js";
 import {html, LitElement, TemplateResult} from "lit";
 import {HttpTransaction} from "@/model/http_transaction";
 import transactionComponentCss from "@/components/transaction/transaction-item.css";
-import {ExchangeMethod} from "@/model/exchange_method";
+import {ExchangeMethod} from "../../../../../cowboy-components/src/model/exchange_method";
 import Prism from 'prismjs'
 import 'prismjs/components/prism-javascript'
 import 'prismjs/themes/prism-okaidia.css'
@@ -147,7 +147,7 @@ export class HttpTransactionItemComponent extends LitElement {
         return html`
             <div class="${tClass}" @click="${this.setActive}">
                 <header>
-                    <sl-tag variant="${ExchangeMethod(req.method)}" class="method">${req.method}</sl-tag>
+                   <pb33f-http-method method="${req.method}"></pb33f-http-method>
                     ${decodeURI(req.path)}
               
                 </header>

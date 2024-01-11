@@ -23,6 +23,7 @@
     "npm-install"
   ],
   "dependencies": {
+    "@stomp/stompjs": "^7.0.0",
     "global": "^4.4.0",
     "node-fetch": "^3.3.1",
     "tar": "^6.1.15"

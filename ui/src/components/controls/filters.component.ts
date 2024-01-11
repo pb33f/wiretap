@@ -2,7 +2,7 @@ import {customElement, state, query, property} from "lit/decorators.js";
 import {html, LitElement} from "lit";
 import sharedCss from "@/components/shared.css";
 import filtersComponentCss from "./filters.css";
-import {ExchangeMethod} from "@/model/exchange_method";
+import {ExchangeMethod} from "../../../../../cowboy-components/src/model/exchange_method";
 import {WiretapFilters} from "@/model/controls";
 import {GlobalDelayChangedEvent} from "@/model/events";
 import {SlInput} from "@shoelace-style/shoelace";

@@ -7,7 +7,6 @@ import {SchemaValidationFailure, ValidationError} from "@/model/http_transaction
 import {ViolationLocation, ViolationLocationSelectionEvent} from "@/model/events";
 
 import sharedCss from "@/components/shared.css";
-import {Property} from "@/components/property-view/property-view";
 import {ViolationDetailsComponent} from "@/components/violation/violation-details";
 
 @customElement('wiretap-violation-view')
