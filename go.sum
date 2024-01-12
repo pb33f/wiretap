@@ -299,6 +299,8 @@ github.com/pb33f/libopenapi-validator v0.0.39-0.20240111232943-e6f013207fcc h1:W
 github.com/pb33f/libopenapi-validator v0.0.39-0.20240111232943-e6f013207fcc/go.mod h1:nWO4jDe3dJwRskfEl2SAtV9LlCJ5ClCB+OBw2E7splo=
 github.com/pb33f/libopenapi-validator v0.0.39-0.20240112004221-78d6c684d418 h1:L8xgjPpWPZkpIuITqHx/2GUd+M+pAcOAoQmie1HkfNE=
 github.com/pb33f/libopenapi-validator v0.0.39-0.20240112004221-78d6c684d418/go.mod h1:nWO4jDe3dJwRskfEl2SAtV9LlCJ5ClCB+OBw2E7splo=
+github.com/pb33f/libopenapi-validator v0.0.39-0.20240112005348-95726f10b0f6 h1:8L2G7VGA7A/doBenUDHy+If09AOLf6v9uaDDAp9+HxQ=
+github.com/pb33f/libopenapi-validator v0.0.39-0.20240112005348-95726f10b0f6/go.mod h1:nWO4jDe3dJwRskfEl2SAtV9LlCJ5ClCB+OBw2E7splo=
 github.com/pb33f/ranch v0.4.0 h1:fve9Lozc9m0IGkygWD3EFkBtbRua+2gyi9yxYHvufh4=
 github.com/pb33f/ranch v0.4.0/go.mod h1:LfZITTWTb1quxakzKr2RErDdSGOrxV/dpai9DK4Aa6k=
 github.com/pelletier/go-toml v1.9.3 h1:zeC5b1GviRUyKYd6OJPvBU/mcVDVoL1OhT17FCt5dSQ=
