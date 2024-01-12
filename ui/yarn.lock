@@ -227,10 +227,10 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@pb33f/cowboy-components@^0.0.10":
-  version "0.0.10"
-  resolved "https://registry.yarnpkg.com/@pb33f/cowboy-components/-/cowboy-components-0.0.10.tgz#499f18971e8eef92f65b73963c988c55ddbfc807"
-  integrity sha512-N6PxmN/Y8lZActVCmZVL9lxzUUZ7L+cBadlM6DkurE1owvX+9oGxwZ0ZgKW9jy7zKbEqoWtsL4WaCWwvWojvlw==
+"@pb33f/cowboy-components@^0.0.11":
+  version "0.0.11"
+  resolved "https://registry.yarnpkg.com/@pb33f/cowboy-components/-/cowboy-components-0.0.11.tgz#cf747d83b4b29c8e8f075830e048d28192066ccd"
+  integrity sha512-FyiIq5C7psSMbTtDAIbolXorqdAh5oebzB2tLeYEyV//brJ1XhAqX8zPFF7nYCtg4Q8tI8rQFf2TOkngLfVHnw==
   dependencies:
     "@pb33f/ranch" "^0.3.4"
     "@pb33f/saddlebag" "^0.1.0"
