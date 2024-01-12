@@ -18,9 +18,8 @@ import (
 	"strconv"
 )
 
-func runWiretapService(wiretapConfig *shared.WiretapConfiguration) (server.PlatformServer, error) {
+func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenapi.Document) (server.PlatformServer, error) {
 
-	var doc libopenapi.Document
 	var err error
 
 	// create a store and put the wiretapConfig in it.

@@ -85,6 +85,7 @@ var (
 			hardError, _ = cmd.Flags().GetBool("hard-validation")
 			hardErrorCode, _ = cmd.Flags().GetInt("hard-validation-code")
 			hardErrorReturnCode, _ = cmd.Flags().GetInt("hard-validation-return-code")
+			streamReport, _ := cmd.Flags().GetBool("stream-report")
 
 			portFlag, _ := cmd.Flags().GetString("port")
 			if portFlag != "" {
@@ -180,6 +181,16 @@ var (
 						config.MockMode = true
 					}
 				}
+				if streamReport {
+					if !config.StreamReport {
+						config.StreamReport = true
+					}
+				}
+
+				if reportFilename != "" {
+					config.ReportFile = reportFilename
+				}
+
 				if base != config.Base {
 					config.Base = base
 				}
@@ -200,9 +211,13 @@ var (
 				if mockMode {
 					config.MockMode = true
 				}
+				if streamReport {
+					config.StreamReport = true
+				}
 				if base != "" {
 					config.Base = base
 				}
+				config.ReportFile = reportFilename
 				config.HAR = harFlag
 				config.HARValidate = harValidate
 				config.HARPathAllowList = harWhiteList
@@ -367,6 +382,12 @@ var (
 				pterm.Println()
 			}
 
+			// streaming violations?
+			if config.StreamReport {
+				pterm.Printf("⏩  Streaming API violations to file: %s\n", pterm.LightMagenta(config.ReportFile))
+				pterm.Println()
+			}
+
 			var harBytes []byte
 			var harFile *harhar.HAR
 
@@ -477,7 +498,7 @@ var (
 			if !config.HARValidate {
 
 				// ready to boot, let's go!
-				_, pErr := runWiretapService(&config)
+				_, pErr := runWiretapService(&config, doc)
 
 				if pErr != nil {
 					pterm.Println()
@@ -600,6 +621,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().BoolP("har-validate", "g", false, "Load a HAR file instead of sniffing traffic, and validate against the OpenAPI specification (requires -s)")
 	rootCmd.Flags().StringArrayP("har-allow", "j", nil, "Add a path to the HAR allow list, can use arg multiple times")
 	rootCmd.Flags().StringP("report-filename", "f", "wiretap-report.json", "Filename for any headless report generation output")
+	rootCmd.Flags().BoolP("stream-report", "a", false, "Stream violations to report JSON file as they occur (headless mode)")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

@@ -34,6 +34,7 @@ func (ws *WiretapService) validateResponse(
 	ws.transactionStore.Put(request.Id.String(), transaction, nil)
 
 	if len(cleanedErrors) > 0 {
+		ws.streamChan <- cleanedErrors
 		ws.broadcastResponseValidationErrors(request, returnedResponse, cleanedErrors)
 	} else {
 		ws.broadcastResponse(request, returnedResponse)
@@ -79,6 +80,7 @@ func (ws *WiretapService) validateRequest(
 
 	// broadcast what we found.
 	if len(cleanedErrors) > 0 {
+		ws.streamChan <- cleanedErrors
 		ws.broadcastRequestValidationErrors(modelRequest, cleanedErrors, transaction)
 	} else {
 		ws.broadcastRequest(modelRequest, transaction)
