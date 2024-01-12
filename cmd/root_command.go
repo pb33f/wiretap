@@ -78,7 +78,7 @@ var (
 
 			harFlag, _ := cmd.Flags().GetString("har")
 			harValidate, _ := cmd.Flags().GetBool("har-validate")
-			harWhiteList, _ := cmd.Flags().GetStringArray("har-whitelist")
+			harWhiteList, _ := cmd.Flags().GetStringArray("har-allow")
 
 			debug, _ := cmd.Flags().GetBool("debug")
 			mockMode, _ = cmd.Flags().GetBool("mock-mode")
@@ -598,7 +598,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().BoolP("debug", "l", false, "Enable debug logging")
 	rootCmd.Flags().StringP("har", "z", "", "Load a HAR file instead of sniffing traffic")
 	rootCmd.Flags().BoolP("har-validate", "g", false, "Load a HAR file instead of sniffing traffic, and validate against the OpenAPI specification (requires -s)")
-	rootCmd.Flags().StringArrayP("har-whitelist", "j", nil, "Add a path to the HAR whitelist, can use arg multiple times")
+	rootCmd.Flags().StringArrayP("har-allow", "j", nil, "Add a path to the HAR allow list, can use arg multiple times")
 	rootCmd.Flags().StringP("report-filename", "f", "wiretap-report.json", "Filename for any headless report generation output")
 
 	if err := rootCmd.Execute(); err != nil {
