@@ -43,6 +43,8 @@ type WiretapConfiguration struct {
 	HAR                 string                        `json:"har,omitempty" yaml:"har,omitempty"`
 	HARValidate         bool                          `json:"harValidate,omitempty" yaml:"harValidate,omitempty"`
 	HARPathAllowList    []string                      `json:"harPathAllowList,omitempty" yaml:"harPathAllowList,omitempty"`
+	StreamReport        bool                          `json:"streamReport,omitempty" yaml:"streamReport,omitempty"`
+	ReportFile          string                        `json:"reportFilename,omitempty" yaml:"reportFilename,omitempty"`
 	HARFile             *harhar.HAR                   `json:"-" yaml:"-"`
 	CompiledPathDelays  map[string]*CompiledPathDelay `json:"-" yaml:"-"`
 	CompiledVariables   map[string]*CompiledVariable  `json:"-" yaml:"-"`

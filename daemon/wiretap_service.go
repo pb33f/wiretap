@@ -5,6 +5,7 @@ package daemon
 
 import (
 	"github.com/pb33f/libopenapi"
+	"github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
@@ -37,6 +38,10 @@ type WiretapService struct {
 	fs               http.Handler
 	mockEngine       *mock.ResponseMockEngine
 	validator        validation.HttpValidator
+	stream           bool
+	streamChan       chan []*errors.ValidationError
+	streamViolations []*errors.ValidationError
+	reportFile       string
 }
 
 func NewWiretapService(document libopenapi.Document, config *shared.WiretapConfiguration) *WiretapService {
@@ -50,7 +55,9 @@ func NewWiretapService(document libopenapi.Document, config *shared.WiretapConfi
 	}
 
 	wts := &WiretapService{
-
+		stream:           config.StreamReport,
+		reportFile:       config.ReportFile,
+		streamChan:       make(chan []*errors.ValidationError),
 		transport:        tr,
 		controlsStore:    controlsStore,
 		transactionStore: transactionStore,
@@ -70,6 +77,9 @@ func NewWiretapService(document libopenapi.Document, config *shared.WiretapConfi
 
 	// hard-wire the config, change this later if needed.
 	wts.config = config
+
+	// listen for violations
+	wts.listenForValidationErrors()
 
 	return wts
 
