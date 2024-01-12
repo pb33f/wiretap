@@ -17,7 +17,7 @@
     "vite-tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
-    "@pb33f/cowboy-components": "^0.0.10",
+    "@pb33f/cowboy-components": "^0.0.11",
     "@pb33f/ranch": "^0.3.4",
     "@pb33f/saddlebag": "^0.1.0",
     "@shoelace-style/shoelace": "^2.12.0",
