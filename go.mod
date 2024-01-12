@@ -7,7 +7,7 @@ require (
 	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
 	github.com/pb33f/harhar v0.0.0-20240111233202-e393c2a39a60
 	github.com/pb33f/libopenapi v0.14.6
-	github.com/pb33f/libopenapi-validator v0.0.39-0.20240112004221-78d6c684d418
+	github.com/pb33f/libopenapi-validator v0.0.39-0.20240112005348-95726f10b0f6
 	github.com/pb33f/ranch v0.4.0
 	github.com/pterm/pterm v0.12.74
 	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e // indirect
