@@ -14,6 +14,7 @@ import (
 	"github.com/pb33f/wiretap/daemon"
 	"github.com/pb33f/wiretap/shared"
 	"log/slog"
+	"time"
 )
 
 const (
@@ -65,6 +66,8 @@ func (hs *HARService) startTheHAR(request *model.Request) {
 					request.HttpRequest = httpRequest
 					request.Id = &id
 					hs.wiretapService.ValidateRequest(request, httpRequest)
+
+					time.Sleep(10 * time.Millisecond)
 
 					httpResponse := harhar.ConvertResponseIntoHttpResponse(entry.Response)
 					hs.wiretapService.ValidateResponse(request, httpResponse)

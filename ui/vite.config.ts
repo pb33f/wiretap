@@ -22,8 +22,8 @@ export default defineConfig({
         rollupOptions: {
             external: [
                 /^node:.*/,
-                "lit",
-                "lit/decorators.js",
+                // "lit",
+                // "lit/decorators.js",
             ],
 
             plugins: [copy({

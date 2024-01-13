@@ -227,10 +227,10 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@pb33f/cowboy-components@^0.0.11":
-  version "0.0.11"
-  resolved "https://registry.yarnpkg.com/@pb33f/cowboy-components/-/cowboy-components-0.0.11.tgz#cf747d83b4b29c8e8f075830e048d28192066ccd"
-  integrity sha512-FyiIq5C7psSMbTtDAIbolXorqdAh5oebzB2tLeYEyV//brJ1XhAqX8zPFF7nYCtg4Q8tI8rQFf2TOkngLfVHnw==
+"@pb33f/cowboy-components@^0.0.12":
+  version "0.0.12"
+  resolved "https://registry.yarnpkg.com/@pb33f/cowboy-components/-/cowboy-components-0.0.12.tgz#ffde2dfa2a8de8871520a8a1defc3a8330d28d76"
+  integrity sha512-xhaK7ot3MJv0/QrDaR50qqydcrM83xmhxYQpyN465rFQ09JORKlQLi2t2DaDCPt67pzfKfkaAUrO+aKY0EcdbQ==
   dependencies:
     "@pb33f/ranch" "^0.3.4"
     "@pb33f/saddlebag" "^0.1.0"
@@ -748,7 +748,7 @@ lit-html@^3.1.0:
   dependencies:
     "@types/trusted-types" "^2.0.2"
 
-lit@^3.0.0:
+lit@^3.0.0, lit@^3.1.1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/lit/-/lit-3.1.1.tgz#49340c8875019a777cc83904f75a2bf7764617dc"
   integrity sha512-hF1y4K58+Gqrz+aAPS0DNBwPqPrg6P04DuWK52eMkt/SM9Qe9keWLcFgRcEKOLuDlRZlDsDbNL37Vr7ew1VCuw==

@@ -414,6 +414,7 @@ var (
 					pterm.Error.Printf("Cannot parse HAR file: %s (%s)\n", config.HAR, fErr.Error())
 					return nil
 				}
+				pterm.Println()
 				config.HARFile = harFile
 			}
 			// let's create a logger first.
