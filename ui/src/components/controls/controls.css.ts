@@ -34,8 +34,10 @@ export default css`
     }
 
     sl-button::part(base) {
-        font-family: var(--font-stack);
+        font-family: var(--font-stack), monospace;
         margin-top: 6px;
+        border: 1px dashed;
+        border-radius: 0;
     }
 
     .filters-badge::part(base) {
