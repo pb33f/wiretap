@@ -2,7 +2,6 @@ import {customElement, property, state} from "lit/decorators.js";
 import {html, LitElement, TemplateResult} from "lit";
 import {HttpTransaction} from "@/model/http_transaction";
 import transactionComponentCss from "@/components/transaction/transaction-item.css";
-import {ExchangeMethod} from "../../../../../cowboy-components/src/model/exchange_method";
 import Prism from 'prismjs'
 import 'prismjs/components/prism-javascript'
 import 'prismjs/themes/prism-okaidia.css'
@@ -72,7 +71,6 @@ export class HttpTransactionItemComponent extends LitElement {
 
 
     render() {
-
         Prism.highlightAll();
         const req = this._httpTransaction?.httpRequest;
         const resp = this._httpTransaction?.httpResponse;

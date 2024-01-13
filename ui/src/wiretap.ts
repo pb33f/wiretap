@@ -9,7 +9,7 @@ import {HeaderComponent} from "@/components/wiretap-header/header";
 import {WiretapControls, WiretapFilters} from "@/model/controls";
 import {
     GetCurrentSpecCommand, NoSpec, QueuePrefix,
-    SpecChannel, TopicPrefix,
+    SpecChannel, StartTheHARCommand, TopicPrefix,
     WiretapChannel, WiretapConfigurationChannel,
     WiretapControlsChannel, WiretapControlsKey, WiretapControlsStore,
     WiretapCurrentSpec, WiretapFiltersStore,
@@ -68,7 +68,10 @@ export class WiretapComponent extends LitElement {
     violationsCount = 0;
 
     @property({type: Number})
-    violatedTransactions = 0.0;
+    violatedTransactions = 0;
+
+    @property({type: Number})
+    totalTransactions = 0;
 
     @property({type: Number})
     complianceLevel: number = 100.0;
@@ -188,6 +191,7 @@ export class WiretapComponent extends LitElement {
             heartbeatOutgoing: 0,
             onConnect: () => {
                 this.requestSpec();
+                this.startTheHar();
             }
         }
 
@@ -198,19 +202,22 @@ export class WiretapComponent extends LitElement {
         let requests = 0;
         let responses = 0;
         let violations = 0;
-        let violated = 0.0
+        let violated = 0;
         if (previousTransactions) {
             previousTransactions.forEach((transaction: HttpTransaction) => {
                 requests++;
                 if (transaction.httpResponse) {
                     responses++;
                 }
+                let v = false;
                 if (transaction.requestValidation) {
-                    violated += 0.5;
+                    violated++
+                    v = true
                     violations += transaction.requestValidation.length
                 }
                 if (transaction.responseValidation) {
-                    violated += 0.5;
+                    if (!v)
+                        violated++;
                     violations += transaction.responseValidation.length;
                 }
             });
@@ -226,6 +233,13 @@ export class WiretapComponent extends LitElement {
         this._bus.publish({
             destination: "/pub/queue/specs",
             body: JSON.stringify({request: GetCurrentSpecCommand}),
+        })
+    }
+
+    startTheHar() {
+        this._bus.publish({
+            destination: "/pub/har-service",
+            body: JSON.stringify({request: StartTheHARCommand}),
         })
     }
 
@@ -247,7 +261,7 @@ export class WiretapComponent extends LitElement {
 
     configHandler(): BusCallback<CommandResponse> {
         return (msg: CommandResponse) => {
-           // todo: do something in here.
+            // todo: do something in here.
         }
     }
 
@@ -261,65 +275,70 @@ export class WiretapComponent extends LitElement {
     wireTransactionHandler(): BusCallback {
         return (msg: CommandResponse) => {
             const wiretapMessage = msg.payload as HttpTransaction
+            const existingTransaction: HttpTransaction = this._httpTransactionStore.get(wiretapMessage.id)
 
-            const constructedTransaction: HttpTransaction = new HttpTransaction();
-            constructedTransaction.httpRequest = Object.assign(new HttpRequest(), wiretapMessage?.httpRequest);
-            constructedTransaction.id = wiretapMessage.id;
-            constructedTransaction.requestValidation = wiretapMessage.requestValidation;
-            constructedTransaction.responseValidation = wiretapMessage.responseValidation;
+            // create a new transaction from the wiretap message.
+            const createTransaction = (): HttpTransaction => {
+                const constructedTransaction: HttpTransaction = new HttpTransaction();
+                constructedTransaction.httpRequest = Object.assign(new HttpRequest(), wiretapMessage?.httpRequest);
+                constructedTransaction.id = wiretapMessage.id;
+                constructedTransaction.requestValidation = wiretapMessage.requestValidation;
 
-            // get global delay
-            const controls = this._controlsStore.get(WiretapControlsKey)
-            if (controls.globalDelay > 0) {
-                constructedTransaction.delay = controls.globalDelay;
-            }
-
-            // get chain link cache
-            const linkCache = this._linkCacheStore.get(WiretapLinkCacheKey);
-            if (linkCache) {
-                linkCache.forEach((value: Map<string, HttpTransactionBase[]>, key: string) => {
-                    // check if a link has been detected.
-                    if (constructedTransaction.httpRequest?.query?.includes(key)) {
-                        constructedTransaction.containsChainLink = true;
-                    }
-                });
-            }
-
-            if (wiretapMessage.requestValidation && wiretapMessage.requestValidation.length > 0) {
-                this.violatedTransactions += 0.5;
-                this.violationsCount += wiretapMessage.requestValidation.length
-            }
-
-            if (wiretapMessage.httpResponse) {
-                this.responseCount++;
-                constructedTransaction.httpResponse = Object.assign(new HttpResponse(), wiretapMessage.httpResponse);
-                if (wiretapMessage.responseValidation && wiretapMessage.responseValidation.length > 0) {
-                    this.violatedTransactions += 0.5;
-                    this.violationsCount += wiretapMessage.responseValidation.length
+                // get global delay
+                const controls = this._controlsStore.get(WiretapControlsKey)
+                if (controls?.globalDelay > 0) {
+                    constructedTransaction.delay = controls.globalDelay;
                 }
-            }
 
-            const existingTransaction: HttpTransaction = this._httpTransactionStore.get(constructedTransaction.id)
-
-            if (existingTransaction) {
-                if (constructedTransaction.httpResponse) {
-                    existingTransaction.httpResponse = constructedTransaction.httpResponse
-                    existingTransaction.responseValidation = constructedTransaction.responseValidation
-                    this._httpTransactionStore.set(existingTransaction.id, existingTransaction)
+                // get chain link cache
+                const linkCache = this._linkCacheStore.get(WiretapLinkCacheKey);
+                if (linkCache) {
+                    linkCache.forEach((value: Map<string, HttpTransactionBase[]>, key: string) => {
+                        // check if a link has been detected.
+                        if (constructedTransaction.httpRequest?.query?.includes(key)) {
+                            constructedTransaction.containsChainLink = true;
+                        }
+                    });
                 }
-            } else {
-                this.requestCount++;
+
+                if (wiretapMessage.requestValidation && wiretapMessage.requestValidation.length > 0) {
+                    this.violatedTransactions++
+                }
                 constructedTransaction.timestamp = new Date().getTime();
+                return constructedTransaction
+            }
+
+            if (existingTransaction && wiretapMessage.httpResponse) {
+                this.responseCount++;
+                if (wiretapMessage.responseValidation && wiretapMessage.responseValidation.length > 0) {
+                    this.violatedTransactions++
+                }
+                existingTransaction.httpResponse = Object.assign(new HttpResponse(), wiretapMessage?.httpResponse);
+                existingTransaction.responseValidation = wiretapMessage.responseValidation;
+                this._httpTransactionStore.set(existingTransaction.id, existingTransaction)
+
+            } else if (existingTransaction && wiretapMessage.httpRequest) {
+
+                if (wiretapMessage.httpRequest) {
+                    const constructedTransaction = createTransaction();
+                    this.requestCount++;
+                    this._httpTransactionStore.set(constructedTransaction.id, constructedTransaction)
+                }
+            } else if (!existingTransaction && wiretapMessage.httpRequest) {
+                this.requestCount++;
+                const constructedTransaction = createTransaction();
                 this._httpTransactionStore.set(constructedTransaction.id, constructedTransaction)
+
             }
             this.calcComplianceLevel();
         }
     }
 
     calcComplianceLevel(): void {
+        this.violationsCount = this.violatedTransactions;
         if (this.violatedTransactions > 0) {
             this.complianceLevel = 100 - parseFloat(
-                (this.violatedTransactions / (this.requestCount + this.responseCount) * 100)
+                (this.violatedTransactions / this.requestCount * 100)
                     .toFixed(2));
         } else {
             this.complianceLevel = 100;
@@ -377,16 +396,16 @@ export class WiretapComponent extends LitElement {
         return html`
             <pb33f-header name="wiretap" url="https://pb33f.io/wiretap/?ref=wiretap">
                 <wiretap-header
-                    @wipeData=${this.wipeData}
-                    requests="${this.requestCount.toFixed(this._headerStatsDefaultPrecision)}"
-                    responses="${this.responseCount.toFixed(this._headerStatsDefaultPrecision)}"
-                    violations="${this.violationsCount.toFixed(this._headerStatsDefaultPrecision)}"
-                    violationsDelta="${this.violatedTransactions.toFixed(this._headerStatsDefaultPrecision)}"
-                    compliance="${this.complianceLevel.toFixed(this._complianceStatPrecision)}">
-            </wiretap-header>
-                
+                        @wipeData=${this.wipeData}
+                        requests="${this.requestCount.toFixed(this._headerStatsDefaultPrecision)}"
+                        responses="${this.responseCount.toFixed(this._headerStatsDefaultPrecision)}"
+                        violations="${this.violationsCount.toFixed(this._headerStatsDefaultPrecision)}"
+                        violationsDelta="${this.violatedTransactions.toFixed(this._headerStatsDefaultPrecision)}"
+                        compliance="${this.complianceLevel.toFixed(this._complianceStatPrecision)}">
+                </wiretap-header>
+
             </pb33f-header>
-            
+
             ${transaction}`
     }
 }
