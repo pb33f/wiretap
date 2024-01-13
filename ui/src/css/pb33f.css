@@ -108,7 +108,6 @@ main {
 
 
 .three-columns .main-content {
-    border-bottom: 1px dashed var(--secondary-color);
     padding: 40px 0 0 20px;
     font-size: 16px;
     width: calc(100vw - 365px);
