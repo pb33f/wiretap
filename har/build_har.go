@@ -18,6 +18,7 @@ func BuildHAR(har []byte) (*harhar.HAR, error) {
 	var harFile harhar.HAR
 
 	err := json.Unmarshal(har, &harFile)
+
 	if err != nil {
 		return nil, err
 	}

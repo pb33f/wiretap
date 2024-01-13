@@ -252,20 +252,14 @@ func (ws *WiretapService) handleMockRequest(
 	// build a mock based on the request.
 	mock, mockStatus, mockErr := ws.mockEngine.GenerateResponse(request.HttpRequest)
 
+	// validate http request.
 	ws.ValidateRequest(request, newReq)
 
 	// sleep for a few ms, this prevents responses from being sent out of order.
 	time.Sleep(2 * time.Millisecond)
 
-	//for i := range validationErrs {
-	//	for y := range validationErrs[i].SchemaValidationErrors {
-	//		validationErrs[i].SchemaValidationErrors[y].ReferenceExample = ws.mockEngine.
-	//	}
-	//}
-
-	headers := make(map[string]any)
-
 	// wiretap needs to work from anywhere, so allow everything.
+	headers := make(map[string]any)
 	setCORSHeaders(headers)
 	headers["Content-Type"] = "application/json"
 

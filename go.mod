@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.5.0
 	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
 	github.com/pb33f/harhar v0.0.0-20240111233202-e393c2a39a60
-	github.com/pb33f/libopenapi v0.14.6
+	github.com/pb33f/libopenapi v0.14.7
 	github.com/pb33f/libopenapi-validator v0.0.39
 	github.com/pb33f/ranch v0.4.0
 	github.com/pterm/pterm v0.12.74
@@ -50,7 +50,7 @@ require (
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/term v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
@@ -64,6 +64,7 @@ require (
 	atomicgo.dev/schedule v0.1.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
