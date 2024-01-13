@@ -353,8 +353,10 @@ export class WiretapComponent extends LitElement {
         this.violatedTransactions = 0;
         this.violationsCount = 0;
         this.calcComplianceLevel();
-        localforage.clear()
-        window.location.reload()
+        localforage.clear().then(() => {
+            window.location.reload()
+        });
+
     }
 
     render() {
