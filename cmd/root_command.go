@@ -391,7 +391,7 @@ var (
 			var harBytes []byte
 			var harFile *harhar.HAR
 
-			// check if we're using a HAR file instead of sniffing traffic.
+			// check if we're using a HAR file
 			if config.HAR != "" {
 				pterm.Println()
 				pterm.Printf("📦 Loading HAR file: %s\n", pterm.LightMagenta(config.HAR))
@@ -414,8 +414,9 @@ var (
 					pterm.Error.Printf("Cannot parse HAR file: %s (%s)\n", config.HAR, fErr.Error())
 					return nil
 				}
+				config.HARFile = harFile
 			}
-			// lets create a logger first.
+			// let's create a logger first.
 			logLevel := pterm.LogLevelWarn
 			if debug {
 				logLevel = pterm.LogLevelDebug
