@@ -10,6 +10,7 @@ import (
 	"github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/controls"
 	"github.com/pb33f/wiretap/daemon"
+	"github.com/pb33f/wiretap/har"
 	"github.com/pb33f/wiretap/report"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
@@ -26,6 +27,9 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenap
 	storeManager := bus.GetBus().GetStoreManager()
 	controlsStore := storeManager.CreateStoreWithType(controls.ControlServiceChan, reflect.TypeOf(wiretapConfig))
 	controlsStore.Put(shared.ConfigKey, wiretapConfig, nil)
+
+	harStore := storeManager.CreateStoreWithType(har.HARServiceChan, reflect.TypeOf(wiretapConfig.HARFile))
+	harStore.Put(shared.HARKey, wiretapConfig.HARFile, nil)
 
 	// create a new ranch config.
 	ranchConfig, _ := server.CreateServerConfig()
@@ -87,6 +91,12 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenap
 	// register wiretapConfig service
 	if err = platformServer.RegisterService(
 		config.NewConfigurationService(), config.ConfigurationServiceChan); err != nil {
+		panic(err)
+	}
+
+	// register HAR Service
+	if err = platformServer.RegisterService(
+		har.NewHARService(wtService, wiretapConfig.Logger), har.HARServiceChan); err != nil {
 		panic(err)
 	}
 
