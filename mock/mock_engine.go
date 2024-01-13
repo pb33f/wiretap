@@ -332,13 +332,15 @@ func (rme *ResponseMockEngine) lookForResponseCodes(
 		if resp == nil {
 			continue
 		}
-		responseBody := resp.Content.GetOrZero(mediaTypeString)
-		if responseBody != nil {
-			// try and extract a default JSON response
-			return responseBody, false
-		} else {
-			responseBody = resp.Content.GetOrZero("application/json")
-			return responseBody, false
+		if resp.Content != nil {
+			responseBody := resp.Content.GetOrZero(mediaTypeString)
+			if responseBody != nil {
+				// try and extract a default JSON response
+				return responseBody, false
+			} else {
+				responseBody = resp.Content.GetOrZero("application/json")
+				return responseBody, false
+			}
 		}
 	}
 

@@ -57,9 +57,11 @@ func BuildResponse(r *model.Request, response *http.Response) *HttpTransaction {
 		}
 
 		// sniff and replace response body.
-		respBody, _ = io.ReadAll(response.Body)
-		_ = response.Body.Close()
-		response.Body = io.NopCloser(bytes.NewBuffer(respBody))
+		if response.Body != nil {
+			respBody, _ = io.ReadAll(response.Body)
+			_ = response.Body.Close()
+			response.Body = io.NopCloser(bytes.NewBuffer(respBody))
+		}
 	}
 	return &HttpTransaction{
 		Id: r.Id.String(),

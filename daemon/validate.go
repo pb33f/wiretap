@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func (ws *WiretapService) validateResponse(
+func (ws *WiretapService) ValidateResponse(
 	request *model.Request,
 	returnedResponse *http.Response) []*errors.ValidationError {
 
@@ -42,7 +42,7 @@ func (ws *WiretapService) validateResponse(
 	return validationErrors
 }
 
-func (ws *WiretapService) validateRequest(
+func (ws *WiretapService) ValidateRequest(
 	modelRequest *model.Request,
 	httpRequest *http.Request) []*errors.ValidationError {
 

@@ -159,12 +159,12 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	if ws.config.HardErrors && !ws.config.MockMode {
 
 		// validate the request synchronously
-		requestErrors = ws.validateRequest(request, newReq)
+		requestErrors = ws.ValidateRequest(request, newReq)
 
 	} else {
 		// validate the request asynchronously
 		if !ws.config.MockMode {
-			go ws.validateRequest(request, newReq)
+			go ws.ValidateRequest(request, newReq)
 		}
 	}
 
@@ -191,10 +191,10 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		// check if we're going to fail hard on validation errors. (default is to skip this)
 		if ws.config.HardErrors {
 			// validate response
-			responseErrors = ws.validateResponse(request, CloneExistingResponse(returnedResponse))
+			responseErrors = ws.ValidateResponse(request, CloneExistingResponse(returnedResponse))
 		} else {
 			// validate response async
-			go ws.validateResponse(request, CloneExistingResponse(returnedResponse))
+			go ws.ValidateResponse(request, CloneExistingResponse(returnedResponse))
 		}
 	}
 
@@ -252,7 +252,10 @@ func (ws *WiretapService) handleMockRequest(
 	// build a mock based on the request.
 	mock, mockStatus, mockErr := ws.mockEngine.GenerateResponse(request.HttpRequest)
 
-	ws.validateRequest(request, newReq)
+	ws.ValidateRequest(request, newReq)
+
+	// sleep for a few ms, this prevents responses from being sent out of order.
+	time.Sleep(2 * time.Millisecond)
 
 	//for i := range validationErrs {
 	//	for y := range validationErrs[i].SchemaValidationErrors {
