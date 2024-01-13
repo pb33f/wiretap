@@ -30,7 +30,7 @@ export class HeaderMetricsComponent extends LitElement {
             <wiretap-metric title="Compliance" value="${this.compliance}" postfix="%" end colorizeValue></wiretap-metric>
             <wiretap-metric title="Requests" value="${this.requests}"></wiretap-metric>
             <wiretap-metric title="Responses" value="${this.responses}"></wiretap-metric>
-            ${this.noSpec ? null : html`<wiretap-metric title="Violations" value="${this.violations}"></wiretap-metric>`}
+            ${this.violations <= 0 ? null : html`<wiretap-metric title="Violations" value="${this.violations}"></wiretap-metric>`}
         `
     }
 }

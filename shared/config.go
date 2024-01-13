@@ -156,6 +156,7 @@ func (wpc *WiretapPathConfig) Compile(key string) *CompiledPath {
 }
 
 const ConfigKey = "config"
+const HARKey = "har"
 const WiretapHostPlaceholder = "%WIRETAP_HOST%"
 const WiretapPortPlaceholder = "%WIRETAP_PORT%"
 const WiretapTLSPlaceholder = "%WIRETAP_TLS%"

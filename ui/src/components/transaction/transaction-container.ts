@@ -109,7 +109,7 @@ export class HttpTransactionContainerComponent extends LitElement {
             // save our internal state.
             this._mappedHttpTransactions = savedTransactions
 
-            // extract state
+            //extract state
             this._mappedHttpTransactions.forEach(
                 (v: HttpTransactionContainer) => {
                     const comp = new HttpTransactionItemComponent(v.Transaction, this._transactionLinkCache);

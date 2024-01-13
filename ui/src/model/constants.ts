@@ -25,6 +25,7 @@ export const WiretapControlsKey = "wiretap-controls";
 export const WiretapCurrentSpec = "current-spec";
 export const GetCurrentSpecCommand = "get-current-spec";
 export const ChangeDelayCommand = "change-delay-request";
+export const StartTheHARCommand = "start-the-har";
 
 export const RequestReportCommand = "generate-report-request";
 

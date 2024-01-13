@@ -20,9 +20,8 @@
     "@pb33f/cowboy-components": "^0.0.11",
     "@pb33f/ranch": "^0.3.4",
     "@pb33f/saddlebag": "^0.1.0",
-    "@shoelace-style/shoelace": "^2.12.0",
     "@stomp/stompjs": "^7.0.0",
-    "lit": "^3.1.0",
+
     "localforage": "^1.10.0",
     "moment": "^2.29.4",
     "monaco-editor": "^0.38.0",
