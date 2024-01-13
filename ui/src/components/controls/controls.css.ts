@@ -42,9 +42,10 @@ export default css`
 
     .filters-badge::part(base) {
         font-size: 0.5rem;
-        margin-top: 17px;
-        margin-right: 5px;
         background-color: var(--primary-color);
+        position: absolute;
+        top: 5px;
+        left: 25px;
     }
 
 `

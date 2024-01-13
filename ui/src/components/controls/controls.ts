@@ -202,9 +202,8 @@ export class WiretapControlsComponent extends LitElement {
         }
 
         return html`
-          
+            ${filtersBadge}
             <sl-icon-button @click=${this.openFilters} name="funnel" label="filers">
-                ${filtersBadge}
             </sl-icon-button>
             <sl-icon-button @click=${this.openSettings} name="gear" label="controls">
             </sl-icon-button>
