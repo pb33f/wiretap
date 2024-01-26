@@ -540,3 +540,97 @@ components:
     assert.Equal(t, 200, status)
     assert.Equal(t, "", string(b))
 }
+
+// https://github.com/pb33f/wiretap/issues/80
+func TestNewMockEngine_MultiAuth(t *testing.T) {
+
+    spec := `openapi: 3.1.0
+info:
+  title: Test
+  version: 0.1.0
+security:
+  - xApiKey: []
+  - apiKey: []
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    xApiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+    apiKey:
+      type: apiKey
+      in: header
+      name: Authorization`
+
+    d, _ := libopenapi.NewDocument([]byte(spec))
+    doc, _ := d.BuildV3Model()
+
+    me := NewMockEngine(&doc.Model, false)
+
+    request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
+    request.Header.Set(helpers.AuthorizationHeader, "ding-a-ling")
+
+    path, _ := me.findPath(request)
+    operation := me.findOperation(request, path)
+
+    err := me.ValidateSecurity(request, operation)
+    assert.NoError(t, err)
+
+    request, _ = http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
+    request.Header.Set("x-api-key", "ding-a-ling")
+
+    path, _ = me.findPath(request)
+    operation = me.findOperation(request, path)
+
+    err = me.ValidateSecurity(request, operation)
+    assert.NoError(t, err)
+
+}
+
+// https://github.com/pb33f/wiretap/issues/80
+func TestNewMockEngine_OptionalAuth(t *testing.T) {
+
+    spec := `openapi: 3.1.0
+info:
+  title: Test
+  version: 0.1.0
+security:
+  - xApiKey: []
+  - {}
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    xApiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+    apiKey:
+      type: apiKey
+      in: header
+      name: Authorization`
+
+    d, _ := libopenapi.NewDocument([]byte(spec))
+    doc, _ := d.BuildV3Model()
+
+    me := NewMockEngine(&doc.Model, false)
+
+    request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
+
+    path, _ := me.findPath(request)
+    operation := me.findOperation(request, path)
+
+    err := me.ValidateSecurity(request, operation)
+    assert.NoError(t, err)
+
+}
