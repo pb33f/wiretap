@@ -51,17 +51,6 @@ func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation
 
     mustApply := make(map[string][]string)
 
-    // global security
-    if len(rme.doc.Security) > 0 {
-        for _, securityRequirement := range rme.doc.Security {
-            for securityPairs := securityRequirement.Requirements.First(); securityPairs != nil; securityPairs = securityPairs.Next() {
-                key := securityPairs.Key()
-                scopes := securityPairs.Value()
-                mustApply[key] = scopes
-            }
-        }
-    }
-
     // operation security
     if len(operation.Security) > 0 {
         for _, securityRequirement := range operation.Security {
@@ -71,6 +60,17 @@ func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation
                 return nil
             }
 
+            for securityPairs := securityRequirement.Requirements.First(); securityPairs != nil; securityPairs = securityPairs.Next() {
+                key := securityPairs.Key()
+                scopes := securityPairs.Value()
+                mustApply[key] = scopes
+            }
+        }
+    }
+
+    // global security if no local security found.
+    if len(mustApply) <= 0 && len(rme.doc.Security) > 0 {
+        for _, securityRequirement := range rme.doc.Security {
             for securityPairs := securityRequirement.Requirements.First(); securityPairs != nil; securityPairs = securityPairs.Next() {
                 key := securityPairs.Key()
                 scopes := securityPairs.Value()
@@ -95,7 +95,8 @@ func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation
                     if securityComponent.Scheme == "bearer" || securityComponent.Scheme == "basic" {
                         // check if we have a bearer token.
                         if request.Header.Get("Authorization") == "" {
-                            return fmt.Errorf("bearer token not found, no `Authorization` header found in request")
+                            return fmt.Errorf("%s authentication failed: bearer token not found, "+
+                                "no `Authorization` header found in request", securityComponent.Scheme)
                         }
                     }
 
@@ -347,6 +348,9 @@ func (rme *ResponseMockEngine) lookForResponseCodes(
                 responseBody = resp.Content.GetOrZero("application/json")
                 return responseBody, false
             }
+        } else {
+            // no content, so try and extract a default JSON response
+            return nil, false
         }
     }
 
