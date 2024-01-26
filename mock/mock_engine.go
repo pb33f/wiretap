@@ -45,7 +45,8 @@ func (rme *ResponseMockEngine) GenerateResponse(request *http.Request) ([]byte, 
 
 func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation *v3.Operation) error {
     // get out early if there is nothing to do.
-    if rme.doc.Components.SecuritySchemes.Len() <= 0 {
+
+    if rme.doc.Components != nil && rme.doc.Components.SecuritySchemes.Len() <= 0 {
         return nil
     }
 
