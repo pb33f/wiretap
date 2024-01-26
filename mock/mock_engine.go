@@ -71,6 +71,10 @@ func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation
     // global security if no local security found.
     if len(mustApply) <= 0 && len(rme.doc.Security) > 0 {
         for _, securityRequirement := range rme.doc.Security {
+            // if an empty requirement is found, we can skip it, it's optional.
+            if securityRequirement.Requirements.Len() <= 0 && securityRequirement.ContainsEmptyRequirement {
+                return nil
+            }
             for securityPairs := securityRequirement.Requirements.First(); securityPairs != nil; securityPairs = securityPairs.Next() {
                 key := securityPairs.Key()
                 scopes := securityPairs.Value()
@@ -83,6 +87,9 @@ func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation
     if len(mustApply) > 0 {
         // locate the security schemes components from the document.
 
+        var failures []error
+        compared := 0
+
         for scope, _ := range mustApply {
 
             securityComponent := rme.doc.Components.SecuritySchemes.GetOrZero(scope)
@@ -93,37 +100,45 @@ func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation
                 case "http":
                     // check if we have a bearer scheme.
                     if securityComponent.Scheme == "bearer" || securityComponent.Scheme == "basic" {
+                        compared++
                         // check if we have a bearer token.
                         if request.Header.Get("Authorization") == "" {
-                            return fmt.Errorf("%s authentication failed: bearer token not found, "+
-                                "no `Authorization` header found in request", securityComponent.Scheme)
+                            failures = append(failures, fmt.Errorf("%s authentication failed: bearer token not found, "+
+                                "no `Authorization` header found in request", securityComponent.Scheme))
                         }
                     }
 
                 case "apiKey":
                     // check if the api key is being used in the header
                     if securityComponent.In == "header" {
+                        compared++
                         // check if we have a bearer token.
                         if request.Header.Get(securityComponent.Name) == "" {
-                            return fmt.Errorf("apiKey not found, no `%s` header found in request",
-                                securityComponent.Name)
+                            failures = append(failures, fmt.Errorf("apiKey not found, no `%s` header found in request",
+                                securityComponent.Name))
                         }
                     }
                     if securityComponent.In == "query" {
+                        compared++
                         if request.URL.Query().Get(securityComponent.Name) == "" {
-                            return fmt.Errorf("apiKey not found, no `%s` query parameter found in request",
-                                securityComponent.Name)
+                            failures = append(failures, fmt.Errorf("apiKey not found, no `%s` query parameter found in request",
+                                securityComponent.Name))
                         }
                     }
                     if securityComponent.In == "cookie" {
+                        compared++
                         cookie, _ := request.Cookie(securityComponent.Name)
                         if cookie == nil {
-                            return fmt.Errorf("apiKey not found, no `%s` cookie found in request",
-                                securityComponent.Name)
+                            failures = append(failures, fmt.Errorf("apiKey not found, no `%s` cookie found in request",
+                                securityComponent.Name))
                         }
                     }
                 }
             }
+        }
+        // only one needs to pass
+        if len(failures) == compared {
+            return errors.Join(failures...)
         }
     }
     return nil
