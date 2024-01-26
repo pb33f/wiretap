@@ -445,3 +445,98 @@ components:
     err := me.ValidateSecurity(request, operation)
     assert.NoError(t, err)
 }
+
+// https://github.com/pb33f/wiretap/issues/78
+func TestNewMockEngine_Fragment(t *testing.T) {
+
+    spec := `openapi: 3.1.0
+info:
+  title: Test
+  version: 0.1.0
+security:
+  - apiKeyAuth: []
+paths:
+  /auth#basicAuth:
+    post:
+      operationId: basicAuth
+      security:
+        - basicAuth: []
+      servers:
+        - url: http://localhost:35456
+      requestBody:
+        content:
+          application/json:
+            schemas:
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic`
+
+    d, _ := libopenapi.NewDocument([]byte(spec))
+    doc, _ := d.BuildV3Model()
+
+    me := NewMockEngine(&doc.Model, false)
+
+    request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/auth", nil)
+    request.Header.Set(helpers.ContentTypeHeader, "application/json")
+    path, _ := me.findPath(request)
+    operation := me.findOperation(request, path)
+
+    err := me.ValidateSecurity(request, operation)
+    assert.Error(t, err)
+    assert.Equal(t, "basic authentication failed: bearer token not found, "+
+        "no `Authorization` header found in request", err.Error())
+}
+
+// https://github.com/pb33f/wiretap/issues/79
+func TestNewMockEngine_ContentType(t *testing.T) {
+
+    spec := `openapi: 3.1.0
+info:
+  title: Test
+  version: 0.1.0
+paths:
+  /auth:
+    post:
+      operationId: basicAuth
+      security:
+        - basicAuth: []
+      servers:
+        - url: http://localhost:35456
+      requestBody:
+        content:
+          application/json:
+            schemas:
+              type: object
+        required: true
+      responses:
+        "200":
+          description: OK
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic`
+
+    d, _ := libopenapi.NewDocument([]byte(spec))
+    doc, _ := d.BuildV3Model()
+
+    me := NewMockEngine(&doc.Model, false)
+
+    payload := `{"basicAuth":{"password":"testPass","username":"testUser"}}`
+    buf := bytes.NewBuffer([]byte(payload))
+    request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/auth", buf)
+    request.Header.Set(helpers.ContentTypeHeader, "application/json")
+    request.Header.Set(helpers.AuthorizationHeader, "the science man")
+
+    b, status, err := me.GenerateResponse(request)
+    assert.NoError(t, err)
+    assert.Equal(t, 200, status)
+    assert.Equal(t, "", string(b))
+}
