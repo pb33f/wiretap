@@ -634,3 +634,301 @@ components:
     assert.NoError(t, err)
 
 }
+
+// https://github.com/pb33f/wiretap/issues/84
+func TestNewMockEngine_UseExamples(t *testing.T) {
+
+    spec := `openapi: 3.1.0
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+              examples:
+                happyDays:
+                  value:
+                    name: happy days
+                    description: a terrible show from a time that never existed. 
+components:
+  schemas:
+    Thing:
+      type: object
+      properties:
+        name:
+          type: string
+          example: nameExample
+        description:
+          type: string
+          example: descriptionExample
+`
+
+    d, _ := libopenapi.NewDocument([]byte(spec))
+    doc, _ := d.BuildV3Model()
+
+    me := NewMockEngine(&doc.Model, false)
+
+    request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
+
+    b, status, err := me.GenerateResponse(request)
+
+    assert.NoError(t, err)
+    assert.Equal(t, 200, status)
+
+    var decoded map[string]any
+    _ = json.Unmarshal(b, &decoded)
+
+    assert.Equal(t, "happy days", decoded["name"])
+    assert.Equal(t, "a terrible show from a time that never existed.", decoded["description"])
+
+}
+
+// https://github.com/pb33f/wiretap/issues/84
+func TestNewMockEngine_UseExamples_Preferred(t *testing.T) {
+
+    spec := `openapi: 3.1.0
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+              examples:
+                happyDays:
+                  value:
+                    name: happy days
+                    description: a terrible show from a time that never existed.
+                robocop:
+                  value:
+                    name: robocop
+                    description: perhaps the best cyberpunk movie ever made.
+components:
+  schemas:
+    Thing:
+      type: object
+      properties:
+        name:
+          type: string
+          example: nameExample
+        description:
+          type: string
+          example: descriptionExample
+`
+
+    d, _ := libopenapi.NewDocument([]byte(spec))
+    doc, _ := d.BuildV3Model()
+
+    me := NewMockEngine(&doc.Model, false)
+
+    request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
+    request.Header.Set(helpers.Preferred, "robocop")
+
+    b, status, err := me.GenerateResponse(request)
+
+    assert.NoError(t, err)
+    assert.Equal(t, 200, status)
+
+    var decoded map[string]any
+    _ = json.Unmarshal(b, &decoded)
+
+    assert.Equal(t, "robocop", decoded["name"])
+    assert.Equal(t, "perhaps the best cyberpunk movie ever made.", decoded["description"])
+
+}
+
+// https://github.com/pb33f/wiretap/issues/84
+func TestNewMockEngine_UseExamples_FromSchemaExamples(t *testing.T) {
+
+    spec := `openapi: 3.1.0
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+components:
+  schemas:
+    Thing:
+      type: object
+      examples:
+        - name: happy days
+          description: a terrible show from a time that never existed.
+      properties:
+        name:
+          type: string
+          example: nameExample
+        description:
+          type: string
+          example: descriptionExample
+`
+
+    d, _ := libopenapi.NewDocument([]byte(spec))
+    doc, _ := d.BuildV3Model()
+
+    me := NewMockEngine(&doc.Model, false)
+
+    request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
+
+    b, status, err := me.GenerateResponse(request)
+
+    assert.NoError(t, err)
+    assert.Equal(t, 200, status)
+
+    var decoded map[string]any
+    _ = json.Unmarshal(b, &decoded)
+
+    assert.Equal(t, "happy days", decoded["name"])
+    assert.Equal(t, "a terrible show from a time that never existed.", decoded["description"])
+
+}
+
+// https://github.com/pb33f/wiretap/issues/84
+func TestNewMockEngine_UseExamples_FromSchemaExamples_Preferred(t *testing.T) {
+
+    spec := `openapi: 3.1.0
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+components:
+  schemas:
+    Thing:
+      type: object
+      examples:
+        - name: happy days
+          description: a terrible show from a time that never existed.
+        - name: robocop
+          description: perhaps the best cyberpunk movie ever made.
+      properties:
+        name:
+          type: string
+          example: nameExample
+        description:
+          type: string
+          example: descriptionExample
+`
+
+    d, _ := libopenapi.NewDocument([]byte(spec))
+    doc, _ := d.BuildV3Model()
+
+    me := NewMockEngine(&doc.Model, false)
+
+    request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
+    request.Header.Set(helpers.Preferred, "1")
+
+    b, status, err := me.GenerateResponse(request)
+
+    assert.NoError(t, err)
+    assert.Equal(t, 200, status)
+
+    var decoded map[string]any
+    _ = json.Unmarshal(b, &decoded)
+
+    assert.Equal(t, "robocop", decoded["name"])
+    assert.Equal(t, "perhaps the best cyberpunk movie ever made.", decoded["description"])
+
+}
+
+// https://github.com/pb33f/wiretap/issues/84
+func TestNewMockEngine_UseExamples_FromSchema(t *testing.T) {
+
+    spec := `openapi: 3.1.0
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+components:
+  schemas:
+    Thing:
+      type: object
+      properties:
+        name:
+          type: string
+          example: nameExample
+        description:
+          type: string
+          example: descriptionExample
+`
+
+    d, _ := libopenapi.NewDocument([]byte(spec))
+    doc, _ := d.BuildV3Model()
+
+    me := NewMockEngine(&doc.Model, false)
+
+    request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
+
+    b, status, err := me.GenerateResponse(request)
+
+    assert.NoError(t, err)
+    assert.Equal(t, 200, status)
+
+    var decoded map[string]any
+    _ = json.Unmarshal(b, &decoded)
+
+    assert.Equal(t, "nameExample", decoded["name"])
+    assert.Equal(t, "descriptionExample", decoded["description"])
+
+}
+
+// https://github.com/pb33f/wiretap/issues/84
+func TestNewMockEngine_UseExamples_FromSchema_Generated(t *testing.T) {
+
+    spec := `openapi: 3.1.0
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+components:
+  schemas:
+    Thing:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+`
+
+    d, _ := libopenapi.NewDocument([]byte(spec))
+    doc, _ := d.BuildV3Model()
+
+    me := NewMockEngine(&doc.Model, false)
+
+    request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
+
+    b, status, err := me.GenerateResponse(request)
+
+    assert.NoError(t, err)
+    assert.Equal(t, 200, status)
+
+    var decoded map[string]any
+    _ = json.Unmarshal(b, &decoded)
+
+    assert.NotEmpty(t, decoded["name"])
+    assert.NotEmpty(t, decoded["description"])
+
+}
