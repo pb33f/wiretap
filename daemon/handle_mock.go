@@ -37,9 +37,9 @@ func (ws *WiretapService) handleMockRequest(
 	time.Sleep(5 * time.Millisecond)
 
 	// wiretap needs to work from anywhere, so allow everything.
-	headers := make(map[string]any)
+	headers := make(map[string][]string)
 	setCORSHeaders(headers)
-	headers["Content-Type"] = "application/json"
+	headers["Content-Type"] = []string{"application/json"}
 
 	buff := bytes.NewBuffer(mock)
 
@@ -52,8 +52,10 @@ func (ws *WiretapService) handleMockRequest(
 	resp.Header = header
 	// write headers
 	for k, v := range headers {
-		request.HttpResponseWriter.Header().Set(k, fmt.Sprint(v))
-		header.Add(k, fmt.Sprint(v))
+		for j := range v {
+			request.HttpResponseWriter.Header().Set(k, fmt.Sprint(j))
+			header.Add(k, fmt.Sprint(v))
+		}
 	}
 
 	// if there was an error building the mock, return a 404
