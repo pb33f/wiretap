@@ -182,10 +182,10 @@ func ReconstructURL(r *http.Request, protocol, host, basepath string, port strin
 	return url
 }
 
-func ExtractHeaders(resp *http.Response) map[string]any {
-	headers := make(map[string]any)
+func ExtractHeaders(resp *http.Response) map[string][]string {
+	headers := make(map[string][]string)
 	for k, v := range resp.Header {
-		headers[k] = v[0]
+		headers[k] = v
 	}
 	return headers
 }

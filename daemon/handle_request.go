@@ -215,7 +215,9 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 
 	// write headers
 	for k, v := range headers {
-		request.HttpResponseWriter.Header().Set(k, fmt.Sprint(v))
+		for _, j := range v {
+			request.HttpResponseWriter.Header().Set(k, fmt.Sprint(j))
+		}
 	}
 	config.Logger.Info("[wiretap] request completed", "url", request.HttpRequest.URL.String(), "code", returnedResponse.StatusCode)
 
@@ -236,8 +238,8 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	_, _ = request.HttpResponseWriter.Write(body)
 }
 
-func setCORSHeaders(headers map[string]any) {
-	headers["Access-Control-Allow-Headers"] = "*"
-	headers["Access-Control-Allow-Origin"] = "*"
-	headers["Access-Control-Allow-Methods"] = "OPTIONS,POST,GET,DELETE,PATCH,PUT"
+func setCORSHeaders(headers map[string][]string) {
+	headers["Access-Control-Allow-Headers"] = []string{"*"}
+	headers["Access-Control-Allow-Origin"] = []string{"*"}
+	headers["Access-Control-Allow-Methods"] = []string{"OPTIONS,POST,GET,DELETE,PATCH,PUT"}
 }
