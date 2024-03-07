@@ -52,7 +52,7 @@ func (ws *WiretapService) handleMockRequest(
 	resp.Header = header
 	// write headers
 	for k, v := range headers {
-		for j := range v {
+		for _, j := range v {
 			request.HttpResponseWriter.Header().Set(k, fmt.Sprint(j))
 			header.Add(k, fmt.Sprint(v))
 		}
