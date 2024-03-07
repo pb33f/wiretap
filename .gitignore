@@ -4,3 +4,7 @@ wiretap
 # UI build
 ui/dist
 ui/node_modules
+
+# Jetbrains files
+.idea/
+
