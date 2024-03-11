@@ -275,7 +275,7 @@ func TestNewMockEngine_BuildResponse_SimpleValid_Pretty(t *testing.T) {
 	doc := resetGiftshopState()
 	me := NewMockEngine(doc, true)
 
-	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products/pb0001", nil)
+	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products/bd1f3f70-d46f-4ea7-b178-de9a5abfe4d8", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
 
 	b, status, err := me.GenerateResponse(request)
