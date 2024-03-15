@@ -339,6 +339,16 @@ var (
 				printLoadedPathDelayConfigurations(config.PathDelays)
 			}
 
+			if len(config.IgnoreRedirects) > 0 {
+				config.CompileIgnoreRedirects()
+				printLoadedIgnoreRedirectPaths(config.IgnoreRedirects)
+			}
+
+			if len(config.RedirectAllowList) > 0 {
+				config.CompileRedirectAllowList()
+				printLoadedRedirectAllowList(config.RedirectAllowList)
+			}
+
 			// static headers
 			if config.Headers != nil && len(config.Headers.DropHeaders) > 0 {
 				pterm.Info.Printf("Dropping the following %d %s globally:\n", len(config.Headers.DropHeaders),
@@ -681,6 +691,26 @@ func printLoadedHarWhitelist(variables []string) {
 		shared.Pluralize(len(variables), "HAR whitelist path", "HAR whitelist paths"))
 	for _, v := range variables {
 		pterm.Printf("📝 '%s' has been whitelisted for HAR analysis\n", pterm.LightCyan(v))
+	}
+	pterm.Println()
+}
+
+func printLoadedIgnoreRedirectPaths(ignoreRedirects []string) {
+	pterm.Info.Printf("Loaded %d %s to ignore for redirects:\n", len(ignoreRedirects),
+		shared.Pluralize(len(ignoreRedirects), "path", "paths"))
+
+	for _, x := range ignoreRedirects {
+		pterm.Printf("🙈 Paths matching '%s' will be ignored for resolving redirects\n", pterm.LightCyan(x))
+	}
+	pterm.Println()
+}
+
+func printLoadedRedirectAllowList(allowRedirects []string) {
+	pterm.Info.Printf("Loaded %d allows listed redirect %s :\n", len(allowRedirects),
+		shared.Pluralize(len(allowRedirects), "path", "paths"))
+
+	for _, x := range allowRedirects {
+		pterm.Printf("🐵 Paths matching '%s' will always follow redirects, regardless of ignoreRedirect settings\n", pterm.LightCyan(x))
 	}
 	pterm.Println()
 }

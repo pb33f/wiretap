@@ -5,11 +5,10 @@ package daemon
 
 import (
 	"crypto/tls"
-	"net/http"
-	"net/url"
-
 	"github.com/pb33f/wiretap/config"
 	"github.com/pterm/pterm"
+	"net/http"
+	"net/url"
 
 	"github.com/pb33f/wiretap/shared"
 )
@@ -40,9 +39,6 @@ func (c *wiretapTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 
 func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 
-	tr := newWiretapTransport()
-	client := &http.Client{Transport: tr}
-
 	configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
 
 	// create a new request from the original request, but replace the path
@@ -57,6 +53,21 @@ func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 		}
 		pterm.Info.Printf("[wiretap] Re-writing path '%s' to '%s'\n", req.URL.String(), newUrl.String())
 		req.URL = newUrl
+	}
+
+	tr := newWiretapTransport()
+	var client *http.Client
+
+	// create a client based on if wiretap should redirect on the path or not
+	if config.IgnoreRedirectOnPath(req.URL.Path, wiretapConfig) && !config.PathRedirectAllowListed(req.URL.Path, wiretapConfig) {
+		client = &http.Client{
+			Transport: tr,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
+	} else {
+		client = &http.Client{Transport: tr}
 	}
 
 	// re-write referer

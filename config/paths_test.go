@@ -214,3 +214,97 @@ func TestLocatePathDelay(t *testing.T) {
 	assert.Equal(t, 0, delay)
 
 }
+
+func TestIgnoreRedirect(t *testing.T) {
+
+	config := `ignoreRedirects:
+  - /pb33f/test/**
+  - /pb33f/cakes/123
+  - /*/test/123`
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &c)
+
+	c.CompileIgnoreRedirects()
+
+	ignore := IgnoreRedirectOnPath("/pb33f/test/burgers/fries?1234=no", &c)
+	assert.True(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/pb33f/cakes/123", &c)
+	assert.True(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/roastbeef/test/123", &c)
+	assert.True(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/not-registered", &c)
+	assert.False(t, ignore)
+
+}
+
+func TestIgnoreRedirect_NoPathsRegistered(t *testing.T) {
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(""), &c)
+
+	c.CompileIgnoreRedirects()
+
+	ignore := IgnoreRedirectOnPath("/pb33f/test/burgers/fries?1234=no", &c)
+	assert.False(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/pb33f/cakes/123", &c)
+	assert.False(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/roastbeef/test/123", &c)
+	assert.False(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/not-registered", &c)
+	assert.False(t, ignore)
+
+}
+
+func TestRedirectAllowList(t *testing.T) {
+
+	config := `ignoreRedirects:
+  - /pb33f/test/**
+  - /pb33f/cakes/123
+  - /*/test/123`
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &c)
+
+	c.CompileIgnoreRedirects()
+
+	ignore := IgnoreRedirectOnPath("/pb33f/test/burgers/fries?1234=no", &c)
+	assert.True(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/pb33f/cakes/123", &c)
+	assert.True(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/roastbeef/test/123", &c)
+	assert.True(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/not-registered", &c)
+	assert.False(t, ignore)
+
+}
+
+func TestRedirectAllowList_NoPathsRegistered(t *testing.T) {
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(""), &c)
+
+	c.CompileIgnoreRedirects()
+
+	ignore := IgnoreRedirectOnPath("/pb33f/test/burgers/fries?1234=no", &c)
+	assert.False(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/pb33f/cakes/123", &c)
+	assert.False(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/roastbeef/test/123", &c)
+	assert.False(t, ignore)
+
+	ignore = IgnoreRedirectOnPath("/not-registered", &c)
+	assert.False(t, ignore)
+
+}
