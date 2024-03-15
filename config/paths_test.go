@@ -264,7 +264,7 @@ func TestIgnoreRedirect_NoPathsRegistered(t *testing.T) {
 
 func TestRedirectAllowList(t *testing.T) {
 
-	config := `ignoreRedirects:
+	config := `redirectAllowList:
   - /pb33f/test/**
   - /pb33f/cakes/123
   - /*/test/123`
@@ -272,18 +272,18 @@ func TestRedirectAllowList(t *testing.T) {
 	var c shared.WiretapConfiguration
 	_ = yaml.Unmarshal([]byte(config), &c)
 
-	c.CompileIgnoreRedirects()
+	c.CompileRedirectAllowList()
 
-	ignore := IgnoreRedirectOnPath("/pb33f/test/burgers/fries?1234=no", &c)
+	ignore := PathRedirectAllowListed("/pb33f/test/burgers/fries?1234=no", &c)
 	assert.True(t, ignore)
 
-	ignore = IgnoreRedirectOnPath("/pb33f/cakes/123", &c)
+	ignore = PathRedirectAllowListed("/pb33f/cakes/123", &c)
 	assert.True(t, ignore)
 
-	ignore = IgnoreRedirectOnPath("/roastbeef/test/123", &c)
+	ignore = PathRedirectAllowListed("/roastbeef/test/123", &c)
 	assert.True(t, ignore)
 
-	ignore = IgnoreRedirectOnPath("/not-registered", &c)
+	ignore = PathRedirectAllowListed("/not-registered", &c)
 	assert.False(t, ignore)
 
 }
@@ -293,18 +293,18 @@ func TestRedirectAllowList_NoPathsRegistered(t *testing.T) {
 	var c shared.WiretapConfiguration
 	_ = yaml.Unmarshal([]byte(""), &c)
 
-	c.CompileIgnoreRedirects()
+	c.CompileRedirectAllowList()
 
-	ignore := IgnoreRedirectOnPath("/pb33f/test/burgers/fries?1234=no", &c)
+	ignore := PathRedirectAllowListed("/pb33f/test/burgers/fries?1234=no", &c)
 	assert.False(t, ignore)
 
-	ignore = IgnoreRedirectOnPath("/pb33f/cakes/123", &c)
+	ignore = PathRedirectAllowListed("/pb33f/cakes/123", &c)
 	assert.False(t, ignore)
 
-	ignore = IgnoreRedirectOnPath("/roastbeef/test/123", &c)
+	ignore = PathRedirectAllowListed("/roastbeef/test/123", &c)
 	assert.False(t, ignore)
 
-	ignore = IgnoreRedirectOnPath("/not-registered", &c)
+	ignore = PathRedirectAllowListed("/not-registered", &c)
 	assert.False(t, ignore)
 
 }
