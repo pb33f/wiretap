@@ -29,6 +29,24 @@ func FindPathDelay(path string, configuration *shared.WiretapConfiguration) int 
 	return foundMatch
 }
 
+func IgnoreRedirectOnPath(path string, configuration *shared.WiretapConfiguration) bool {
+	for _, redirectPath := range configuration.CompiledIgnoreRedirects {
+		if redirectPath.CompiledPath.Match(path) {
+			return true
+		}
+	}
+	return false
+}
+
+func PathRedirectAllowListed(path string, configuration *shared.WiretapConfiguration) bool {
+	for _, redirectPath := range configuration.CompiledRedirectAllowList {
+		if redirectPath.CompiledPath.Match(path) {
+			return true
+		}
+	}
+	return false
+}
+
 func RewritePath(path string, configuration *shared.WiretapConfiguration) string {
 	paths := FindPaths(path, configuration)
 	var replaced string = path
