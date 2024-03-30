@@ -6,13 +6,14 @@ package mock
 import (
 	"bytes"
 	"encoding/json"
+	"io"
+	"net/http"
+	"testing"
+
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi-validator/helpers"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/stretchr/testify/assert"
-	"io"
-	"net/http"
-	"testing"
 )
 
 // var doc *v3.Document
@@ -840,6 +841,85 @@ components:
 
 	assert.Equal(t, "robocop", decoded["name"])
 	assert.Equal(t, "perhaps the best cyberpunk movie ever made.", decoded["description"])
+
+}
+
+// https://github.com/pb33f/wiretap/issues/84
+func TestNewMockEngine_UseExamples_Preferred_From_400(t *testing.T) {
+
+	spec := `openapi: 3.1.0
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+              examples:
+                happyDays:
+                  value:
+                    name: happy days
+                    description: a terrible show from a time that never existed.
+                robocop:
+                  value:
+                    name: robocop
+                    description: perhaps the best cyberpunk movie ever made.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorThing'
+              examples:
+                sadErrorDays:
+                  value:
+                    name: sad error days
+                    description: a sad error prone show
+                sadcop:
+                  value:
+                    name: sad cop
+                    description: perhaps the saddest cyberpunk movie ever made.
+components:
+  schemas:
+    Thing:
+      type: object
+      properties:
+        name:
+          type: string
+          example: nameExample
+        description:
+          type: string
+          example: descriptionExample
+    ErrorThing:
+      type: object
+      properties:
+        name:
+          type: string
+          example: errorNameExample
+        description:
+          type: string
+          example: errorDescriptionExample
+`
+
+	d, _ := libopenapi.NewDocument([]byte(spec))
+	doc, _ := d.BuildV3Model()
+
+	me := NewMockEngine(&doc.Model, false)
+
+	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
+	request.Header.Set(helpers.Preferred, "sadcop")
+
+	b, status, err := me.GenerateResponse(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 400, status)
+
+	var decoded map[string]any
+	_ = json.Unmarshal(b, &decoded)
+
+	assert.Equal(t, "sad cop", decoded["name"])
+	assert.Equal(t, "perhaps the saddest cyberpunk movie ever made.", decoded["description"])
 
 }
 

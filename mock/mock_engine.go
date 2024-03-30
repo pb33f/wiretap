@@ -297,11 +297,23 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 
     }
 
-    // get the lowest success code
+    preferred := rme.extractPreferred(request)
     lo := rme.findLowestSuccessCode(operation)
 
-    // find the lowest success code.
-    mt, noMT := rme.lookForResponseCodes(operation, request, []string{lo})
+    var mt *v3.MediaType
+    var noMT bool = true
+    
+    if preferred != "" {
+        // If an explicit preferred header is present, let it have a chance to take precedence
+        // This can lead to a preferred header leading to a 3xx, 4xx, or 5xx example response.
+        mt, lo, noMT = rme.findMediaTypeContainingNamedExample(operation, request, preferred)
+    }
+    
+    if (noMT) {
+        // find the lowest success code.
+        mt, noMT = rme.lookForResponseCodes(operation, request, []string{lo})
+    }
+    
     if mt == nil && noMT {
         mtString := rme.extractMediaTypeHeader(request)
         return rme.buildError(
@@ -324,6 +336,33 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
     }
     c, _ := strconv.Atoi(lo)
     return mock, c, nil
+}
+
+func (rme *ResponseMockEngine) findMediaTypeContainingNamedExample(
+    operation *v3.Operation,
+    request *http.Request,
+    preferredExample string) (*v3.MediaType, string, bool) {
+
+    mediaTypeString := rme.extractMediaTypeHeader(request)
+
+    for codePairs := operation.Responses.Codes.First(); codePairs != nil; codePairs = codePairs.Next() {
+        resp := codePairs.Value()
+
+        if resp.Content != nil {
+            responseBody := resp.Content.GetOrZero(mediaTypeString)
+            if responseBody == nil {
+                responseBody = resp.Content.GetOrZero("application/json")
+            }
+
+            _, present := responseBody.Examples.Get(preferredExample)
+
+            if present {
+                return responseBody, codePairs.Key(), false
+            }
+        }
+    }
+
+    return nil, "", true
 }
 
 func (rme *ResponseMockEngine) findLowestSuccessCode(operation *v3.Operation) string {
