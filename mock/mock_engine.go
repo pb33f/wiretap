@@ -305,7 +305,8 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
     
     if preferred != "" {
         // If an explicit preferred header is present, let it have a chance to take precedence
-        // This can lead to a preferred header leading to a 3xx, 4xx, or 5xx example response.
+        // This allows a developer to cause a 3xx, 4xx, or 5xx mocked response by passing
+        // the appropriate example header value.
         mt, lo, noMT = rme.findMediaTypeContainingNamedExample(operation, request, preferred)
     }
     
