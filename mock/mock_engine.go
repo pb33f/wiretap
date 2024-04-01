@@ -248,7 +248,7 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
     // check the request is valid against security requirements.
     err = rme.ValidateSecurity(request, operation)
     if err != nil {
-        mt, _ := rme.lookForResponseCodes(operation, request, []string{"401"})
+        mt, _ := rme.findBestMediaTypeMatch(operation, request, []string{"401"})
         if mt != nil {
             mock, mockErr := rme.mockEngine.GenerateMock(mt, rme.extractPreferred(request))
             if mockErr != nil {
@@ -275,7 +275,7 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
     // validate the request against the document.
     _, validationErrors := rme.validator.ValidateHttpRequest(request)
     if len(validationErrors) > 0 {
-        mt, _ := rme.lookForResponseCodes(operation, request, []string{"422", "400"})
+        mt, _ := rme.findBestMediaTypeMatch(operation, request, []string{"422", "400"})
         if mt == nil {
             // no default, no valid response, inform use with a 500
             return rme.buildErrorWithPayload(
@@ -298,8 +298,8 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
     }
 
     preferred := rme.extractPreferred(request)
-    lo := rme.findLowestSuccessCode(operation)
 
+    var lo string
     var mt *v3.MediaType
     var noMT bool = true
     
@@ -311,8 +311,9 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
     }
     
     if (noMT) {
-        // find the lowest success code.
-        mt, noMT = rme.lookForResponseCodes(operation, request, []string{lo})
+        // When no preferred header is passed, or preferred header did not match a named example
+        lo = rme.findLowestSuccessCode(operation)
+        mt, noMT = rme.findBestMediaTypeMatch(operation, request, []string{lo})
     }
     
     if mt == nil && noMT {
@@ -325,7 +326,7 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
         ), 415, nil
     }
 
-    mock, mockErr := rme.mockEngine.GenerateMock(mt, rme.extractPreferred(request))
+    mock, mockErr := rme.mockEngine.GenerateMock(mt, preferred)
     if mockErr != nil {
         return rme.buildError(
             422,
@@ -355,6 +356,10 @@ func (rme *ResponseMockEngine) findMediaTypeContainingNamedExample(
                 responseBody = resp.Content.GetOrZero("application/json")
             }
 
+            if responseBody == nil {
+                continue;
+            }
+            
             _, present := responseBody.Examples.Get(preferredExample)
 
             if present {
@@ -381,14 +386,15 @@ func (rme *ResponseMockEngine) findLowestSuccessCode(operation *v3.Operation) st
     return fmt.Sprintf("%d", lowestCode)
 }
 
-func (rme *ResponseMockEngine) lookForResponseCodes(
+func (rme *ResponseMockEngine) findBestMediaTypeMatch(
     op *v3.Operation,
     request *http.Request,
     resultCodes []string) (*v3.MediaType, bool) {
 
     mediaTypeString := rme.extractMediaTypeHeader(request)
 
-    // check if the media type exists in the response.
+    // Try to find a matching media type in responses matching
+    // parameterized result codes
     for _, code := range resultCodes {
 
         resp := op.Responses.Codes.GetOrZero(code)
@@ -410,6 +416,8 @@ func (rme *ResponseMockEngine) lookForResponseCodes(
         }
     }
 
+    // As a last resort, check if a default response is specified and attempt
+    // to use that
     if op.Responses.Default != nil && op.Responses.Default.Content != nil {
         if op.Responses.Default.Content.GetOrZero(mediaTypeString) != nil {
             return op.Responses.Default.Content.GetOrZero(mediaTypeString), false
