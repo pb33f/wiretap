@@ -27,11 +27,26 @@ func handleHttpTraffic(wiretapConfig *shared.WiretapConfiguration, wtService *da
 			wtService.HandleHttpRequest(requestModel)
 		}
 
+		handleWebsocket := func(w http.ResponseWriter, r *http.Request) {
+			id, _ := uuid.NewUUID()
+			requestModel := &model.Request{
+				Id:                 &id,
+				HttpRequest:        r,
+				HttpResponseWriter: w,
+			}
+			wtService.HandleWebsocketRequest(requestModel)
+		}
+
 		// create a new mux.
 		mux := http.NewServeMux()
 
 		// handle the index
 		mux.HandleFunc("/", handleTraffic)
+
+		// Handle Websockets
+		for websocket := range wiretapConfig.WebsocketConfigs {
+			mux.HandleFunc(websocket, handleWebsocket)
+		}
 
 		pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("API Gateway UI booting on port %s...", wiretapConfig.Port)))
 

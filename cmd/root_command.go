@@ -349,6 +349,16 @@ var (
 				printLoadedRedirectAllowList(config.RedirectAllowList)
 			}
 
+			if len(config.WebsocketConfigs) > 0 {
+				for _, config := range config.WebsocketConfigs {
+					if config.VerifyCert == nil {
+						config.VerifyCert = func() *bool { b := true; return &b }()
+					}
+				}
+
+				printLoadedWebsockets(config.WebsocketConfigs)
+			}
+
 			// static headers
 			if config.Headers != nil && len(config.Headers.DropHeaders) > 0 {
 				pterm.Info.Printf("Dropping the following %d %s globally:\n", len(config.Headers.DropHeaders),
@@ -625,8 +635,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().IntP("hard-validation-code", "q", 400, "Set a custom http error code for non-compliant requests when using the hard-error flag")
 	rootCmd.Flags().IntP("hard-validation-return-code", "y", 502, "Set a custom http error code for non-compliant responses when using the hard-error flag")
 	rootCmd.Flags().BoolP("mock-mode", "x", false, "Run in mock mode, responses are mocked and no traffic is sent to the target API (requires OpenAPI spec)")
-	rootCmd.Flags().StringP("config", "c", "",
-		"Location of wiretap configuration file to use (default is .wiretap in current directory)")
+	rootCmd.Flags().StringP("config", "c", "", "Location of wiretap configuration file to use (default is .wiretap in current directory)")
 	rootCmd.Flags().StringP("base", "b", "", "Set a base path to resolve relative file references from, or a overriding base URL to resolve remote references from")
 	rootCmd.Flags().BoolP("debug", "l", false, "Enable debug logging")
 	rootCmd.Flags().StringP("har", "z", "", "Load a HAR file instead of sniffing traffic")
@@ -706,11 +715,20 @@ func printLoadedIgnoreRedirectPaths(ignoreRedirects []string) {
 }
 
 func printLoadedRedirectAllowList(allowRedirects []string) {
-	pterm.Info.Printf("Loaded %d allows listed redirect %s :\n", len(allowRedirects),
+	pterm.Info.Printf("Loaded %d allows listed redirect %s:\n", len(allowRedirects),
 		shared.Pluralize(len(allowRedirects), "path", "paths"))
 
 	for _, x := range allowRedirects {
 		pterm.Printf("🐵 Paths matching '%s' will always follow redirects, regardless of ignoreRedirect settings\n", pterm.LightCyan(x))
+	}
+	pterm.Println()
+}
+
+func printLoadedWebsockets(websockets map[string]*shared.WiretapWebsocketConfig) {
+	pterm.Info.Printf("Loaded %d %s: \n", len(websockets), shared.Pluralize(len(websockets), "websocket", "websockets"))
+
+	for websocket := range websockets {
+		pterm.Printf("🔌 Paths prefixed '%s' will be managed as a websocket\n", pterm.LightCyan(websocket))
 	}
 	pterm.Println()
 }
