@@ -95,6 +95,9 @@ func (ws *WiretapService) HandleServiceRequest(request *model.Request, core serv
 }
 
 func (ws *WiretapService) HandleHttpRequest(request *model.Request) {
-
 	ws.handleHttpRequest(request)
+}
+
+func (ws *WiretapService) HandleWebsocketRequest(request *model.Request) {
+	ws.handleWebsocketRequest(request)
 }
