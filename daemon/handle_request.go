@@ -298,7 +298,7 @@ func (ws *WiretapService) handleWebsocketRequest(request *model.Request) {
 	dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: !*websocketConfig.VerifyCert}
 	serverConn, _, err := dialer.Dial(newRequest.URL.String(), newRequest.Header)
 	if err != nil {
-		ws.config.Logger.Error("Unable to create server connection")
+		ws.config.Logger.Error(fmt.Sprintf("Unable to connect to remote server; websocket connection failed: %s", err))
 		return
 	}
 	defer func(serverConn *websocket.Conn) {
@@ -386,7 +386,7 @@ func getCloseCode(err error) (int, bool) {
 
 func logWebsocketClose(config *shared.WiretapConfiguration, closeCode int, isUnexpected bool) {
 	if isUnexpected {
-		config.Logger.Error(fmt.Sprintf("Websocket closed unexepectedly with code: %d", closeCode))
+		config.Logger.Warn(fmt.Sprintf("Websocket closed unexepectedly with code: %d", closeCode))
 	} else {
 		config.Logger.Info(fmt.Sprintf("Websocket closed expectedly with code: %d", closeCode))
 	}
