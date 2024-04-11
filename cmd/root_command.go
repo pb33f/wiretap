@@ -366,7 +366,12 @@ var (
 
 			if len(config.IgnoreValidation) > 0 {
 				config.CompileIgnoreValidations()
-				// TODO: add print command
+				printLoadedIgnoreValidationPaths(config.IgnoreValidation)
+			}
+
+			if len(config.ValidationAllowList) > 0 {
+				config.CompileValidationAllowList()
+				printLoadedValidationAllowList(config.ValidationAllowList)
 			}
 
 			// static headers
@@ -725,7 +730,7 @@ func printLoadedIgnoreRedirectPaths(ignoreRedirects []string) {
 }
 
 func printLoadedRedirectAllowList(allowRedirects []string) {
-	pterm.Info.Printf("Loaded %d allows listed redirect %s:\n", len(allowRedirects),
+	pterm.Info.Printf("Loaded %d allow listed redirect %s:\n", len(allowRedirects),
 		shared.Pluralize(len(allowRedirects), "path", "paths"))
 
 	for _, x := range allowRedirects {
@@ -739,6 +744,26 @@ func printLoadedWebsockets(websockets map[string]*shared.WiretapWebsocketConfig)
 
 	for websocket := range websockets {
 		pterm.Printf("🔌 Paths prefixed '%s' will be managed as a websocket\n", pterm.LightCyan(websocket))
+	}
+	pterm.Println()
+}
+
+func printLoadedIgnoreValidationPaths(ignoreValidations []string) {
+	pterm.Info.Printf("Loaded %d %s to ignore validation:\n", len(ignoreValidations),
+		shared.Pluralize(len(ignoreValidations), "path", "paths"))
+
+	for _, x := range ignoreValidations {
+		pterm.Printf("⚖️ Paths matching '%s' will not have requests validated\n", pterm.LightCyan(x))
+	}
+	pterm.Println()
+}
+
+func printLoadedValidationAllowList(validationAllowList []string) {
+	pterm.Info.Printf("Loaded %d allow listed validation paths %s :\n", len(validationAllowList),
+		shared.Pluralize(len(validationAllowList), "path", "paths"))
+
+	for _, x := range validationAllowList {
+		pterm.Printf("👮 Paths matching '%s' will always have validation run, regardless of ignoreValidation settings\n", pterm.LightCyan(x))
 	}
 	pterm.Println()
 }

@@ -309,4 +309,96 @@ func TestRedirectAllowList_NoPathsRegistered(t *testing.T) {
 
 }
 
-// TODO: add tests for new validation functions
+func TestIgnoreValidation(t *testing.T) {
+
+	config := `ignoreValidation:
+  - /pb33f/test/**
+  - /pb33f/cakes/123
+  - /*/test/123`
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &c)
+
+	c.CompileIgnoreValidations()
+
+	ignore := IgnoreValidationOnPath("/pb33f/test/burgers/fries?1234=no", &c)
+	assert.True(t, ignore)
+
+	ignore = IgnoreValidationOnPath("/pb33f/cakes/123", &c)
+	assert.True(t, ignore)
+
+	ignore = IgnoreValidationOnPath("/roastbeef/test/123", &c)
+	assert.True(t, ignore)
+
+	ignore = IgnoreValidationOnPath("/not-registered", &c)
+	assert.False(t, ignore)
+
+}
+
+func TestIgnoreValidation_NoPathsRegistered(t *testing.T) {
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(""), &c)
+
+	c.CompileIgnoreValidations()
+
+	ignore := IgnoreValidationOnPath("/pb33f/test/burgers/fries?1234=no", &c)
+	assert.False(t, ignore)
+
+	ignore = IgnoreValidationOnPath("/pb33f/cakes/123", &c)
+	assert.False(t, ignore)
+
+	ignore = IgnoreValidationOnPath("/roastbeef/test/123", &c)
+	assert.False(t, ignore)
+
+	ignore = IgnoreValidationOnPath("/not-registered", &c)
+	assert.False(t, ignore)
+
+}
+
+func TestValidationAllowList(t *testing.T) {
+
+	config := `validationAllowList:
+  - /pb33f/test/**
+  - /pb33f/cakes/123
+  - /*/test/123`
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &c)
+
+	c.CompileValidationAllowList()
+
+	ignore := PathValidationAllowListed("/pb33f/test/burgers/fries?1234=no", &c)
+	assert.True(t, ignore)
+
+	ignore = PathValidationAllowListed("/pb33f/cakes/123", &c)
+	assert.True(t, ignore)
+
+	ignore = PathValidationAllowListed("/roastbeef/test/123", &c)
+	assert.True(t, ignore)
+
+	ignore = PathValidationAllowListed("/not-registered", &c)
+	assert.False(t, ignore)
+
+}
+
+func TestValidationAllowList_NoPathsRegistered(t *testing.T) {
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(""), &c)
+
+	c.CompileValidationAllowList()
+
+	ignore := PathValidationAllowListed("/pb33f/test/burgers/fries?1234=no", &c)
+	assert.False(t, ignore)
+
+	ignore = PathValidationAllowListed("/pb33f/cakes/123", &c)
+	assert.False(t, ignore)
+
+	ignore = PathValidationAllowListed("/roastbeef/test/123", &c)
+	assert.False(t, ignore)
+
+	ignore = PathValidationAllowListed("/not-registered", &c)
+	assert.False(t, ignore)
+
+}

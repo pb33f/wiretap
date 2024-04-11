@@ -48,8 +48,8 @@ func PathRedirectAllowListed(path string, configuration *shared.WiretapConfigura
 }
 
 func IgnoreValidationOnPath(path string, configuration *shared.WiretapConfiguration) bool {
-	for _, redirectPath := range configuration.CompiledIgnoreValidations {
-		if redirectPath.CompiledPath.Match(path) {
+	for _, validationPath := range configuration.CompiledIgnoreValidations {
+		if validationPath.CompiledPath.Match(path) {
 			return true
 		}
 	}
@@ -57,8 +57,8 @@ func IgnoreValidationOnPath(path string, configuration *shared.WiretapConfigurat
 }
 
 func PathValidationAllowListed(path string, configuration *shared.WiretapConfiguration) bool {
-	for _, redirectPath := range configuration.CompiledIgnoreValidations {
-		if redirectPath.CompiledPath.Match(path) {
+	for _, validationPath := range configuration.CompiledValidationAllowList {
+		if validationPath.CompiledPath.Match(path) {
 			return true
 		}
 	}
