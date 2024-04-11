@@ -47,6 +47,24 @@ func PathRedirectAllowListed(path string, configuration *shared.WiretapConfigura
 	return false
 }
 
+func IgnoreValidationOnPath(path string, configuration *shared.WiretapConfiguration) bool {
+	for _, redirectPath := range configuration.CompiledIgnoreValidations {
+		if redirectPath.CompiledPath.Match(path) {
+			return true
+		}
+	}
+	return false
+}
+
+func PathValidationAllowListed(path string, configuration *shared.WiretapConfiguration) bool {
+	for _, redirectPath := range configuration.CompiledIgnoreValidations {
+		if redirectPath.CompiledPath.Match(path) {
+			return true
+		}
+	}
+	return false
+}
+
 func RewritePath(path string, configuration *shared.WiretapConfiguration) string {
 	paths := FindPaths(path, configuration)
 	var replaced string = path
