@@ -53,16 +53,8 @@ func (ws *WiretapService) ValidateRequest(
 		_, validationErrors = validator.ValidateHttpRequest(httpRequest)
 	}
 
-	pm := false
-	for i := range validationErrors {
-		if validationErrors[i].IsPathMissingError() {
-			if !pm {
-				cleanedErrors = append(cleanedErrors, validationErrors[i])
-				pm = true
-			}
-		} else {
-			cleanedErrors = append(cleanedErrors, validationErrors[i])
-		}
+	for _, validationError := range validationErrors {
+		cleanedErrors = append(cleanedErrors, validationError)
 	}
 	// record results
 	buildTransConfig := HttpTransactionConfig{

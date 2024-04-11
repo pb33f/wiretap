@@ -308,3 +308,5 @@ func TestRedirectAllowList_NoPathsRegistered(t *testing.T) {
 	assert.False(t, ignore)
 
 }
+
+// TODO: add tests for new validation functions

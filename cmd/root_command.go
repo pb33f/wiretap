@@ -359,6 +359,16 @@ var (
 				printLoadedWebsockets(config.WebsocketConfigs)
 			}
 
+			if len(config.ValidationAllowList) > 0 {
+				config.CompileIgnoreValidations()
+				// TODO: add print command
+			}
+
+			if len(config.IgnoreValidation) > 0 {
+				config.CompileIgnoreValidations()
+				// TODO: add print command
+			}
+
 			// static headers
 			if config.Headers != nil && len(config.Headers.DropHeaders) > 0 {
 				pterm.Info.Printf("Dropping the following %d %s globally:\n", len(config.Headers.DropHeaders),

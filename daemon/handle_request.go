@@ -131,17 +131,21 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 
 	ws.config.Logger.Info("[wiretap] handling API request", "url", request.HttpRequest.URL.String())
 
-	// check if we're going to fail hard on validation errors. (default is to skip this)
-	if ws.config.HardErrors && !ws.config.MockMode {
+	if ws.config.MockMode {
+		// TODO: Add logging
+
+	} else if configModel.IgnoreValidationOnPath(apiRequest.URL.Path, ws.config) && !configModel.PathValidationAllowListed(apiRequest.URL.Path, ws.config) {
+		// TODO: Add logging
+
+		// check if we're going to fail hard on validation errors. (default is to skip this)
+	} else if ws.config.HardErrors {
 
 		// validate the request synchronously
 		requestErrors = ws.ValidateRequest(request, newReq)
 
 	} else {
 		// validate the request asynchronously
-		if !ws.config.MockMode {
-			go ws.ValidateRequest(request, newReq)
-		}
+		go ws.ValidateRequest(request, newReq)
 	}
 
 	// short-circuit if we're using mock mode, there is no API call to make.
