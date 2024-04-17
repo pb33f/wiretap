@@ -2,6 +2,11 @@
 
 ![logo](.github/wiretap-hero.png)
 
+[![discord](https://img.shields.io/discord/923258363540815912)](https://discord.gg/x7VACVuEGP)
+[![GitHub downloads](https://img.shields.io/github/downloads/pb33f/wiretap/total?label=github%20downloads&style=flat-square)](https://github.com/pb33f/wiretap/releases)
+[![npm](https://img.shields.io/npm/dm/@pb33f/wiretap?style=flat-square&label=npm%20downloads)](https://www.npmjs.com/package/@pb33f/wiretap)
+[![Docker Pulls](https://img.shields.io/docker/pulls/pb33f/wiretap?style=flat-square)](https://hub.docker.com/r/pb33f/wiretap)
+
 A local and pipeline based tool to sniff API request and responses from clients and servers
 to detect OpenAPI contract violations and compliance.
 
