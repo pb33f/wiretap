@@ -390,15 +390,15 @@ func setStrictLocationHeader(config *shared.WiretapConfiguration, headers map[st
 			if parseErr != nil {
 				config.Logger.Warn(fmt.Sprintf("Unable to parse `Location` header URL: %s", location))
 				newLocations = append(newLocations, location)
-
-				// Check if the target location's host differs from wiretap's host
-			} else if parsedLocation.Host != apiGatewayHost {
+			} else if parsedLocation.Host != apiGatewayHost { // Check if the target location's host differs from wiretap's host
 				parsedLocation.Host = apiGatewayHost
 
 				newLocation := parsedLocation.String()
 				config.Logger.Info(fmt.Sprintf("Rewrote `Location` header from %s to %s", location, newLocation))
 
 				newLocations = append(newLocations, newLocation)
+			} else { // Otherwise, we need to re-add the old location
+				newLocations = append(newLocations, location)
 			}
 
 		}
