@@ -4,7 +4,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/plank/pkg/server"
@@ -21,13 +20,9 @@ func bootedMessage(wiretapConfig *shared.WiretapConfiguration) {
 			if !seen {
 				seen = true
 				pterm.Println()
-				protocol := "http"
-				if wiretapConfig.CertificateKey != "" && wiretapConfig.Certificate != "" {
-					protocol = "https"
-				}
 
-				b1 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("API Gateway")).Sprint(fmt.Sprintf("%s://localhost:%s", protocol, wiretapConfig.Port))
-				b2 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Monitor UI")).Sprint(fmt.Sprintf("%s://localhost:%s", protocol, wiretapConfig.MonitorPort))
+				b1 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("API Gateway")).Sprint(wiretapConfig.GetApiGateway())
+				b2 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Monitor UI")).Sprint(wiretapConfig.GetMonitorUI())
 				b3 := pterm.DefaultBox.WithTitle(pterm.LightMagenta("Static files served from")).Sprint(wiretapConfig.StaticDir)
 
 				var pp *pterm.PanelPrinter

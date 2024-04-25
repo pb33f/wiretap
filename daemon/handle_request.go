@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -186,6 +187,10 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 
 	// wiretap needs to work from anywhere, so allow everything.
 	setCORSHeaders(headers)
+
+	if config.StrictRedirectLocation && is3xxStatusCode(returnedResponse.StatusCode) {
+		setStrictLocationHeader(config, headers)
+	}
 
 	// write headers
 	for k, v := range headers {
@@ -367,6 +372,41 @@ func setCORSHeaders(headers map[string][]string) {
 	headers["Access-Control-Allow-Methods"] = []string{"OPTIONS,POST,GET,DELETE,PATCH,PUT"}
 }
 
+// setStrictLocationHeader rewrites any `Location` headers to wiretap's ApiGatewayHost. Some web servers specify
+// the full URL when redirecting the browser, so we need to ensure that the browser isn't redirected away from the
+// wiretap Host. We achieve this by rewriting the `Location` header host and port to wiretap's host and port on all
+// redirect responses.
+func setStrictLocationHeader(config *shared.WiretapConfiguration, headers map[string][]string) {
+	if locations, ok := headers["Location"]; ok {
+		newLocations := make([]string, 0)
+
+		apiGatewayHost := config.GetApiGatewayHost()
+
+		for _, location := range locations {
+			parsedLocation, parseErr := url.Parse(location)
+
+			// Unable to parse the location url, let's just re-add the location to ensure that there is at least one
+			// redirect target
+			if parseErr != nil {
+				config.Logger.Warn(fmt.Sprintf("Unable to parse `Location` header URL: %s", location))
+				newLocations = append(newLocations, location)
+
+				// Check if the target location's host differs from wiretap's host
+			} else if parsedLocation.Host != apiGatewayHost {
+				parsedLocation.Host = apiGatewayHost
+
+				newLocation := parsedLocation.String()
+				config.Logger.Info(fmt.Sprintf("Rewrote `Location` header from %s to %s", location, newLocation))
+
+				newLocations = append(newLocations, newLocation)
+			}
+
+		}
+		headers["Location"] = newLocations
+	}
+
+}
+
 func getCloseCode(err error) (int, bool) {
 	unexpectedClose := websocket.IsUnexpectedCloseError(err,
 		websocket.CloseNormalClosure,
@@ -379,6 +419,10 @@ func getCloseCode(err error) (int, bool) {
 		return ce.Code, unexpectedClose
 	}
 	return -1, unexpectedClose
+}
+
+func is3xxStatusCode(statusCode int) bool {
+	return 300 <= statusCode && statusCode < 400
 }
 
 func logWebsocketClose(config *shared.WiretapConfiguration, closeCode int, isUnexpected bool) {

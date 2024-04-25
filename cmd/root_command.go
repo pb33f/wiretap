@@ -86,6 +86,7 @@ var (
 			hardErrorCode, _ = cmd.Flags().GetInt("hard-validation-code")
 			hardErrorReturnCode, _ = cmd.Flags().GetInt("hard-validation-return-code")
 			streamReport, _ := cmd.Flags().GetBool("stream-report")
+			strictRedirectLocation, _ := cmd.Flags().GetBool("strict-redirect-location")
 
 			portFlag, _ := cmd.Flags().GetString("port")
 			if portFlag != "" {
@@ -186,6 +187,11 @@ var (
 						config.StreamReport = true
 					}
 				}
+				if strictRedirectLocation {
+					if !config.StrictRedirectLocation {
+						config.StrictRedirectLocation = true
+					}
+				}
 
 				if reportFilename != "" {
 					config.ReportFile = reportFilename
@@ -213,6 +219,9 @@ var (
 				}
 				if streamReport {
 					config.StreamReport = true
+				}
+				if strictRedirectLocation {
+					config.StrictRedirectLocation = true
 				}
 				if base != "" {
 					config.Base = base
@@ -357,11 +366,6 @@ var (
 				}
 
 				printLoadedWebsockets(config.WebsocketConfigs)
-			}
-
-			if len(config.ValidationAllowList) > 0 {
-				config.CompileIgnoreValidations()
-				// TODO: add print command
 			}
 
 			if len(config.IgnoreValidation) > 0 {
@@ -658,6 +662,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringArrayP("har-allow", "j", nil, "Add a path to the HAR allow list, can use arg multiple times")
 	rootCmd.Flags().StringP("report-filename", "f", "wiretap-report.json", "Filename for any headless report generation output")
 	rootCmd.Flags().BoolP("stream-report", "a", false, "Stream violations to report JSON file as they occur (headless mode)")
+	rootCmd.Flags().BoolP("strict-redirect-location", "r", false, "Rewrite the redirect `Location` header on redirect responses to wiretap's API Gateway Host")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
