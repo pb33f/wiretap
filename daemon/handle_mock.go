@@ -90,9 +90,12 @@ func (ws *WiretapService) handleMockRequest(
 
 	// if the mock is empty
 	request.HttpResponseWriter.WriteHeader(mockStatus)
+	if mock == nil {
+		return
+	}
+
 	_, errs := request.HttpResponseWriter.Write(mock)
 	if errs != nil {
 		panic(errs)
 	}
-	return
 }
