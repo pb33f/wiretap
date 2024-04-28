@@ -4,7 +4,7 @@ import {map} from "lit/directives/map.js";
 import {LitElement, TemplateResult} from "lit";
 import {BuildLiveTransactionFromState, HttpTransaction} from "@/model/http_transaction";
 import transactionViewComponentCss from "./transaction-view.css";
-import {KVViewComponent} from "@pb33f/cowboy-components/components/kv-view/kv-view";
+import {KVViewComponent} from "@pb33f/cowboy-components/components/kv-view/kv-view.js";
 import sharedCss from "@/components/shared.css";
 import {SlTab, SlTabGroup} from "@shoelace-style/shoelace";
 import {
