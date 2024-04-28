@@ -114,33 +114,47 @@ export class ViolationDetailsComponent extends LitElement {
             violationDetails = html`
                 ${map(this._data, (i) => {
                     
-                    const formatted = Prism.highlight(i.referenceSchema,
-                            Prism.languages.json, 'yaml');
-                    
                     let schemaView: TemplateResult;
                     if (this.selectedViolationView === SchemaType.SCHEMA) {
-        
-                        const formattedCode = formatted
-                                .split('\n')
-                                .map((line, num) => `<span class="${((num+1) == i.line) ?
-                                        'line-active' : ''}"><span class="line-num ${((num+1) == i.line) ? 
-                                        'line-active' : ''}">${(num + 1).toString().padStart(4, ' ')}.</span> ${line}</span>`)
-                                .join('\n');
                         
-                        schemaView = html`
-                            <div class="schema-violation-object">
-                                <pre class="line-numbers"><code>${unsafeHTML(formattedCode)}</code></pre>
-                            </div>`
+                        if (i.referenceSchema) {
+                            const formatted = Prism.highlight(i.referenceSchema,
+                                Prism.languages.json, 'yaml');
+
+                            const formattedCode = formatted
+                                .split('\n')
+                                .map((line, num) => `<span class="${((num + 1) == i.line) ?
+                                    'line-active' : ''}"><span class="line-num ${((num + 1) == i.line) ?
+                                    'line-active' : ''}">${(num + 1).toString().padStart(4, ' ')}.</span> ${line}</span>`)
+                                .join('\n');
+
+                            schemaView = html`
+                                <div class="schema-violation-object">
+                                    <pre class="line-numbers"><code>${unsafeHTML(formattedCode)}</code></pre>
+                                </div>`
+                        } else {
+                            schemaView = html`
+                                <div class="schema-violation-object">
+                                     <pre><code>Schema unavailable</code></pre>
+                                </div>`
+                        
+                        }
                     }
                     if (this.selectedViolationView === SchemaType.OBJECT) {
-                        schemaView = html`
-                            <div class="schema-violation-object">
-                                <pre><code>${unsafeHTML(Prism.highlight(i.referenceObject,
-                                        Prism.languages.json, 'json'))}</code></pre>
-                            </div>`
+                        if (i.referenceObject) {
+                            schemaView = html`
+                                <div class="schema-violation-object">
+                                    <pre><code>${unsafeHTML(Prism.highlight(i.referenceObject,
+                                            Prism.languages.json, 'json'))}</code></pre>
+                                </div>`
+                        } else {
+                            schemaView = html`
+                                <div class="schema-violation-object">
+                                     <pre><code>Object unavailable</code></pre>
+                                </div>`
+                        }
                     }
-
-
+                    
                     if (this.selectedViolationView === SchemaType.EXAMPLE) {
                         // schemaView = html`
                         //     <div class="schema-violation-object">
