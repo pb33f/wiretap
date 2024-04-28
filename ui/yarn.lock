@@ -227,15 +227,16 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@pb33f/cowboy-components@^0.0.12":
-  version "0.0.12"
-  resolved "https://registry.yarnpkg.com/@pb33f/cowboy-components/-/cowboy-components-0.0.12.tgz#ffde2dfa2a8de8871520a8a1defc3a8330d28d76"
-  integrity sha512-xhaK7ot3MJv0/QrDaR50qqydcrM83xmhxYQpyN465rFQ09JORKlQLi2t2DaDCPt67pzfKfkaAUrO+aKY0EcdbQ==
+"@pb33f/cowboy-components@^0.1.6":
+  version "0.1.16"
+  resolved "https://registry.yarnpkg.com/@pb33f/cowboy-components/-/cowboy-components-0.1.16.tgz#951cc30f2dd5cd44936906e49a710314d61ebf99"
+  integrity sha512-qYbliIp2liyJP+9U7jS51ziYSE3b9bt1ORLJsAtqw69eT4OInRB+sVQOe5Wjbvcr9GqE4azIFOSYVCdh+eGcAw==
   dependencies:
     "@pb33f/ranch" "^0.3.4"
-    "@pb33f/saddlebag" "^0.1.0"
-    "@shoelace-style/shoelace" "^2.12.0"
+    "@pb33f/saddlebag" "^0.2.1"
+    "@shoelace-style/shoelace" "^2.15.0"
     marked "^11.1.1"
+    monaco-editor "^0.46.0"
     prismjs "^1.29.0"
 
 "@pb33f/ranch@^0.3.4":
@@ -249,6 +250,11 @@
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/@pb33f/saddlebag/-/saddlebag-0.1.0.tgz#41a022a60d7781c73a591780ffdbad68cd08c47c"
   integrity sha512-WfhBeZSc25AJko7JhnthNHQ9PmdJPRJvEHYovU1ZswY2BEzGd6w5P9RPdMC5QklTWljs3xEURUk4tbaBqlt1BQ==
+
+"@pb33f/saddlebag@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@pb33f/saddlebag/-/saddlebag-0.2.1.tgz#3e18342b661c9d0ca88befc08edb2a4884bb04db"
+  integrity sha512-zVALv461z7n0eYnHeBXDHT3w4yDyc7rd7kgmB2xCEsxhUpeXybtwb+c04HEflHUHQ5f4joQH2L2iEZd6W4k1yg==
 
 "@rollup/plugin-typescript@^11.1.1":
   version "11.1.6"
@@ -312,6 +318,20 @@
   version "2.12.0"
   resolved "https://registry.yarnpkg.com/@shoelace-style/shoelace/-/shoelace-2.12.0.tgz#8fa21ccfc28114cb5ce8126adb412dc4abf855df"
   integrity sha512-1Amirj0c5WLkymDcP6ZQmBfMC6zTNmGGK7/mjmGq4yhljrVaECVlBoKm0tfmo1jd3r8XJ8xYbQ8cxPAlwiDDvw==
+  dependencies:
+    "@ctrl/tinycolor" "^4.0.2"
+    "@floating-ui/dom" "^1.5.3"
+    "@lit/react" "^1.0.0"
+    "@shoelace-style/animations" "^1.1.0"
+    "@shoelace-style/localize" "^3.1.2"
+    composed-offset-position "^0.0.4"
+    lit "^3.0.0"
+    qr-creator "^1.0.0"
+
+"@shoelace-style/shoelace@^2.15.0":
+  version "2.15.0"
+  resolved "https://registry.yarnpkg.com/@shoelace-style/shoelace/-/shoelace-2.15.0.tgz#3410d6bb50811fad001b2c2fbd455cb60d6341a9"
+  integrity sha512-Lcg938Y8U2VsHqIYewzlt+H1rbrXC4GRSUkTJgXyF8/0YAOlI+srd5OSfIw+/LYmwLP2Peyh398Kae/6tg4PDA==
   dependencies:
     "@ctrl/tinycolor" "^4.0.2"
     "@floating-ui/dom" "^1.5.3"
@@ -839,6 +859,11 @@ monaco-editor@^0.38.0:
   version "0.38.0"
   resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.38.0.tgz#7b3cd16f89b1b8867fcd3c96e67fccee791ff05c"
   integrity sha512-11Fkh6yzEmwx7O0YoLxeae0qEGFwmyPRlVxpg7oF9czOOCB/iCjdJrG5I67da5WiXK3YJCxoz9TJFE8Tfq/v9A==
+
+monaco-editor@^0.46.0:
+  version "0.46.0"
+  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.46.0.tgz#013e453fd2408997e4fe0bf67b36a80a24bc7bcc"
+  integrity sha512-ADwtLIIww+9FKybWscd7OCfm9odsFYHImBRI1v9AviGce55QY8raT+9ihH8jX/E/e6QVSGM+pKj4jSUSRmALNQ==
 
 ms@2.1.2:
   version "2.1.2"
