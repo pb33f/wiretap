@@ -1011,9 +1011,9 @@ components:
 }
 
 func TestNewMockEngine_UseExamples_Preferred_200_Not_Json(t *testing.T) {
-// A little far-fetched for an API to behave this way,
-// where lowest 2xx response is html and second is json,
-// including the test case just in case
+	// A little far-fetched for an API to behave this way,
+	// where lowest 2xx response is html and second is json,
+	// including the test case just in case
 	spec := `openapi: 3.1.0
 paths:
   /test:
