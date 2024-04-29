@@ -23,9 +23,6 @@ export class SpecControlsComponent extends LitElement {
     }
 
     render() {
-
-
-
         return html`
             <sl-button variant="default" size="small" @click="${this.toggleSpec}">
                 <sl-icon slot="prefix" name="${this.specVisible? 'eye-slash' : 'eye'}"></sl-icon>
