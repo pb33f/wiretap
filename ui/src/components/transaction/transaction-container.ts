@@ -19,6 +19,7 @@ import {AreFiltersActive, WiretapFilters} from "@/model/controls";
 import {TransactionLinkCache} from "@/model/link_cache";
 import {GetBagManager} from "@pb33f/saddlebag";
 import dividerCss from "@/components/divider.css";
+import {SpecControlsComponent} from "@/components/transaction/spec_controls";
 
 @customElement('http-transaction-container')
 export class HttpTransactionContainerComponent extends LitElement {
@@ -48,6 +49,9 @@ export class HttpTransactionContainerComponent extends LitElement {
 
     @query('spec-editor')
     private _specEditor: SpecEditor;
+
+    @query('spec-controls')
+    private _specControls: SpecControlsComponent;
 
     private _filters: WiretapFilters;
 
@@ -311,6 +315,7 @@ export class HttpTransactionContainerComponent extends LitElement {
 
     locationSelected(e: CustomEvent<ViolationLocation>) {
         this._showSpec = true;
+        this._specControls.specVisible = true;
         this.requestUpdate();
         // wait for the dom to update, then select the location in the editor.
         setTimeout(() => {
