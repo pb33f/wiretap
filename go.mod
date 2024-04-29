@@ -6,8 +6,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
 	github.com/pb33f/harhar v0.0.0-20240111233202-e393c2a39a60
-	github.com/pb33f/libopenapi v0.16.2
-	github.com/pb33f/libopenapi-validator v0.0.51
+	github.com/pb33f/libopenapi v0.16.3
+	github.com/pb33f/libopenapi-validator v0.0.52
 	github.com/pb33f/ranch v0.4.0
 	github.com/pterm/pterm v0.12.79
 	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
@@ -43,7 +43,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.18.2
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
