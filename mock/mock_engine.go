@@ -340,12 +340,12 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 
 	if len(mock) == 0 {
 		return rme.buildError(
-			404,
-			"No mock generated",
-			fmt.Sprintf("Nothing was generated for the request '%s' with the method '%s'. Check spec response defintions",
+			200,
+			"Response is empty",
+			fmt.Sprintf("Nothing was generated for the request '%s' with the method '%s'. Response is empty",
 				request.URL.Path, request.Method),
-			"not_found",
-		), 404, err
+			"empty",
+		), 200, err
 	}
 
 	return mock, c, nil

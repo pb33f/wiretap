@@ -538,7 +538,7 @@ components:
 	b, status, err := me.GenerateResponse(request)
 	assert.NoError(t, err)
 	assert.Equal(t, 200, status)
-	assert.Equal(t, "", string(b))
+	assert.Equal(t, `{"type":"https://pb33f.io/wiretap/errors#empty","title":"Response is empty (200)","status":200,"detail":"Nothing was generated for the request '/auth' with the method 'POST'. Response is empty"}`, string(b))
 }
 
 // https://github.com/pb33f/wiretap/issues/80
