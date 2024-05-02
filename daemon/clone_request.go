@@ -35,10 +35,16 @@ func CloneExistingRequest(request CloneRequest) *http.Request {
 
 	var newURL string
 	var newReq *http.Request
+
 	newURL = ReconstructURL(request.Request, request.Protocol, request.Host, request.BasePath, request.Port)
 
 	// create cloned request
-	newReq, _ = http.NewRequest(request.Request.Method, newURL, io.NopCloser(bytes.NewBuffer(b)))
+	var err error
+	newReq, err = http.NewRequest(request.Request.Method, newURL, io.NopCloser(bytes.NewBuffer(b)))
+
+	if err != nil {
+		return nil
+	}
 
 	// copy headers, drop those that are specified.
 	for k, v := range request.Request.Header {
