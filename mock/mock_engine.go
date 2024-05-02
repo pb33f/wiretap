@@ -348,6 +348,11 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 		), 200, err
 	}
 
+	// check for wiretap-status-code in header and override the code, regardless of what was found in the spec.
+	if statusCode := request.Header.Get("wiretap-status-code"); statusCode != "" {
+		c, _ = strconv.Atoi(statusCode)
+	}
+
 	return mock, c, nil
 }
 

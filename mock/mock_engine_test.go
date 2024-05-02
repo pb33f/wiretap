@@ -1232,3 +1232,48 @@ paths:
 	assert.Equal(t, "1", items[0])
 
 }
+
+// https://github.com/pb33f/wiretap/issues/89
+func TestNewMockEngine_OverrideStatusCode_Issue89(t *testing.T) {
+
+	spec := `openapi: 3.1.0
+paths:
+  /test:
+    get:
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+components:
+  schemas:
+    Thing:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+`
+
+	d, _ := libopenapi.NewDocument([]byte(spec))
+	doc, _ := d.BuildV3Model()
+
+	me := NewMockEngine(&doc.Model, false)
+
+	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
+	request.Header.Set("wiretap-status-code", "418")
+
+	b, status, err := me.GenerateResponse(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 418, status)
+
+	var decoded map[string]any
+	_ = json.Unmarshal(b, &decoded)
+
+	assert.NotEmpty(t, decoded["name"])
+	assert.NotEmpty(t, decoded["description"])
+
+}
