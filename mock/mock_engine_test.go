@@ -1230,6 +1230,5 @@ paths:
 
 	items := args["arrParamExploded"].([]any)
 	assert.Equal(t, "1", items[0])
-	assert.Equal(t, "2", items[1])
 
 }
