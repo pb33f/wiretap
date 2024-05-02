@@ -127,6 +127,11 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		Variables:     config.CompiledVariables,
 	})
 
+	if newReq == nil || apiRequest == nil {
+		ws.config.Logger.Error("[wiretap] unable to clone API request, failed", "url", request.HttpRequest.URL.String())
+		return
+	}
+
 	var requestErrors []*errors.ValidationError
 	var responseErrors []*errors.ValidationError
 
