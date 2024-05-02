@@ -1111,4 +1111,125 @@ components:
 	assert.NoError(t, err)
 	assert.Equal(t, 200, status)
 	assert.Equal(t, "<!DOCTYPE html><html lang=\"en\"><body><h1>Happy Days</h1</body></html>", string(b[:]))
+
+}
+
+// https://github.com/pb33f/wiretap/issues/83
+func TestNewMockEngine_UseExamples_Items_Issue83(t *testing.T) {
+
+	spec := `openapi: 3.1.0
+paths:
+  /chip-shop:
+    get:
+      operationId: itemsExamples
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  args:
+                    type: object
+                    properties:
+                      arrParam:
+                        type: string
+                        example: "test,test2"
+                      arrParamExploded:
+                        type: array
+                        items:
+                          type: string
+                          examples:
+                            - "1"
+                            - "2"
+                    required:
+                      - arrParam
+                      - arrParamExploded
+                required:
+                  - args
+`
+
+	d, _ := libopenapi.NewDocument([]byte(spec))
+	doc, _ := d.BuildV3Model()
+
+	me := NewMockEngine(&doc.Model, false)
+
+	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/chip-shop", nil)
+
+	b, status, err := me.GenerateResponse(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 200, status)
+
+	var decoded map[string]any
+	_ = json.Unmarshal(b, &decoded)
+
+	args := decoded["args"].(map[string]any)
+
+	assert.Equal(t, "test,test2", args["arrParam"])
+
+	items := args["arrParamExploded"].([]any)
+	assert.Equal(t, "1", items[0])
+	assert.Equal(t, "2", items[1])
+
+}
+
+// https://github.com/pb33f/wiretap/issues/83
+func TestNewMockEngine_UseExample_Items_Issue83(t *testing.T) {
+
+	spec := `openapi: 3.1.0
+paths:
+  /chip-shop:
+    get:
+      operationId: itemsExamples
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  args:
+                    type: object
+                    properties:
+                      arrParam:
+                        type: string
+                        example: "test,test2"
+                      arrParamExploded:
+                        type: array
+                        items:
+                          type: string
+                          example: "1"
+                    required:
+                      - arrParam
+                      - arrParamExploded
+                required:
+                  - args
+`
+
+	d, _ := libopenapi.NewDocument([]byte(spec))
+	doc, _ := d.BuildV3Model()
+
+	me := NewMockEngine(&doc.Model, false)
+
+	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/chip-shop", nil)
+
+	b, status, err := me.GenerateResponse(request)
+
+	assert.NoError(t, err)
+	assert.Equal(t, 200, status)
+
+	var decoded map[string]any
+	_ = json.Unmarshal(b, &decoded)
+
+	args := decoded["args"].(map[string]any)
+
+	assert.Equal(t, "test,test2", args["arrParam"])
+
+	items := args["arrParamExploded"].([]any)
+	assert.Equal(t, "1", items[0])
+	assert.Equal(t, "2", items[1])
+
 }
