@@ -55,23 +55,28 @@ export class RequestBodyViewComponent extends LitElement {
         </span>`;
 
         let jsonBody = '[unable to parse JSON body]';
-        let parsedBody = null;
-        try {
-            parsedBody = JSON.parse(req.requestBody);
-            JSON.stringify(parsedBody, null, 2)
-        } catch (e) {
-            jsonBody += ": " + e.message;
-        }
+        let parsedBody: any = req.requestBody;
+
 
         switch (exct) {
             case ContentTypeJSON:
+
+                try {
+                    parsedBody = JSON.parse(req.requestBody);
+                    jsonBody = JSON.stringify(parsedBody, null, 2)
+                    parsedBody = jsonBody;
+                } catch (e) {
+                    jsonBody += ": " + e.message;
+                }
+
+
                 return html`${ct}
                 <pre><code>${unsafeHTML(Prism.highlight(jsonBody,
                         Prism.languages.json, 'json'))}</code></pre>`;
 
             case ContentTypeXML:
                 return html`${ct}
-                <pre><code>${unsafeHTML(Prism.highlight(jsonBody,
+                <pre><code>${unsafeHTML(Prism.highlight(req.requestBody,
                         Prism.languages.xml, 'xml'))}</code></pre>`;
 
             case ContentTypeOctetStream:
@@ -83,7 +88,7 @@ export class RequestBodyViewComponent extends LitElement {
                 </div>`;
             case ContentTypeHtml:
                 return html`${ct}
-                <pre><code>${unsafeHTML(Prism.highlight(jsonBody,
+                <pre><code>${unsafeHTML(Prism.highlight(req.requestBody,
                         Prism.languages.xml, 'xml'))}</code></pre>`;
 
             case ContentTypeFormEncoded:
@@ -96,6 +101,13 @@ export class RequestBodyViewComponent extends LitElement {
                 const formProps = new HttpPropertyViewComponent()
                 formProps.propertyLabel = "Form Key";
                 formProps.typeLabel = "Type";
+
+                try {
+                    parsedBody = JSON.parse(req.requestBody);
+                    jsonBody = JSON.stringify(parsedBody, null, 2)
+                } catch (e) {
+                    jsonBody += ": " + e.message;
+                }
 
                 // extract pre-rendered form data from wiretap
                 const parts: FormPart[] = parsedBody as FormPart[];
