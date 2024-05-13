@@ -6,13 +6,15 @@ package mock
 import (
 	"bytes"
 	"encoding/json"
+	"io"
+	"net/http"
+	"testing"
+
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi-validator/helpers"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/stretchr/testify/assert"
-	"io"
-	"net/http"
-	"testing"
+	"github.com/stretchr/testify/require"
 )
 
 // var doc *v3.Document
@@ -1276,4 +1278,48 @@ components:
 	assert.NotEmpty(t, decoded["name"])
 	assert.NotEmpty(t, decoded["description"])
 
+}
+
+func TestNewMockEngine_UseExamples_204_Response(t *testing.T) {
+	spec := `openapi: 3.1.0
+info:
+  title: Simple API
+  version: 1.0.0
+paths:
+  /test:
+    post:
+      summary: Submit a request
+      description: Submits a request to the server which processes it but returns no content.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Message to be processed by the server.
+                  example: "Hello, this is a test message."
+      responses:
+        '204':
+          description: Request processed successfully, no content to return.
+`
+
+	d, _ := libopenapi.NewDocument([]byte(spec))
+	doc, _ := d.BuildV3Model()
+
+	me := NewMockEngine(&doc.Model, false)
+
+	request, err := http.NewRequest(http.MethodPost, "https://api.pb33f.io/test",
+		bytes.NewBufferString("{\"message\": \"Hello, this is a test message.\"}"))
+	require.NoError(t, err)
+
+	request.Header.Set("Content-Type", "application/json")
+
+	b, status, err := me.GenerateResponse(request)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusNoContent, status)
+	assert.Empty(t, b)
 }
