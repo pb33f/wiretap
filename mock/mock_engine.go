@@ -316,6 +316,11 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 		mt, noMT = rme.findBestMediaTypeMatch(operation, request, []string{lo})
 	}
 
+	c, _ := strconv.Atoi(lo)
+	if c == http.StatusNoContent {
+		return nil, c, nil
+	}
+
 	if mt == nil && noMT {
 		mtString := rme.extractMediaTypeHeader(request)
 		return rme.buildError(
@@ -336,7 +341,6 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 			"build_mock_error",
 		), 422, mockErr
 	}
-	c, _ := strconv.Atoi(lo)
 
 	if len(mock) == 0 {
 		return rme.buildError(
