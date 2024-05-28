@@ -31,6 +31,8 @@ func NewMockEngine(document *v3.Document, pretty bool) *ResponseMockEngine {
 	if pretty {
 		me.SetPretty()
 	}
+	me.DisableRequiredCheck()
+
 	return &ResponseMockEngine{
 		doc:        document,
 		validator:  validation.NewHttpValidator(document),
