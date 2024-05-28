@@ -1323,3 +1323,136 @@ paths:
 	assert.Equal(t, http.StatusNoContent, status)
 	assert.Empty(t, b)
 }
+
+func TestNewMockEngine_GenerateResponse_CombinedExampleObject(t *testing.T) {
+	spec := `openapi: 3.0.3
+info:
+  title: Example API
+  description: An example API for testing purposes
+  version: 1.0.0
+paths:
+  /examples:
+    get:
+      summary: Get example data
+      description: Retrieve an example response with various fields
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+components:
+  schemas:
+    ID:
+      type: integer
+
+    Response:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        name:
+          type: string
+        username:
+          type: string
+        active:
+          type: boolean
+        balance:
+          type: number
+          format: float
+        tags:
+          type: array
+          items:
+            type: string
+      example:
+        id: 123
+        name: "John Doe"
+        username: "jack"
+        active: true
+        balance: 99.99
+        tags: ["tag1", "tag2", "tag3"]`
+
+	d, _ := libopenapi.NewDocument([]byte(spec))
+	doc, _ := d.BuildV3Model()
+
+	me := NewMockEngine(&doc.Model, false)
+
+	request, err := http.NewRequest(http.MethodGet, "https://api.pb33f.io/examples", http.NoBody)
+	require.NoError(t, err)
+
+	b, status, err := me.GenerateResponse(request)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, status)
+	assert.Equal(t, `{"active":true,"balance":99.99,"id":123,"name":"John Doe","tags":["tag1","tag2","tag3"],"username":"jack"}`, string(b))
+}
+
+func TestNewMockEngine_GenerateResponse_IndividualPropertyExamples(t *testing.T) {
+	spec := `openapi: 3.0.3
+info:
+  title: Example API
+  description: An example API for testing purposes
+  version: 1.0.0
+paths:
+  /examples:
+    get:
+      summary: Get example data
+      description: Retrieve an example response with various fields
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+components:
+  schemas:
+    ID:
+      type: integer
+      example: 123
+
+    Response:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        name:
+          type: string
+          example: "John Doe"
+        username:
+          type: string
+          example: "jack"
+        active:
+          type: boolean
+          example: true
+        balance:
+          type: number
+          format: float
+          example: 99.99
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["tag1", "tag2", "tag3"]`
+
+	d, _ := libopenapi.NewDocument([]byte(spec))
+	doc, _ := d.BuildV3Model()
+
+	me := NewMockEngine(&doc.Model, false)
+
+	request, err := http.NewRequest(http.MethodGet, "https://api.pb33f.io/examples", http.NoBody)
+	require.NoError(t, err)
+
+	b, status, err := me.GenerateResponse(request)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, status)
+	assert.Equal(t, `{"active":true,"balance":99.99,"id":123,"name":"John Doe","tags":["tag1","tag2","tag3"],"username":"jack"}`, string(b))
+}
