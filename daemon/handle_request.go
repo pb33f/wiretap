@@ -200,7 +200,13 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	// write headers
 	for k, v := range headers {
 		for _, j := range v {
-			request.HttpResponseWriter.Header().Set(k, fmt.Sprint(j))
+			responseHeaders := request.HttpResponseWriter.Header()
+
+			if responseHeaders.Get(k) == "" {
+				request.HttpResponseWriter.Header().Set(k, fmt.Sprint(j))
+			} else {
+				request.HttpResponseWriter.Header().Add(k, fmt.Sprint(j))
+			}
 		}
 	}
 	config.Logger.Info("[wiretap] request completed", "url", request.HttpRequest.URL.String(), "code", returnedResponse.StatusCode)
