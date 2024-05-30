@@ -203,9 +203,9 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 			responseHeaders := request.HttpResponseWriter.Header()
 
 			if responseHeaders.Get(k) == "" {
-				request.HttpResponseWriter.Header().Set(k, fmt.Sprint(j))
+				responseHeaders.Set(k, fmt.Sprint(j))
 			} else {
-				request.HttpResponseWriter.Header().Add(k, fmt.Sprint(j))
+				responseHeaders.Add(k, fmt.Sprint(j))
 			}
 		}
 	}
