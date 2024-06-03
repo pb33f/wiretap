@@ -73,7 +73,8 @@ func NewWiretapService(document libopenapi.Document, config *shared.WiretapConfi
 	}
 
 	// create a new mock engine
-	wts.mockEngine = mock.NewMockEngine(wts.docModel, config.MockModePretty)
+	wts.mockEngine = mock.NewMockEngine(wts.docModel, config.MockModePretty,
+		config.UseAllMockResponseFields)
 
 	// hard-wire the config, change this later if needed.
 	wts.config = config

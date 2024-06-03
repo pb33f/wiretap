@@ -26,12 +26,15 @@ type ResponseMockEngine struct {
 	pretty     bool
 }
 
-func NewMockEngine(document *v3.Document, pretty bool) *ResponseMockEngine {
+func NewMockEngine(document *v3.Document, pretty, useAllPropertyExamples bool) *ResponseMockEngine {
 	me := renderer.NewMockGenerator(renderer.JSON)
 	if pretty {
 		me.SetPretty()
 	}
-	me.DisableRequiredCheck()
+
+	if useAllPropertyExamples {
+		me.DisableRequiredCheck()
+	}
 
 	return &ResponseMockEngine{
 		doc:        document,

@@ -6,10 +6,11 @@ package shared
 import (
 	"embed"
 	"fmt"
-	"github.com/gobwas/glob"
-	"github.com/pb33f/harhar"
 	"log/slog"
 	"regexp"
+
+	"github.com/gobwas/glob"
+	"github.com/pb33f/harhar"
 )
 
 type WiretapConfiguration struct {
@@ -38,6 +39,7 @@ type WiretapConfiguration struct {
 	HardErrorReturnCode         int                                `json:"hardValidationReturnCode,omitempty" yaml:"hardValidationReturnCode,omitempty"`
 	PathDelays                  map[string]int                     `json:"pathDelays,omitempty" yaml:"pathDelays,omitempty"`
 	MockMode                    bool                               `json:"mockMode,omitempty" yaml:"mockMode,omitempty"`
+	UseAllMockResponseFields    bool                               `json:"useAllMockResponseFields,omitempty" yaml:"useAllMockResponseFields,omitempty"`
 	MockModePretty              bool                               `json:"mockModePretty,omitempty" yaml:"mockModePretty,omitempty"`
 	Base                        string                             `json:"base,omitempty" yaml:"base,omitempty"`
 	HAR                         string                             `json:"har,omitempty" yaml:"har,omitempty"`
