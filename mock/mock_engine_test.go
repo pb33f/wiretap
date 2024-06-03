@@ -12,7 +12,7 @@ import (
 
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi-validator/helpers"
-	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +49,7 @@ func resetPetstoreState() *v3.Document {
 
 func TestNewMockEngine_findPath(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -60,7 +60,7 @@ func TestNewMockEngine_findPath(t *testing.T) {
 
 func TestNewMockEngine_findPathNegative(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/invalid", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -72,7 +72,7 @@ func TestNewMockEngine_findPathNegative(t *testing.T) {
 
 func TestNewMockEngine_findOperation(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -85,7 +85,7 @@ func TestNewMockEngine_findOperation(t *testing.T) {
 
 func TestNewMockEngine_findOperationNegative(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodPatch, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -97,7 +97,7 @@ func TestNewMockEngine_findOperationNegative(t *testing.T) {
 
 func TestNewMockEngine_ValidateSecurity_FailAPIKey_Header(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -110,7 +110,7 @@ func TestNewMockEngine_ValidateSecurity_FailAPIKey_Header(t *testing.T) {
 
 func TestNewMockEngine_ValidateSecurity_PassAPIKey_Header(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -123,7 +123,7 @@ func TestNewMockEngine_ValidateSecurity_PassAPIKey_Header(t *testing.T) {
 
 func TestNewMockEngine_ValidateSecurity_FailAPIKey_Query(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -141,7 +141,7 @@ func TestNewMockEngine_ValidateSecurity_FailAPIKey_Query(t *testing.T) {
 
 func TestNewMockEngine_ValidateSecurity_PassAPIKey_Query(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products?pizza-burger-cake=123", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -158,7 +158,7 @@ func TestNewMockEngine_ValidateSecurity_PassAPIKey_Query(t *testing.T) {
 
 func TestNewMockEngine_ValidateSecurity_FailAPIKey_Cookie(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -176,7 +176,7 @@ func TestNewMockEngine_ValidateSecurity_FailAPIKey_Cookie(t *testing.T) {
 
 func TestNewMockEngine_ValidateSecurity_PassAPIKey_Cookie(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -197,7 +197,7 @@ func TestNewMockEngine_ValidateSecurity_PassAPIKey_Cookie(t *testing.T) {
 
 func TestNewMockEngine_ValidateSecurity_FailHTTP_Bearer(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -216,7 +216,7 @@ func TestNewMockEngine_ValidateSecurity_FailHTTP_Bearer(t *testing.T) {
 
 func TestNewMockEngine_ValidateSecurity_PassHTTP_Bearer(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -235,7 +235,7 @@ func TestNewMockEngine_ValidateSecurity_PassHTTP_Bearer(t *testing.T) {
 
 func TestNewMockEngine_BuildResponse_SimpleValid(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -257,7 +257,7 @@ func TestNewMockEngine_BuildResponse_SimpleValid(t *testing.T) {
 
 //func TestNewMockEngine_BuildResponse_SimpleInvalid_BadContentType(t *testing.T) {
 //	doc := resetGiftshopState()
-//	me := NewMockEngine(doc, false)
+//	me := NewMockEngine(doc, false, true)
 //
 //	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 //	request.Header.Set(helpers.ContentTypeHeader, "cup/tea")
@@ -275,7 +275,7 @@ func TestNewMockEngine_BuildResponse_SimpleValid(t *testing.T) {
 
 func TestNewMockEngine_BuildResponse_SimpleValid_Pretty(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, true)
+	me := NewMockEngine(doc, true, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/wiretap/giftshop/products/bd1f3f70-d46f-4ea7-b178-de9a5abfe4d8", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -291,7 +291,7 @@ func TestNewMockEngine_BuildResponse_SimpleValid_Pretty(t *testing.T) {
 
 func TestNewMockEngine_BuildResponse_MissingPath_404(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/minky/monkey/moo", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -312,7 +312,7 @@ func TestNewMockEngine_BuildResponse_MissingPath_404(t *testing.T) {
 
 func TestNewMockEngine_BuildResponse_MissingOperation_404(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodPatch, "https://api.pb33f.io/wiretap/giftshop/products", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -335,7 +335,7 @@ func TestNewMockEngine_BuildResponse_MissingOperation_404(t *testing.T) {
 func TestNewMockEngine_BuildResponse_CreateProduct_NoSecurity_Invalid(t *testing.T) {
 
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	product := make(map[string]any)
 	product["price"] = 400.23
@@ -361,7 +361,7 @@ func TestNewMockEngine_BuildResponse_CreateProduct_NoSecurity_Invalid(t *testing
 func TestNewMockEngine_BuildResponse_CreateProduct_WithSecurity_Invalid(t *testing.T) {
 
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	product := make(map[string]any)
 	product["price"] = 400.23
@@ -387,7 +387,7 @@ func TestNewMockEngine_BuildResponse_CreateProduct_WithSecurity_Invalid(t *testi
 
 func TestNewMockEngine_BuildResponse_Petstore_Sexurirt(t *testing.T) {
 	doc := resetGiftshopState()
-	me := NewMockEngine(doc, false)
+	me := NewMockEngine(doc, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/minky/monkey/moo", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -433,7 +433,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/go", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -483,7 +483,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/auth", nil)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
@@ -529,7 +529,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	payload := `{"basicAuth":{"password":"testPass","username":"testUser"}}`
 	buf := bytes.NewBuffer([]byte(payload))
@@ -573,7 +573,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
 	request.Header.Set(helpers.AuthorizationHeader, "ding-a-ling")
@@ -625,7 +625,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
 
@@ -671,7 +671,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
 
@@ -726,7 +726,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
 	request.Header.Set(helpers.Preferred, "robocop")
@@ -776,7 +776,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
 
@@ -827,7 +827,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
 	request.Header.Set(helpers.Preferred, "1")
@@ -874,7 +874,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
 
@@ -918,7 +918,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
 
@@ -995,7 +995,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
 	request.Header.Set(helpers.Preferred, "sadcop")
@@ -1086,7 +1086,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	// Check that we don't panic if first 2xx does not match media type
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
@@ -1155,7 +1155,7 @@ paths:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/chip-shop", nil)
 
@@ -1214,7 +1214,7 @@ paths:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/chip-shop", nil)
 
@@ -1262,7 +1262,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, _ := http.NewRequest(http.MethodGet, "https://api.pb33f.io/test", nil)
 	request.Header.Set("wiretap-status-code", "418")
@@ -1309,7 +1309,7 @@ paths:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, err := http.NewRequest(http.MethodPost, "https://api.pb33f.io/test",
 		bytes.NewBufferString("{\"message\": \"Hello, this is a test message.\"}"))
@@ -1379,7 +1379,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, err := http.NewRequest(http.MethodGet, "https://api.pb33f.io/examples", http.NoBody)
 	require.NoError(t, err)
@@ -1391,7 +1391,7 @@ components:
 	assert.Equal(t, `{"active":true,"balance":99.99,"id":123,"name":"John Doe","tags":["tag1","tag2","tag3"],"username":"jack"}`, string(b))
 }
 
-func TestNewMockEngine_GenerateResponse_IndividualPropertyExamples(t *testing.T) {
+func TestNewMockEngine_GenerateResponse_DefaultWithAllPropertyExamplesInResponse(t *testing.T) {
 	spec := `openapi: 3.0.3
 info:
   title: Example API
@@ -1445,7 +1445,7 @@ components:
 	d, _ := libopenapi.NewDocument([]byte(spec))
 	doc, _ := d.BuildV3Model()
 
-	me := NewMockEngine(&doc.Model, false)
+	me := NewMockEngine(&doc.Model, false, true)
 
 	request, err := http.NewRequest(http.MethodGet, "https://api.pb33f.io/examples", http.NoBody)
 	require.NoError(t, err)
@@ -1455,4 +1455,70 @@ components:
 
 	assert.Equal(t, http.StatusOK, status)
 	assert.Equal(t, `{"active":true,"balance":99.99,"id":123,"name":"John Doe","tags":["tag1","tag2","tag3"],"username":"jack"}`, string(b))
+}
+
+func TestNewMockEngine_GenerateResponse_OnlyRequiredPropertyExamplesInResponse(t *testing.T) {
+	spec := `openapi: 3.0.3
+info:
+  title: Example API
+  description: An example API for testing purposes
+  version: 1.0.0
+paths:
+  /examples:
+    get:
+      summary: Get example data
+      description: Retrieve an example response with various fields
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+components:
+  schemas:
+    ID:
+      type: integer
+      example: 123
+
+    Response:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          $ref: '#/components/schemas/ID'
+        name:
+          type: string
+          example: "John Doe"
+        username:
+          type: string
+          example: "jack"
+        active:
+          type: boolean
+          example: true
+        balance:
+          type: number
+          format: float
+          example: 99.99
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["tag1", "tag2", "tag3"]`
+
+	d, _ := libopenapi.NewDocument([]byte(spec))
+	doc, _ := d.BuildV3Model()
+
+	me := NewMockEngine(&doc.Model, false, false)
+
+	request, err := http.NewRequest(http.MethodGet, "https://api.pb33f.io/examples", http.NoBody)
+	require.NoError(t, err)
+
+	b, status, err := me.GenerateResponse(request)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, status)
+	assert.Equal(t, `{"id":123,"name":"John Doe"}`, string(b))
 }

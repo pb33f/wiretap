@@ -63,6 +63,7 @@ var (
 
 			// mock mode
 			var mockMode bool
+			var useAllMockResponseFields bool
 
 			certFlag, _ := cmd.Flags().GetString("cert")
 			if certFlag != "" {
@@ -82,6 +83,7 @@ var (
 
 			debug, _ := cmd.Flags().GetBool("debug")
 			mockMode, _ = cmd.Flags().GetBool("mock-mode")
+			useAllMockResponseFields, _ = cmd.Flags().GetBool("enable-all-mock-response-fields")
 			hardError, _ = cmd.Flags().GetBool("hard-validation")
 			hardErrorCode, _ = cmd.Flags().GetInt("hard-validation-code")
 			hardErrorReturnCode, _ = cmd.Flags().GetInt("hard-validation-return-code")
@@ -182,6 +184,11 @@ var (
 						config.MockMode = true
 					}
 				}
+				if useAllMockResponseFields {
+					if !config.UseAllMockResponseFields {
+						config.UseAllMockResponseFields = true
+					}
+				}
 				if streamReport {
 					if !config.StreamReport {
 						config.StreamReport = true
@@ -216,6 +223,9 @@ var (
 				config.StaticIndex = staticIndex
 				if mockMode {
 					config.MockMode = true
+				}
+				if useAllMockResponseFields {
+					config.UseAllMockResponseFields = true
 				}
 				if streamReport {
 					config.StreamReport = true
@@ -654,6 +664,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().IntP("hard-validation-code", "q", 400, "Set a custom http error code for non-compliant requests when using the hard-error flag")
 	rootCmd.Flags().IntP("hard-validation-return-code", "y", 502, "Set a custom http error code for non-compliant responses when using the hard-error flag")
 	rootCmd.Flags().BoolP("mock-mode", "x", false, "Run in mock mode, responses are mocked and no traffic is sent to the target API (requires OpenAPI spec)")
+	rootCmd.Flags().BoolP("enable-all-mock-response-fields", "o", true, "Enable usage of all property examples in mock responses. When set to false, only required field examples will be used.")
 	rootCmd.Flags().StringP("config", "c", "", "Location of wiretap configuration file to use (default is .wiretap in current directory)")
 	rootCmd.Flags().StringP("base", "b", "", "Set a base path to resolve relative file references from, or a overriding base URL to resolve remote references from")
 	rootCmd.Flags().BoolP("debug", "l", false, "Enable debug logging")
