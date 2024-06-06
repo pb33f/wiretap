@@ -335,8 +335,12 @@ var (
 			}
 
 			// paths
-			if len(config.PathConfigurations) > 0 || len(config.StaticPaths) > 0 || len(config.HARPathAllowList) > 0 {
+			if len(config.PathConfigurations) > 0 || len(config.StaticPaths) > 0 || len(config.HARPathAllowList) > 0 || len(config.IgnorePathRewrite) > 0 {
 				config.CompilePaths()
+				if len(config.IgnorePathRewrite) > 0 {
+					printLoadedIgnorePathRewrite(config.IgnorePathRewrite)
+				}
+
 				if len(config.PathConfigurations) > 0 {
 					printLoadedPathConfigurations(config.PathConfigurations)
 				}
@@ -669,6 +673,17 @@ func Execute(version, commit, date string, fs embed.FS) {
 	}
 }
 
+func printLoadedIgnorePathRewrite(ignoreRewritePaths []*shared.IgnoreRewriteConfig) {
+	pterm.Info.Printf("Loaded %d %s on which to globally ignore rewriting", len(ignoreRewritePaths),
+		shared.Pluralize(len(ignoreRewritePaths), "path", "paths"))
+	pterm.Println()
+
+	for _, ignoreRewrite := range ignoreRewritePaths {
+		pterm.Printf("🙅 Paths matching '%s' will not be re-written regardless of Path Rewrite configuration\n", pterm.LightCyan(ignoreRewrite.Path))
+	}
+	pterm.Println()
+}
+
 func printLoadedPathConfigurations(configs map[string]*shared.WiretapPathConfig) {
 	pterm.Info.Printf("Loaded %d path %s:\n", len(configs),
 		shared.Pluralize(len(configs), "configuration", "configurations"))
@@ -687,6 +702,10 @@ func printLoadedPathConfigurations(configs map[string]*shared.WiretapPathConfig)
 				pterm.Printf("🗑️  '%s' is being %s\n", pterm.LightCyan(h), pterm.LightRed("dropped"))
 			}
 		}
+		for _, ignoreRewrite := range v.IgnoreRewrite {
+			pterm.Printf("🙅 Paths matching '%s' will not be re-written for this path configuration\n", pterm.LightCyan(ignoreRewrite.Path))
+		}
+
 		if v.Auth != "" {
 			pterm.Printf("🔒 Basic authentication implemented for '%s'\n", pterm.LightMagenta(k))
 		}

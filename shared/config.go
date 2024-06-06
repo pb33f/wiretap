@@ -51,6 +51,7 @@ type WiretapConfiguration struct {
 	IgnoreValidation            []string                           `json:"ignoreValidation,omitempty" yaml:"ignoreValidation,omitempty"`
 	ValidationAllowList         []string                           `json:"validationAllowList,omitempty" yaml:"validationAllowList,omitempty"`
 	StrictRedirectLocation      bool                               `json:"strictRedirectLocation,omitempty" yaml:"strictRedirectLocation,omitempty"`
+	IgnorePathRewrite           []*IgnoreRewriteConfig             `json:"ignorePathRewrite,omitempty" yaml:"ignorePathRewrite,omitempty"`
 	HARFile                     *harhar.HAR                        `json:"-" yaml:"-"`
 	CompiledPathDelays          map[string]*CompiledPathDelay      `json:"-" yaml:"-"`
 	CompiledVariables           map[string]*CompiledVariable       `json:"-" yaml:"-"`
@@ -61,6 +62,7 @@ type WiretapConfiguration struct {
 	CompiledRedirectAllowList   []*CompiledRedirect                `json:"-" yaml:"-"`
 	CompiledIgnoreValidations   []*CompiledRedirect                `json:"-" yaml:"-"`
 	CompiledValidationAllowList []*CompiledRedirect                `json:"-" yaml:"-"`
+	CompiledIgnorePathRewrite   []*CompiledIgnoreRewrite           `json:"-" yaml:"-"`
 	FS                          embed.FS                           `json:"-"`
 	Logger                      *slog.Logger
 }
@@ -76,6 +78,16 @@ func (wtc *WiretapConfiguration) CompilePaths() {
 			comp[x] = glob.MustCompile(path)
 		}
 		wtc.StaticPathsCompiled = comp
+	}
+	if len(wtc.IgnorePathRewrite) > 0 {
+		compiledPaths := make([]*CompiledIgnoreRewrite, len(wtc.IgnorePathRewrite))
+		for x, ignoreRewrite := range wtc.IgnorePathRewrite {
+			compiledPaths[x] = &CompiledIgnoreRewrite{
+				RewriteTarget:         ignoreRewrite.RewriteTarget,
+				CompiledIgnoreRewrite: glob.MustCompile(ignoreRewrite.Path),
+			}
+		}
+		wtc.CompiledIgnorePathRewrite = compiledPaths
 	}
 }
 
@@ -179,13 +191,25 @@ type WiretapWebsocketConfig struct {
 }
 
 type WiretapPathConfig struct {
-	Target       string               `json:"target,omitempty" yaml:"target,omitempty"`
-	PathRewrite  map[string]string    `json:"pathRewrite,omitempty" yaml:"pathRewrite,omitempty"`
-	ChangeOrigin bool                 `json:"changeOrigin,omitempty" yaml:"changeOrigin,omitempty"`
-	Headers      *WiretapHeaderConfig `json:"headers,omitempty" yaml:"headers,omitempty"`
-	Secure       bool                 `json:"secure,omitempty" yaml:"secure,omitempty"`
-	Auth         string               `json:"auth,omitempty" yaml:"auth,omitempty"`
-	CompiledPath *CompiledPath        `json:"-"`
+	Target                string                   `json:"target,omitempty" yaml:"target,omitempty"`
+	PathRewrite           map[string]string        `json:"pathRewrite,omitempty" yaml:"pathRewrite,omitempty"`
+	ChangeOrigin          bool                     `json:"changeOrigin,omitempty" yaml:"changeOrigin,omitempty"`
+	Headers               *WiretapHeaderConfig     `json:"headers,omitempty" yaml:"headers,omitempty"`
+	Secure                bool                     `json:"secure,omitempty" yaml:"secure,omitempty"`
+	Auth                  string                   `json:"auth,omitempty" yaml:"auth,omitempty"`
+	IgnoreRewrite         []*IgnoreRewriteConfig   `json:"ignoreRewrite,omitempty" yaml:"ignoreRewrite,omitempty"`
+	CompiledPath          *CompiledPath            `json:"-"`
+	CompiledIgnoreRewrite []*CompiledIgnoreRewrite `json:"-"`
+}
+
+type IgnoreRewriteConfig struct {
+	RewriteTarget bool   `json:"rewriteTarget,omitempty" yaml:"rewriteTarget,omitempty"`
+	Path          string `json:"path,omitempty" yaml:"path,omitempty"`
+}
+
+type CompiledIgnoreRewrite struct {
+	RewriteTarget         bool
+	CompiledIgnoreRewrite glob.Glob
 }
 
 type CompiledPath struct {
@@ -232,6 +256,14 @@ func (wpc *WiretapPathConfig) Compile(key string) *CompiledPath {
 	cp.CompiledPathRewrite = make(map[string]*regexp.Regexp)
 	for x := range wpc.PathRewrite {
 		cp.CompiledPathRewrite[x] = regexp.MustCompile(x)
+	}
+
+	wpc.CompiledIgnoreRewrite = make([]*CompiledIgnoreRewrite, len(wpc.IgnoreRewrite))
+	for i, ignoreRewrite := range wpc.IgnoreRewrite {
+		wpc.CompiledIgnoreRewrite[i] = &CompiledIgnoreRewrite{
+			RewriteTarget:         ignoreRewrite.RewriteTarget,
+			CompiledIgnoreRewrite: glob.MustCompile(ignoreRewrite.Path),
+		}
 	}
 	return cp
 }
