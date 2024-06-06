@@ -6,6 +6,7 @@ package config
 import (
 	"fmt"
 	"github.com/pb33f/wiretap/shared"
+	"github.com/pterm/pterm"
 	"strings"
 )
 
@@ -65,6 +66,20 @@ func PathValidationAllowListed(path string, configuration *shared.WiretapConfigu
 	return false
 }
 
+func rewriteTaget(path string, pathConfig *shared.WiretapPathConfig, configuration *shared.WiretapConfiguration) string {
+	scheme := "http://"
+	if pathConfig.Secure {
+		scheme = "https://"
+	}
+	target := strings.ReplaceAll(strings.ReplaceAll(configuration.ReplaceWithVariables(pathConfig.Target),
+		"http://", ""), "https://", "")
+
+	if path[0] != '/' && pathConfig.Target[len(pathConfig.Target)-1] != '/' {
+		path = fmt.Sprintf("/%s", path)
+	}
+	return fmt.Sprintf("%s%s%s", scheme, target, path)
+}
+
 func RewritePath(path string, configuration *shared.WiretapConfiguration) string {
 	paths := FindPaths(path, configuration)
 	var replaced string = path
@@ -72,8 +87,35 @@ func RewritePath(path string, configuration *shared.WiretapConfiguration) string
 		// extract first path
 		pathConfig := paths[0]
 		replaced = ""
+
+		for _, globalIgnoreRewrite := range configuration.CompiledIgnorePathRewrite {
+			// If the current path matches the ignore rewrite, we should skip rewriting,
+			// and instead check if we even want to rewrite the target
+			if globalIgnoreRewrite.CompiledIgnoreRewrite.Match(path) {
+				if globalIgnoreRewrite.RewriteTarget {
+					return rewriteTaget(path, pathConfig, configuration)
+				} else {
+					pterm.Info.Printf("[wiretap] Not re-writing path '%s' due to global ignore rewrite configuration\n", path)
+					return path
+				}
+			}
+		}
+
 		for key := range pathConfig.CompiledPath.CompiledPathRewrite {
 			if pathConfig.CompiledPath.CompiledPathRewrite[key].MatchString(path) {
+
+				// Check if this path matches a local ignore rewrite. If so, then check if we need to rewrite the target
+				for _, ignoreRewrite := range pathConfig.CompiledIgnoreRewrite {
+					if ignoreRewrite.CompiledIgnoreRewrite.Match(path) {
+						if ignoreRewrite.RewriteTarget {
+							return rewriteTaget(path, pathConfig, configuration)
+						} else {
+							pterm.Info.Printf("[wiretap] Not re-writing path '%s' due to local ignore rewrite configuration\n", path)
+							return path
+						}
+					}
+				}
+
 				replace := pathConfig.PathRewrite[key]
 				rex := pathConfig.CompiledPath.CompiledPathRewrite[key]
 				replacedPath := rex.ReplaceAllString(path, replace)
@@ -92,20 +134,12 @@ func RewritePath(path string, configuration *shared.WiretapConfiguration) string
 				break
 			}
 		}
+
 		// no rewriting, just replace target.
 		if replaced == "" {
-			scheme := "http://"
-			if pathConfig.Secure {
-				scheme = "https://"
-			}
-			target := strings.ReplaceAll(strings.ReplaceAll(configuration.ReplaceWithVariables(pathConfig.Target),
-				"http://", ""), "https://", "")
-
-			if path[0] != '/' && pathConfig.Target[len(pathConfig.Target)-1] != '/' {
-				path = fmt.Sprintf("/%s", path)
-			}
-			replaced = fmt.Sprintf("%s%s%s", scheme, target, path)
+			replaced = rewriteTaget(path, pathConfig, configuration)
 		}
+
 	}
 
 	return replaced
