@@ -45,7 +45,7 @@ func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 	wiretapConfig := configStore.(*shared.WiretapConfiguration)
 
 	// lookup path and determine if we need to redirect it.
-	replaced := config.RewritePath(req.URL.Path, wiretapConfig)
+	replaced := config.RewritePath(req.URL.Path, req, wiretapConfig)
 	if replaced != req.URL.Path {
 		newUrl, _ := url.Parse(replaced)
 		if req.URL.RawQuery != "" {

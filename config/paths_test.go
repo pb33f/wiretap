@@ -4,12 +4,11 @@
 package config
 
 import (
-	"github.com/mitchellh/mapstructure"
+	"encoding/json"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
-	"strings"
+	"net/http"
 	"testing"
 )
 
@@ -23,29 +22,49 @@ paths:
     pathRewrite:
       '^/pb33f/test/': ''`
 
-	viper.SetConfigType("yaml")
-	verr := viper.ReadConfig(strings.NewReader(config))
-	assert.NoError(t, verr)
-
-	paths := viper.Get("paths")
-	var pc map[string]*shared.WiretapPathConfig
-
-	derr := mapstructure.Decode(paths, &pc)
-	assert.NoError(t, derr)
-
-	wcConfig := &shared.WiretapConfiguration{
-		PathConfigurations: pc,
-	}
+	var wcConfig shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &wcConfig)
 
 	wcConfig.CompilePaths()
 
-	res := FindPaths("/pb33f/test/123", wcConfig)
+	res := FindPaths("/pb33f/test/123", &wcConfig)
 	assert.Len(t, res, 1)
 
-	res = FindPaths("/pb33f/test/123/sing/song", wcConfig)
+	res = FindPaths("/pb33f/test/123/sing/song", &wcConfig)
 	assert.Len(t, res, 1)
 
-	res = FindPaths("/pb33f/no-match/wrong", wcConfig)
+	res = FindPaths("/pb33f/no-match/wrong", &wcConfig)
+	assert.Len(t, res, 0)
+
+}
+
+func TestFindPath_JSON(t *testing.T) {
+
+	config := `
+{
+    "paths": {
+		"/pb33f/test/**": {
+			"target": "/",
+			"secure": false,
+			"pathRewrite": {
+				"^/pb33f/test/": ""
+			}
+		}
+	}
+}`
+
+	var wcConfig shared.WiretapConfiguration
+	_ = json.Unmarshal([]byte(config), &wcConfig)
+
+	wcConfig.CompilePaths()
+
+	res := FindPaths("/pb33f/test/123", &wcConfig)
+	assert.Len(t, res, 1)
+
+	res = FindPaths("/pb33f/test/123/sing/song", &wcConfig)
+	assert.Len(t, res, 1)
+
+	res = FindPaths("/pb33f/no-match/wrong", &wcConfig)
 	assert.Len(t, res, 0)
 
 }
@@ -60,23 +79,12 @@ paths:
     pathRewrite:
       '^/pb33f/test/': ''`
 
-	viper.SetConfigType("yaml")
-	verr := viper.ReadConfig(strings.NewReader(config))
-	assert.NoError(t, verr)
-
-	paths := viper.Get("paths")
-	var pc map[string]*shared.WiretapPathConfig
-
-	derr := mapstructure.Decode(paths, &pc)
-	assert.NoError(t, derr)
-
-	wcConfig := &shared.WiretapConfiguration{
-		PathConfigurations: pc,
-	}
+	var wcConfig shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &wcConfig)
 
 	wcConfig.CompilePaths()
 
-	path := RewritePath("/pb33f/test/123/slap/a/chap", wcConfig)
+	path := RewritePath("/pb33f/test/123/slap/a/chap", nil, &wcConfig)
 	assert.Equal(t, "http://localhost:9093/123/slap/a/chap", path)
 
 }
@@ -91,23 +99,12 @@ paths:
     pathRewrite:
       '^/pb33f/(\w+)/test/': '/flat/jam/'`
 
-	viper.SetConfigType("yaml")
-	verr := viper.ReadConfig(strings.NewReader(config))
-	assert.NoError(t, verr)
-
-	paths := viper.Get("paths")
-	var pc map[string]*shared.WiretapPathConfig
-
-	derr := mapstructure.Decode(paths, &pc)
-	assert.NoError(t, derr)
-
-	wcConfig := &shared.WiretapConfiguration{
-		PathConfigurations: pc,
-	}
+	var wcConfig shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &wcConfig)
 
 	wcConfig.CompilePaths()
 
-	path := RewritePath("/pb33f/cakes/test/123/smelly/jelly", wcConfig)
+	path := RewritePath("/pb33f/cakes/test/123/smelly/jelly", nil, &wcConfig)
 	assert.Equal(t, "https://localhost:9093/flat/jam/123/smelly/jelly", path)
 
 }
@@ -122,23 +119,12 @@ paths:
     pathRewrite:
       '^/pb33f/(\w+)/test/(\w+)/(\d+)/': '/slippy/$1/whip/$3/$2/'`
 
-	viper.SetConfigType("yaml")
-	verr := viper.ReadConfig(strings.NewReader(config))
-	assert.NoError(t, verr)
-
-	paths := viper.Get("paths")
-	var pc map[string]*shared.WiretapPathConfig
-
-	derr := mapstructure.Decode(paths, &pc)
-	assert.NoError(t, derr)
-
-	wcConfig := &shared.WiretapConfiguration{
-		PathConfigurations: pc,
-	}
+	var wcConfig shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &wcConfig)
 
 	wcConfig.CompilePaths()
 
-	path := RewritePath("/pb33f/cakes/test/lemons/321/smelly/jelly", wcConfig)
+	path := RewritePath("/pb33f/cakes/test/lemons/321/smelly/jelly", nil, &wcConfig)
 	assert.Equal(t, "https://localhost:9093/slippy/cakes/whip/321/lemons/smelly/jelly", path)
 
 }
@@ -161,7 +147,7 @@ paths:
 
 	c.CompilePaths()
 
-	path := RewritePath("/en-US/burgerd/__raw/noKetchupPlease/nobody/", &c)
+	path := RewritePath("/en-US/burgerd/__raw/noKetchupPlease/nobody/", nil, &c)
 	assert.Equal(t, "http://localhost:80/noKetchupPlease/-/", path)
 
 }
@@ -184,8 +170,114 @@ paths:
 
 	c.CompilePaths()
 
-	path := RewritePath("/en-US/burgerd/__raw/noKetchupPlease/nobody/yummy/yum?onions=true", &c)
+	path := RewritePath("/en-US/burgerd/__raw/noKetchupPlease/nobody/yummy/yum?onions=true", nil, &c)
 	assert.Equal(t, "http://localhost:80/noKetchupPlease/-/yummy/yum?onions=true", path)
+
+}
+
+func TestRewritePath_With_RewriteId(t *testing.T) {
+
+	config := `
+paths:
+  /pb33f/test/**:
+    target: localhost:9093
+    secure: true
+    pathRewrite:
+      'test': 'invalid'
+  /pb33f/test/id:
+    target: localhost:9093
+    secure: true
+    rewriteId: test_id
+    pathRewrite:
+      'test': 'correct'`
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &c)
+
+	c.CompilePaths()
+
+	req := &http.Request{
+		Header: http.Header{
+			"Rewrite-Id":   []string{"garbage", "garbage again", "test_id", "gargabe please"},
+			"Other-Header": []string{"another header"},
+		},
+	}
+
+	pathConfigs := make([]*shared.WiretapPathConfig, 0, c.PathConfigurations.Len())
+
+	for x := c.PathConfigurations.First(); x != nil; x = x.Next() {
+		pathConfigs = append(pathConfigs, x.Value())
+	}
+
+	path := RewritePath("/pb33f/test/id", req, &c)
+	assert.Equal(t, "https://localhost:9093/pb33f/correct/id", path)
+
+	actualConfig := FindPathWithRewriteId(pathConfigs, req)
+	expectedConfig := pathConfigs[1] // second config is the valid one
+	assert.Equal(t, expectedConfig, actualConfig)
+
+}
+
+func TestRewritePath_With_RewriteId_No_Header(t *testing.T) {
+
+	config := `
+paths:
+  /pb33f/test/**:
+    target: localhost:9093
+    secure: true
+    pathRewrite:
+      'test': 'correct'
+  /pb33f/test/id:
+    target: localhost:9093
+    secure: true
+    rewriteId: test_id
+    pathRewrite:
+      'test': 'invalid'`
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &c)
+
+	c.CompilePaths()
+
+	req := &http.Request{
+		Header: http.Header{},
+	}
+
+	path := RewritePath("/pb33f/test/id", req, &c)
+	assert.Equal(t, "https://localhost:9093/pb33f/correct/id", path)
+
+}
+
+func TestRewritePath_With_RewriteId_No_Valid_Rewrite_Id(t *testing.T) {
+
+	config := `
+paths:
+  /pb33f/test/**:
+    target: localhost:9093
+    secure: true
+    pathRewrite:
+      'test': 'correct'
+  /pb33f/test/id:
+    target: localhost:9093
+    secure: true
+    rewriteId: test_id
+    pathRewrite:
+      'test': 'invalid'`
+
+	var c shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &c)
+
+	c.CompilePaths()
+
+	req := &http.Request{
+		Header: http.Header{
+			"Rewrite-Id":   []string{"garbage", "garbage again", "gargabe please"},
+			"Other-Header": []string{"another header"},
+		},
+	}
+
+	path := RewritePath("/pb33f/test/id", req, &c)
+	assert.Equal(t, "https://localhost:9093/pb33f/correct/id", path)
 
 }
 

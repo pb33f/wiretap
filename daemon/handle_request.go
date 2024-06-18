@@ -458,17 +458,24 @@ func (ws *WiretapService) getHeadersAndAuth(config *shared.WiretapConfiguration,
 	matchedPaths := configModel.FindPaths(request.HttpRequest.URL.Path, config)
 	auth := ""
 	if len(matchedPaths) > 0 {
-		for _, path := range matchedPaths {
-			auth = path.Auth
-			if path.Headers != nil {
-				dropHeaders = append(dropHeaders, path.Headers.DropHeaders...)
-				newInjectHeaders := path.Headers.InjectHeaders
-				for key := range injectHeaders {
-					newInjectHeaders[key] = injectHeaders[key]
-				}
-				injectHeaders = newInjectHeaders
+		var matchedPath *shared.WiretapPathConfig
+
+		// First check if we have a path matching our RewriteId
+		matchedPath = configModel.FindPathWithRewriteId(matchedPaths, request.HttpRequest)
+
+		// Get the first matched value in the list, if we don't have a rewriteId that fits
+		if matchedPath == nil {
+			matchedPath = matchedPaths[0]
+		}
+
+		auth = matchedPath.Auth
+		if matchedPath.Headers != nil {
+			dropHeaders = append(dropHeaders, matchedPath.Headers.DropHeaders...)
+			newInjectHeaders := matchedPath.Headers.InjectHeaders
+			for key := range injectHeaders {
+				newInjectHeaders[key] = injectHeaders[key]
 			}
-			break
+			injectHeaders = newInjectHeaders
 		}
 	}
 
