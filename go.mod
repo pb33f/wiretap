@@ -42,7 +42,6 @@ require (
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
@@ -65,12 +64,10 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
-	github.com/sagikazarmark/locafero v0.4.0 // indirect
-	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
-	github.com/sourcegraph/conc v0.3.0 // indirect
+	github.com/pelletier/go-toml v1.9.3 // indirect
+	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/spf13/viper v1.8.1 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
-	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/net v0.19.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

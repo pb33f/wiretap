@@ -10,6 +10,7 @@ import (
 	"github.com/pb33f/harhar"
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pb33f/wiretap/har"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
@@ -345,13 +346,13 @@ var (
 			}
 
 			// paths
-			if len(config.PathConfigurations) > 0 || len(config.StaticPaths) > 0 || len(config.HARPathAllowList) > 0 || len(config.IgnorePathRewrite) > 0 {
+			if config.PathConfigurations.Len() > 0 || len(config.StaticPaths) > 0 || len(config.HARPathAllowList) > 0 || len(config.IgnorePathRewrite) > 0 {
 				config.CompilePaths()
 				if len(config.IgnorePathRewrite) > 0 {
 					printLoadedIgnorePathRewrite(config.IgnorePathRewrite)
 				}
 
-				if len(config.PathConfigurations) > 0 {
+				if config.PathConfigurations.Len() > 0 {
 					printLoadedPathConfigurations(config.PathConfigurations)
 				}
 			}
@@ -695,12 +696,13 @@ func printLoadedIgnorePathRewrite(ignoreRewritePaths []*shared.IgnoreRewriteConf
 	pterm.Println()
 }
 
-func printLoadedPathConfigurations(configs map[string]*shared.WiretapPathConfig) {
-	pterm.Info.Printf("Loaded %d path %s:\n", len(configs),
-		shared.Pluralize(len(configs), "configuration", "configurations"))
+func printLoadedPathConfigurations(configs *orderedmap.Map[string, *shared.WiretapPathConfig]) {
+	pterm.Info.Printf("Loaded %d path %s:\n", configs.Len(),
+		shared.Pluralize(configs.Len(), "configuration", "configurations"))
 	pterm.Println()
 
-	for k, v := range configs {
+	for x := configs.First(); x != nil; x = x.Next() {
+		k, v := x.Key(), x.Value()
 		pterm.Printf("%s --> %s\n", pterm.LightMagenta(k), pterm.LightCyan(v.Target))
 		for ka, p := range v.PathRewrite {
 			pterm.Printf("✏️  '%s' re-written to '%s'\n", pterm.LightCyan(ka), pterm.LightGreen(p))
@@ -720,6 +722,11 @@ func printLoadedPathConfigurations(configs map[string]*shared.WiretapPathConfig)
 		if v.Auth != "" {
 			pterm.Printf("🔒 Basic authentication implemented for '%s'\n", pterm.LightMagenta(k))
 		}
+
+		if v.RewriteId != "" {
+			pterm.Printf("💳  Identifier '%s' registered for this configuration\n", pterm.LightCyan(v.RewriteId))
+		}
+
 		pterm.Println()
 	}
 }

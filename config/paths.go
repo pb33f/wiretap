@@ -7,14 +7,20 @@ import (
 	"fmt"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
+	"net/http"
 	"strings"
+)
+
+const (
+	RewriteIdHeader = "Rewrite-Id"
 )
 
 func FindPaths(path string, configuration *shared.WiretapConfiguration) []*shared.WiretapPathConfig {
 	var foundConfigurations []*shared.WiretapPathConfig
-	for key := range configuration.CompiledPaths {
-		if configuration.CompiledPaths[key].CompiledKey.Match(path) {
-			foundConfigurations = append(foundConfigurations, configuration.CompiledPaths[key].PathConfig)
+	for x := configuration.CompiledPaths.First(); x != nil; x = x.Next() {
+		compiledPath := x.Value()
+		if compiledPath.CompiledKey.Match(path) {
+			foundConfigurations = append(foundConfigurations, compiledPath.PathConfig)
 		}
 	}
 	return foundConfigurations
@@ -80,12 +86,43 @@ func rewriteTaget(path string, pathConfig *shared.WiretapPathConfig, configurati
 	return fmt.Sprintf("%s%s%s", scheme, target, path)
 }
 
-func RewritePath(path string, configuration *shared.WiretapConfiguration) string {
+func FindPathWithRewriteId(paths []*shared.WiretapPathConfig, req *http.Request) *shared.WiretapPathConfig {
+
+	if req == nil {
+		return nil
+	}
+
+	if rewriteIdHeaderValues, ok := req.Header[RewriteIdHeader]; ok {
+		for _, pathRewriteConfig := range paths {
+
+			// Iterate through header values - since it's a multi-value field
+			for _, rewriteId := range rewriteIdHeaderValues {
+				if pathRewriteConfig.RewriteId == rewriteId {
+					return pathRewriteConfig
+				}
+			}
+
+		}
+	}
+
+	return nil
+}
+
+func RewritePath(path string, req *http.Request, configuration *shared.WiretapConfiguration) string {
 	paths := FindPaths(path, configuration)
-	var replaced string = path
+	var replaced = path
 	if len(paths) > 0 {
-		// extract first path
-		pathConfig := paths[0]
+
+		var pathConfig *shared.WiretapPathConfig
+
+		// Check if request headers have rewrite id; if so, we should try to find a matching rewrite config
+		pathConfig = FindPathWithRewriteId(paths, req)
+
+		// if rewriteId not specified in request or not found, extract first path
+		if pathConfig == nil {
+			pathConfig = paths[0]
+		}
+
 		replaced = ""
 
 		for _, globalIgnoreRewrite := range configuration.CompiledIgnorePathRewrite {

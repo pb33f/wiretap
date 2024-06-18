@@ -41,18 +41,26 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 	// now add path specific headers.
 	matchedPaths := config.FindPaths(build.OriginalRequest.URL.Path, cf)
 	auth := ""
+
 	if len(matchedPaths) > 0 {
-		for _, path := range matchedPaths {
-			auth = path.Auth
-			if path.Headers != nil {
-				dropHeaders = append(dropHeaders, path.Headers.DropHeaders...)
-				newInjectHeaders := path.Headers.InjectHeaders
-				for key := range injectHeaders {
-					newInjectHeaders[key] = injectHeaders[key]
-				}
-				injectHeaders = newInjectHeaders
+		var matchedPath *shared.WiretapPathConfig
+
+		// First check if we have a path matching our RewriteId
+		matchedPath = config.FindPathWithRewriteId(matchedPaths, build.NewRequest)
+
+		// Get the first matched value in the list
+		if matchedPath == nil {
+			matchedPath = matchedPaths[0]
+		}
+
+		auth = matchedPath.Auth
+		if matchedPath.Headers != nil {
+			dropHeaders = append(dropHeaders, matchedPath.Headers.DropHeaders...)
+			newInjectHeaders := matchedPath.Headers.InjectHeaders
+			for key := range injectHeaders {
+				newInjectHeaders[key] = injectHeaders[key]
 			}
-			break
+			injectHeaders = newInjectHeaders
 		}
 	}
 
@@ -126,7 +134,7 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 		requestBody, _ = io.ReadAll(newReq.Body)
 	}
 
-	replaced := config.RewritePath(build.NewRequest.URL.Path, cf)
+	replaced := config.RewritePath(build.NewRequest.URL.Path, newReq, cf)
 	var newUrl = build.NewRequest.URL
 	if replaced != "" {
 		var e error
