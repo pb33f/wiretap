@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	RewriteIdHeader = "Rewrite-Id"
+	RewriteIdHeader = "RewriteId"
 )
 
 func FindPaths(path string, configuration *shared.WiretapConfiguration) []*shared.WiretapPathConfig {
