@@ -198,7 +198,7 @@ paths:
 
 	req := &http.Request{
 		Header: http.Header{
-			"Rewrite-Id":   []string{"garbage", "garbage again", "test_id", "gargabe please"},
+			"RewriteId":    []string{"garbage", "garbage again", "test_id", "gargabe please"},
 			"Other-Header": []string{"another header"},
 		},
 	}
@@ -271,7 +271,7 @@ paths:
 
 	req := &http.Request{
 		Header: http.Header{
-			"Rewrite-Id":   []string{"garbage", "garbage again", "gargabe please"},
+			"RewriteId":    []string{"garbage", "garbage again", "gargabe please"},
 			"Other-Header": []string{"another header"},
 		},
 	}
