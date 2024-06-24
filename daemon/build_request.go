@@ -141,7 +141,7 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 		newUrl, e = url.Parse(replaced.RewrittenPath)
 		if e != nil {
 			newUrl = build.NewRequest.URL
-			pterm.Error.Printf("major configuration problem: cannot parse URL: `%s`: %s", replaced, e.Error())
+			pterm.Error.Printf("major configuration problem: cannot parse URL: `%s`: %s", replaced.RewrittenPath, e.Error())
 		}
 		if build.NewRequest.URL.RawQuery != "" {
 			newUrl.RawQuery = build.NewRequest.URL.RawQuery
