@@ -85,7 +85,7 @@ paths:
 	wcConfig.CompilePaths()
 
 	path := RewritePath("/pb33f/test/123/slap/a/chap", nil, &wcConfig)
-	assert.Equal(t, "http://localhost:9093/123/slap/a/chap", path)
+	assert.Equal(t, "http://localhost:9093/123/slap/a/chap", path.RewrittenPath)
 
 }
 
@@ -105,7 +105,7 @@ paths:
 	wcConfig.CompilePaths()
 
 	path := RewritePath("/pb33f/cakes/test/123/smelly/jelly", nil, &wcConfig)
-	assert.Equal(t, "https://localhost:9093/flat/jam/123/smelly/jelly", path)
+	assert.Equal(t, "https://localhost:9093/flat/jam/123/smelly/jelly", path.RewrittenPath)
 
 }
 
@@ -125,7 +125,7 @@ paths:
 	wcConfig.CompilePaths()
 
 	path := RewritePath("/pb33f/cakes/test/lemons/321/smelly/jelly", nil, &wcConfig)
-	assert.Equal(t, "https://localhost:9093/slippy/cakes/whip/321/lemons/smelly/jelly", path)
+	assert.Equal(t, "https://localhost:9093/slippy/cakes/whip/321/lemons/smelly/jelly", path.RewrittenPath)
 
 }
 
@@ -148,7 +148,7 @@ paths:
 	c.CompilePaths()
 
 	path := RewritePath("/en-US/burgerd/__raw/noKetchupPlease/nobody/", nil, &c)
-	assert.Equal(t, "http://localhost:80/noKetchupPlease/-/", path)
+	assert.Equal(t, "http://localhost:80/noKetchupPlease/-/", path.RewrittenPath)
 
 }
 
@@ -171,7 +171,7 @@ paths:
 	c.CompilePaths()
 
 	path := RewritePath("/en-US/burgerd/__raw/noKetchupPlease/nobody/yummy/yum?onions=true", nil, &c)
-	assert.Equal(t, "http://localhost:80/noKetchupPlease/-/yummy/yum?onions=true", path)
+	assert.Equal(t, "http://localhost:80/noKetchupPlease/-/yummy/yum?onions=true", path.RewrittenPath)
 
 }
 
@@ -210,7 +210,7 @@ paths:
 	}
 
 	path := RewritePath("/pb33f/test/id", req, &c)
-	assert.Equal(t, "https://localhost:9093/pb33f/correct/id", path)
+	assert.Equal(t, "https://localhost:9093/pb33f/correct/id", path.RewrittenPath)
 
 	actualConfig := FindPathWithRewriteId(pathConfigs, req)
 	expectedConfig := pathConfigs[1] // second config is the valid one
@@ -244,7 +244,7 @@ paths:
 	}
 
 	path := RewritePath("/pb33f/test/id", req, &c)
-	assert.Equal(t, "https://localhost:9093/pb33f/correct/id", path)
+	assert.Equal(t, "https://localhost:9093/pb33f/correct/id", path.RewrittenPath)
 
 }
 
@@ -277,7 +277,7 @@ paths:
 	}
 
 	path := RewritePath("/pb33f/test/id", req, &c)
-	assert.Equal(t, "https://localhost:9093/pb33f/correct/id", path)
+	assert.Equal(t, "https://localhost:9093/pb33f/correct/id", path.RewrittenPath)
 
 }
 

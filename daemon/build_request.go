@@ -136,9 +136,9 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 
 	replaced := config.RewritePath(build.NewRequest.URL.Path, newReq, cf)
 	var newUrl = build.NewRequest.URL
-	if replaced != "" {
+	if replaced.RewrittenPath != "" {
 		var e error
-		newUrl, e = url.Parse(replaced)
+		newUrl, e = url.Parse(replaced.RewrittenPath)
 		if e != nil {
 			newUrl = build.NewRequest.URL
 			pterm.Error.Printf("major configuration problem: cannot parse URL: `%s`: %s", replaced, e.Error())
