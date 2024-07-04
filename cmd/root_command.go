@@ -346,7 +346,7 @@ var (
 			}
 
 			// paths
-			if config.PathConfigurations.Len() > 0 || len(config.StaticPaths) > 0 || len(config.HARPathAllowList) > 0 || len(config.IgnorePathRewrite) > 0 {
+			if config.PathConfigurations != nil && config.PathConfigurations.Len() > 0 || len(config.StaticPaths) > 0 || len(config.HARPathAllowList) > 0 || len(config.IgnorePathRewrite) > 0 {
 				config.CompilePaths()
 				if len(config.IgnorePathRewrite) > 0 {
 					printLoadedIgnorePathRewrite(config.IgnorePathRewrite)
