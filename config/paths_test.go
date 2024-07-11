@@ -494,3 +494,96 @@ func TestValidationAllowList_NoPathsRegistered(t *testing.T) {
 	assert.False(t, ignore)
 
 }
+
+func TestGetRewriteHeaderValues(t *testing.T) {
+
+	expectedValue := []string{"ExpectedValue"}
+
+	requestList := []*http.Request{
+		{
+			Header: http.Header{
+				"Rewriteid":    expectedValue,
+				"Other-Header": []string{"another header"},
+				"other-header": []string{"another another header"},
+			},
+		},
+		{
+			Header: http.Header{
+				"Rewrite-Id":   expectedValue,
+				"Other-Header": []string{"another header"},
+				"other-header": []string{"another another header"},
+			},
+		},
+		{
+			Header: http.Header{
+				"Rewrite_id":   expectedValue,
+				"Other-Header": []string{"another header"},
+				"other-header": []string{"another another header"},
+			},
+		},
+		{
+			Header: http.Header{
+				"RewriteId":    expectedValue,
+				"Other-Header": []string{"another header"},
+				"other-header": []string{"another another header"},
+			},
+		},
+		{
+			Header: http.Header{
+				"RewrIte-Id":   expectedValue,
+				"Other-Header": []string{"another header"},
+				"other-header": []string{"another another header"},
+			},
+		},
+		{
+			Header: http.Header{
+				"rewriteid":    expectedValue,
+				"Other-Header": []string{"another header"},
+				"other-header": []string{"another another header"},
+			},
+		},
+		{
+			Header: http.Header{
+				"rewrite-id":   expectedValue,
+				"Other-Header": []string{"another header"},
+				"other-header": []string{"another another header"},
+			},
+		},
+		{
+			Header: http.Header{
+				"rewrite_id":   expectedValue,
+				"Other-Header": []string{"another header"},
+				"other-header": []string{"another another header"},
+			},
+		},
+	}
+
+	for _, request := range requestList {
+		actualValue, found := getRewriteIdHeaderValues(request)
+		assert.Equal(t, expectedValue, actualValue)
+		assert.True(t, found)
+	}
+
+}
+
+func TestGetRewriteHeaderValues_MissingHeader(t *testing.T) {
+
+	requestList := []*http.Request{
+		{
+			Header: http.Header{
+				"Other-Header": []string{"another header"},
+				"other-header": []string{"another another header"},
+			},
+		},
+		{
+			Header: http.Header{},
+		},
+	}
+
+	for _, request := range requestList {
+		actualValue, found := getRewriteIdHeaderValues(request)
+		assert.Equal(t, []string{}, actualValue)
+		assert.False(t, found)
+	}
+
+}

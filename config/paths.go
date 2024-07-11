@@ -13,7 +13,7 @@ import (
 
 const (
 	PascalCaseRewriteIdHeader = "Rewriteid"
-	SnakeCaseRewriteIdHeader  = "rewrite_id"
+	SnakeCaseRewriteIdHeader  = "Rewrite_id"
 	KebabCaseRewriteIdHeader  = "Rewrite-Id"
 )
 
@@ -119,12 +119,17 @@ func getRewriteIdHeaderValues(req *http.Request) ([]string, bool) {
 
 	// Let's now try to ignore case ; this may produce collisions if a user has two headers with similar keys,
 	// but different capitalization. This is okay, as this is a last ditch effort to find any possible match
-	var loweredHeaders = make(http.Header)
+	loweredHeaders := map[string][]string{}
 
 	for headerKey, headerValues := range req.Header {
-		for _, headerValue := range headerValues {
-			loweredHeaders.Set(strings.ToLower(headerKey), headerValue)
+		loweredKey := strings.ToLower(headerKey)
+
+		if _, ok := loweredHeaders[loweredKey]; ok {
+			loweredHeaders[loweredKey] = append(loweredHeaders[loweredKey], headerValues...)
+		} else {
+			loweredHeaders[loweredKey] = headerValues
 		}
+
 	}
 
 	for _, possibleHeaderKey := range rewriteIdHeaders {
@@ -135,7 +140,7 @@ func getRewriteIdHeaderValues(req *http.Request) ([]string, bool) {
 
 	}
 
-	return nil, false
+	return []string{}, false
 }
 
 func FindPathWithRewriteId(paths []*shared.WiretapPathConfig, req *http.Request) *shared.WiretapPathConfig {
