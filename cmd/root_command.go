@@ -542,7 +542,17 @@ var (
 				// build a model
 				var errs []error
 				docModel, errs = doc.BuildV3Model()
-				if len(errs) > 0 {
+				if len(errs) > 0 && docModel != nil {
+					pterm.Warning.Printf("OpenAPI Specification loaded, but there %s %d %s detected...\n",
+						shared.Pluralize(len(errs), "was", "were"),
+						len(errs),
+						shared.Pluralize(len(errs), "issue", "issues"))
+					for _, e := range errs {
+						pterm.Warning.Printf("--> %s\n", e.Error())
+					}
+				}
+				if len(errs) > 0 && docModel == nil {
+					pterm.Error.Printf("Failed to load / read OpenAPI specification.")
 					return errors.Join(errs...)
 				}
 			}
