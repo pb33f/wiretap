@@ -326,10 +326,7 @@ func TestNewMockEngine_BuildResponse_MissingOperation_404(t *testing.T) {
 	_ = json.Unmarshal(b, &decoded)
 
 	assert.Equal(t, "Path / operation not found (404)", decoded["title"])
-	assert.Equal(t, "Unable to locate the path '/wiretap/giftshop/products' with the method 'PATCH'. "+
-		"Error: PATCH Path '/wiretap/giftshop/products' not found, Reason: The PATCH request contains a path of "+
-		"'/wiretap/giftshop/products' however that path, or the PATCH method for that path does not exist in the "+
-		"specification", decoded["detail"])
+	assert.Equal(t, "Unable to locate the path '/wiretap/giftshop/products' with the method 'PATCH'. Error: PATCH Path '/wiretap/giftshop/products' not found, Reason: The PATCH method for that path does not exist in the specification", decoded["detail"])
 }
 
 func TestNewMockEngine_BuildResponse_CreateProduct_NoSecurity_Invalid(t *testing.T) {
