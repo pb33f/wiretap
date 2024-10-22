@@ -43,6 +43,6 @@ RUN echo "I am running on $TARGETPLATFORM, was built on $BUILDPLATFORM" > /log
 # copy only the built binary
 COPY --from=gobuilder /wiretap /wiretap
 
-ENV PATH=$PATH:/work/bin
+ENV PATH=$PATH:/
 
 ENTRYPOINT ["wiretap"]
