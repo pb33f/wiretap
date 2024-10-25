@@ -33,7 +33,7 @@ RUN echo "I am building go for GOOS:$TARGETOS, GOARCH:$TARGETARCH" > /log
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go mod download && go mod verify
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-w -s" -v -o /wiretap wiretap.go
 
-FROM golang:1.23-alpine AS runner
+FROM alpine:3.20.3 AS runner
 
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
