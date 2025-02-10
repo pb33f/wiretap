@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	_ "embed"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
 	"net/url"
@@ -15,6 +14,8 @@ import (
 	"path/filepath"
 	"text/template"
 	"time"
+
+	"github.com/gorilla/websocket"
 
 	"github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/ranch/model"
@@ -138,14 +139,14 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	ws.config.Logger.Info("[wiretap] handling API request", "url", request.HttpRequest.URL.String())
 
 	// short-circuit if we're using mock mode, there is no API call to make.
-	if ws.config.MockMode {
+	if ws.config.MockMode || configModel.IncludePathOnMockMode(apiRequest.URL.Path, ws.config) {
 		ws.config.Logger.Info("MockMode enabled; skipping validation")
 		ws.handleMockRequest(request, config, newReq)
 		return
 	} else if configModel.IgnoreValidationOnPath(apiRequest.URL.Path, ws.config) && !configModel.PathValidationAllowListed(apiRequest.URL.Path, ws.config) {
 		ws.config.Logger.Info(
 			fmt.Sprintf("Request on validation ignored path: %s ; skipping validation", apiRequest.URL.Path))
-	} else if ws.config.HardErrors { // check if we're going to fail hard on validation errors. (default is to skip this)
+	} else if configModel.IsHardErrorsSet(apiRequest.URL.Path, ws.config) { // check if we're going to fail hard on validation errors. (default is to skip this)
 		// validate the request synchronously
 		requestErrors = ws.ValidateRequest(request, newReq)
 	} else {
@@ -168,7 +169,7 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	} else {
 
 		// check if we're going to fail hard on validation errors. (default is to skip this)
-		if ws.config.HardErrors {
+		if configModel.IsHardErrorsSet(apiRequest.URL.Path, ws.config) {
 			// validate response
 			responseErrors = ws.ValidateResponse(request, CloneExistingResponse(returnedResponse))
 		} else {
@@ -216,11 +217,11 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	returnCode := config.HardErrorReturnCode
 
 	switch {
-	case config.HardErrors && len(requestErrors) > 0 && len(responseErrors) <= 0:
+	case configModel.IsHardErrorsSet(apiRequest.URL.Path, ws.config) && len(requestErrors) > 0 && len(responseErrors) <= 0:
 		request.HttpResponseWriter.WriteHeader(requestCode)
-	case config.HardErrors && len(requestErrors) <= 0 && len(responseErrors) > 0:
+	case configModel.IsHardErrorsSet(apiRequest.URL.Path, ws.config) && len(requestErrors) <= 0 && len(responseErrors) > 0:
 		request.HttpResponseWriter.WriteHeader(returnCode)
-	case config.HardErrors && len(requestErrors) > 0 && len(responseErrors) > 0:
+	case configModel.IsHardErrorsSet(apiRequest.URL.Path, ws.config) && len(requestErrors) > 0 && len(responseErrors) > 0:
 		request.HttpResponseWriter.WriteHeader(returnCode)
 	default:
 		request.HttpResponseWriter.WriteHeader(returnedResponse.StatusCode)

@@ -5,12 +5,103 @@ package config
 
 import (
 	"encoding/json"
+	"net/http"
+	"testing"
+
 	"github.com/pb33f/wiretap/shared"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
-	"net/http"
-	"testing"
 )
+
+func TestIsHardErrorsSet(t *testing.T) {
+	config := `variables:
+  ranch: /dressing
+hardValidationList:
+  - /pb33f/howdy/**
+  - /pb33f/cowboy/123
+  - ${ranch}
+  `
+
+	var wcConfig shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &wcConfig)
+
+	wcConfig.CompileVariables()
+	wcConfig.CompileHardErrorList()
+
+	ignore := IsHardErrorsSet("/pb33f/howdy/partner", &wcConfig)
+	assert.True(t, ignore)
+
+	ignore = IsHardErrorsSet("/pb33f/cowboy/123", &wcConfig)
+	assert.True(t, ignore)
+
+	ignore = IsHardErrorsSet("/not-registered", &wcConfig)
+	assert.False(t, ignore)
+
+	ignore = IsHardErrorsSet("/dressing", &wcConfig)
+	assert.True(t, ignore)
+}
+
+func TestHardErrorOnPath(t *testing.T) {
+	config := `variables:
+  ranch: /dressing
+hardValidationList:
+  - /pb33f/howdy/**
+  - /pb33f/cowboy/123
+  - /*/test/123
+  - ${ranch}`
+
+	var wcConfig shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &wcConfig)
+
+	wcConfig.CompileVariables()
+	wcConfig.CompileHardErrorList()
+
+	ignore := hardErrorOnPath("/pb33f/howdy/partner", &wcConfig)
+	assert.True(t, ignore)
+
+	ignore = hardErrorOnPath("/pb33f/cowboy/123", &wcConfig)
+	assert.True(t, ignore)
+
+	ignore = hardErrorOnPath("/texmexgrilledtacos/test/123", &wcConfig)
+	assert.True(t, ignore)
+
+	ignore = hardErrorOnPath("/not-registered", &wcConfig)
+	assert.False(t, ignore)
+
+	ignore = hardErrorOnPath("/dressing", &wcConfig)
+	assert.True(t, ignore)
+}
+func TestIncludePathOnMockMode(t *testing.T) {
+	config := `variables:
+  vaquero: /vaquero/is/cowboy/in/spanish
+mockModeList:
+  - /pb33f/howdy/**
+  - /pb33f/cowboy/123
+  - /*/test/123
+  - ${vaquero}`
+
+	var wcConfig shared.WiretapConfiguration
+	_ = yaml.Unmarshal([]byte(config), &wcConfig)
+
+	wcConfig.CompileVariables()
+	wcConfig.CompileMockModeList()
+
+	ignore := IncludePathOnMockMode("/pb33f/howdy/partner", &wcConfig)
+	assert.True(t, ignore)
+
+	ignore = IncludePathOnMockMode("/pb33f/cowboy/123", &wcConfig)
+	assert.True(t, ignore)
+
+	ignore = IncludePathOnMockMode("/texmexgrilledtacos/test/123", &wcConfig)
+	assert.True(t, ignore)
+
+	ignore = IncludePathOnMockMode("/not-registered", &wcConfig)
+	assert.False(t, ignore)
+
+	ignore = IncludePathOnMockMode("/vaquero/is/cowboy/in/spanish", &wcConfig)
+	assert.True(t, ignore)
+
+}
 
 func TestFindPath(t *testing.T) {
 

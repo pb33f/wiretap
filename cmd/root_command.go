@@ -7,6 +7,11 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
+	"log/slog"
+	"net/url"
+	"os"
+	"path/filepath"
+
 	"github.com/pb33f/harhar"
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
@@ -16,10 +21,6 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
-	"log/slog"
-	"net/url"
-	"os"
-	"path/filepath"
 )
 
 var (
@@ -326,10 +327,10 @@ var (
 			}
 
 			// configure hard errors if set
-			if config.HardErrors && config.HardErrorCode <= 0 {
+			if (config.HardErrors || len(config.HardErrorsList) > 0) && config.HardErrorCode <= 0 {
 				config.HardErrorCode = hardErrorCode
 			}
-			if config.HardErrors && config.HardErrorReturnCode <= 0 {
+			if (config.HardErrors || len(config.HardErrorsList) > 0) && config.HardErrorReturnCode <= 0 {
 				config.HardErrorReturnCode = hardErrorReturnCode
 			}
 
@@ -381,6 +382,16 @@ var (
 				}
 
 				printLoadedWebsockets(config.WebsocketConfigs)
+			}
+
+			if len(config.MockModeList) > 0 && !config.MockMode {
+				config.CompileMockModeList()
+				printLoadedMockModeList(config.MockModeList)
+			}
+
+			if len(config.HardErrorsList) > 0 && !config.HardErrors {
+				config.CompileHardErrorList()
+				printLoadedHardErrorList(config.MockModeList)
 			}
 
 			if len(config.IgnoreValidation) > 0 {
@@ -816,6 +827,26 @@ func printLoadedValidationAllowList(validationAllowList []string) {
 
 	for _, x := range validationAllowList {
 		pterm.Printf("👮 Paths matching '%s' will always have validation run, regardless of ignoreValidation settings\n", pterm.LightCyan(x))
+	}
+	pterm.Println()
+}
+
+func printLoadedMockModeList(mockModeList []string) {
+	pterm.Info.Printf("Loaded %d %s from mock mode list:\n", len(mockModeList),
+		shared.Pluralize(len(mockModeList), "path", "paths"))
+
+	for _, x := range mockModeList {
+		pterm.Printf("️Ⓜ️  Paths matching '%s' will have all responses %s.\n", x, pterm.LightMagenta("generated as mocks/simulations"))
+	}
+	pterm.Println()
+}
+
+func printLoadedHardErrorList(HardErrorList []string) {
+	pterm.Info.Printf("Loaded %d %s from hard validation list:\n", len(HardErrorList),
+		shared.Pluralize(len(HardErrorList), "path", "paths"))
+
+	for _, x := range HardErrorList {
+		pterm.Printf("️️❌ Paths matching '%s' will create HTTP %s errors for requests and %s errors for responses that fail to pass validation.\n", x, pterm.LightRed("400"), pterm.LightRed("502"))
 	}
 	pterm.Println()
 }
