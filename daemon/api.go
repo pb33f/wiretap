@@ -5,10 +5,11 @@ package daemon
 
 import (
 	"crypto/tls"
-	"github.com/pb33f/wiretap/config"
-	"github.com/pterm/pterm"
 	"net/http"
 	"net/url"
+
+	"github.com/pb33f/wiretap/config"
+	"github.com/pterm/pterm"
 
 	"github.com/pb33f/wiretap/shared"
 )

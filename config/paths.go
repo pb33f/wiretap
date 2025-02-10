@@ -5,10 +5,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/pb33f/wiretap/shared"
-	"github.com/pterm/pterm"
 	"net/http"
 	"strings"
+
+	"github.com/pb33f/wiretap/shared"
+	"github.com/pterm/pterm"
 )
 
 const (
@@ -64,6 +65,32 @@ func PathRedirectAllowListed(path string, configuration *shared.WiretapConfigura
 			return true
 		}
 	}
+	return false
+}
+
+func IncludePathOnMockMode(path string, configuration *shared.WiretapConfiguration) bool {
+	for _, mockModePath := range configuration.CompiledMockModeList {
+		if mockModePath.Match(path) {
+			return true
+		}
+	}
+	return false
+}
+
+func hardErrorOnPath(path string, configuration *shared.WiretapConfiguration) bool {
+	for _, mockModePath := range configuration.CompiledHardErrorList {
+		if mockModePath.Match(path) {
+			return true
+		}
+	}
+	return false
+}
+
+func IsHardErrorsSet(path string, configuration *shared.WiretapConfiguration) bool {
+	if configuration.HardErrors || hardErrorOnPath(path, configuration) {
+		return true
+	}
+
 	return false
 }
 

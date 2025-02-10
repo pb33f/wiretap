@@ -7,10 +7,11 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"github.com/pb33f/libopenapi/orderedmap"
-	"gopkg.in/yaml.v3"
 	"log/slog"
 	"regexp"
+
+	"github.com/pb33f/libopenapi/orderedmap"
+	"gopkg.in/yaml.v3"
 
 	"github.com/gobwas/glob"
 	"github.com/pb33f/harhar"
@@ -40,8 +41,10 @@ type WiretapConfiguration struct {
 	HardErrors                  bool                                        `json:"hardValidation,omitempty" yaml:"hardValidation,omitempty"`
 	HardErrorCode               int                                         `json:"hardValidationCode,omitempty" yaml:"hardValidationCode,omitempty"`
 	HardErrorReturnCode         int                                         `json:"hardValidationReturnCode,omitempty" yaml:"hardValidationReturnCode,omitempty"`
+	HardErrorsList              []string                                    `json:"hardValidationList,omitempty" yaml:"hardValidationList,omitempty"`
 	PathDelays                  map[string]int                              `json:"pathDelays,omitempty" yaml:"pathDelays,omitempty"`
 	MockMode                    bool                                        `json:"mockMode,omitempty" yaml:"mockMode,omitempty"`
+	MockModeList                []string                                    `json:"mockModeList,omitempty" yaml:"mockModeList,omitempty"`
 	UseAllMockResponseFields    bool                                        `json:"useAllMockResponseFields,omitempty" yaml:"useAllMockResponseFields,omitempty"`
 	MockModePretty              bool                                        `json:"mockModePretty,omitempty" yaml:"mockModePretty,omitempty"`
 	Base                        string                                      `json:"base,omitempty" yaml:"base,omitempty"`
@@ -58,10 +61,12 @@ type WiretapConfiguration struct {
 	StrictRedirectLocation      bool                                        `json:"strictRedirectLocation,omitempty" yaml:"strictRedirectLocation,omitempty"`
 	IgnorePathRewrite           []*IgnoreRewriteConfig                      `json:"ignorePathRewrite,omitempty" yaml:"ignorePathRewrite,omitempty"`
 	HARFile                     *harhar.HAR                                 `json:"-" yaml:"-"`
+	CompiledMockModeList        []glob.Glob                                 `json:"-" yaml:"-"`
 	CompiledPathDelays          map[string]*CompiledPathDelay               `json:"-" yaml:"-"`
 	CompiledVariables           map[string]*CompiledVariable                `json:"-" yaml:"-"`
 	Version                     string                                      `json:"-" yaml:"-"`
 	StaticPathsCompiled         []glob.Glob                                 `json:"-" yaml:"-"`
+	CompiledHardErrorList       []glob.Glob                                 `json:"-" yaml:"-"`
 	CompiledPaths               *orderedmap.Map[string, *CompiledPath]      `json:"-"`
 	CompiledIgnoreRedirects     []*CompiledRedirect                         `json:"-" yaml:"-"`
 	CompiledRedirectAllowList   []*CompiledRedirect                         `json:"-" yaml:"-"`
@@ -143,6 +148,20 @@ func (wtc *WiretapConfiguration) CompileVariables() {
 			VariableValue:    wtc.Variables[x],
 		}
 		wtc.CompiledVariables[x] = compiled
+	}
+}
+
+func (wtc *WiretapConfiguration) CompileMockModeList() {
+	wtc.CompiledMockModeList = make([]glob.Glob, 0)
+	for _, x := range wtc.MockModeList {
+		wtc.CompiledMockModeList = append(wtc.CompiledMockModeList, glob.MustCompile(wtc.ReplaceWithVariables((x))))
+	}
+}
+
+func (wtc *WiretapConfiguration) CompileHardErrorList() {
+	wtc.CompiledHardErrorList = make([]glob.Glob, 0)
+	for _, x := range wtc.HardErrorsList {
+		wtc.CompiledHardErrorList = append(wtc.CompiledHardErrorList, glob.MustCompile(wtc.ReplaceWithVariables((x))))
 	}
 }
 
