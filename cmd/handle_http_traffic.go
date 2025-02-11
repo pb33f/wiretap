@@ -5,16 +5,18 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/wiretap/daemon"
 	"github.com/pb33f/wiretap/shared"
+	"github.com/pb33f/wiretap/staticMock"
 	"github.com/pterm/pterm"
-	"net/http"
 )
 
-func handleHttpTraffic(wiretapConfig *shared.WiretapConfiguration, wtService *daemon.WiretapService) {
+func handleHttpTraffic(wiretapConfig *shared.WiretapConfiguration, wtService *daemon.WiretapService, staticMockService *staticMock.StaticMockService) {
 	go func() {
 		handleTraffic := func(w http.ResponseWriter, r *http.Request) {
 			id, _ := uuid.NewUUID()
@@ -24,7 +26,13 @@ func handleHttpTraffic(wiretapConfig *shared.WiretapConfiguration, wtService *da
 				HttpRequest:        r,
 				HttpResponseWriter: w,
 			}
-			wtService.HandleHttpRequest(requestModel)
+
+			// if static-mock-dir is set, then we call the handler of staticMockService
+			if len(wiretapConfig.StaticMockDir) != 0 {
+				staticMockService.HandleStaticMockRequest(requestModel)
+			} else { // else call the wiretap service handler
+				wtService.HandleHttpRequest(requestModel)
+			}
 		}
 
 		handleWebsocket := func(w http.ResponseWriter, r *http.Request) {
