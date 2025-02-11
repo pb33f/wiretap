@@ -14,3 +14,4 @@ ui/node_modules
 
 # Local run output files
 wiretap-report.json
+__debug*
