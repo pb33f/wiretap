@@ -4,9 +4,12 @@
 package daemon
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi-validator/errors"
-	"github.com/pb33f/libopenapi/datamodel/high/v3"
+	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
@@ -14,8 +17,6 @@ import (
 	"github.com/pb33f/wiretap/mock"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/validation"
-	"net/http"
-	"time"
 )
 
 const (
@@ -42,6 +43,7 @@ type WiretapService struct {
 	streamChan       chan []*errors.ValidationError
 	streamViolations []*errors.ValidationError
 	reportFile       string
+	StaticMockDir    string
 }
 
 func NewWiretapService(document libopenapi.Document, config *shared.WiretapConfiguration) *WiretapService {
@@ -61,6 +63,7 @@ func NewWiretapService(document libopenapi.Document, config *shared.WiretapConfi
 		transport:        tr,
 		controlsStore:    controlsStore,
 		transactionStore: transactionStore,
+		StaticMockDir:    config.StaticMockDir,
 	}
 	if document != nil {
 		m, _ := document.BuildV3Model()
@@ -97,6 +100,10 @@ func (ws *WiretapService) HandleServiceRequest(request *model.Request, core serv
 
 func (ws *WiretapService) HandleHttpRequest(request *model.Request) {
 	ws.handleHttpRequest(request)
+}
+
+func (ws *WiretapService) HandleStaticMockResponse(request *model.Request, response *http.Response) {
+	ws.handleStaticMockResponse(request, response)
 }
 
 func (ws *WiretapService) HandleWebsocketRequest(request *model.Request) {

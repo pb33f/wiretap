@@ -4,6 +4,10 @@
 package cmd
 
 import (
+	"os"
+	"reflect"
+	"strconv"
+
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/plank/pkg/server"
@@ -14,9 +18,7 @@ import (
 	"github.com/pb33f/wiretap/report"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
-	"os"
-	"reflect"
-	"strconv"
+	"github.com/pb33f/wiretap/staticMock"
 )
 
 func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenapi.Document) (server.PlatformServer, error) {
@@ -70,6 +72,13 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenap
 		panic(err)
 	}
 
+	staticMockService := staticMock.NewStaticMockService(wtService, wiretapConfig.Logger)
+	// register Static-Mock Service
+	if err = platformServer.RegisterService(
+		staticMockService, staticMock.StaticMockServiceChan); err != nil {
+		panic(err)
+	}
+
 	// register spec service
 	if err = platformServer.RegisterService(
 		specs.NewSpecService(doc), specs.SpecServiceChan); err != nil {
@@ -107,7 +116,7 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenap
 	bootedMessage(wiretapConfig)
 
 	// boot the http handler
-	handleHttpTraffic(wiretapConfig, wtService)
+	handleHttpTraffic(wiretapConfig, wtService, staticMockService)
 
 	// boot the monitor
 	serveMonitor(wiretapConfig)

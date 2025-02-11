@@ -45,6 +45,7 @@ type WiretapConfiguration struct {
 	PathDelays                  map[string]int                              `json:"pathDelays,omitempty" yaml:"pathDelays,omitempty"`
 	MockMode                    bool                                        `json:"mockMode,omitempty" yaml:"mockMode,omitempty"`
 	MockModeList                []string                                    `json:"mockModeList,omitempty" yaml:"mockModeList,omitempty"`
+	StaticMockDir               string                                      `json:"staticMockDir,omitempty" yaml:"staticMockDir,omitempty"`
 	UseAllMockResponseFields    bool                                        `json:"useAllMockResponseFields,omitempty" yaml:"useAllMockResponseFields,omitempty"`
 	MockModePretty              bool                                        `json:"mockModePretty,omitempty" yaml:"mockModePretty,omitempty"`
 	Base                        string                                      `json:"base,omitempty" yaml:"base,omitempty"`
