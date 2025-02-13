@@ -6,25 +6,105 @@
 package staticMock
 
 import (
-	"bytes"
+	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/pb33f/ranch/model"
+	"github.com/pb33f/wiretap/shared"
 )
 
-// Function to check if a slice contains a given element
-func contains(slice []string, value string) bool {
-	for _, v := range slice {
-		if v == value {
-			return true
+func (sms *StaticMockService) getBodyBytesFromHttpRequest(request *http.Request) []byte {
+	bodyBytes, err := io.ReadAll(request.Body)
+	if err != nil {
+		panic(err)
+	}
+	return bodyBytes
+}
+
+func (sms *StaticMockService) compareJsonBody(mock StaticMockDefinitionRequest, request *http.Request) bool {
+	// Mock body is JSON but incoming body is not JSON
+	if request.Header.Get("Content-Type") != "application/json" {
+		return false
+	}
+
+	incomingBodyBytes := sms.getBodyBytesFromHttpRequest(request)
+	var incomingBodyJson interface{}
+	err := json.Unmarshal(incomingBodyBytes, &incomingBodyJson)
+	if err != nil {
+		sms.logger.Error("Error decoding JSON of incoming request")
+		panic(err)
+	}
+	// Check if the JSON object or array is a subset of the incoming body
+	return shared.IsSubset(mock.Body, incomingBodyJson)
+}
+
+// Function to transform []string values to []interface{}(string)
+func (sms *StaticMockService) transStrArrToInterfaceArr(strArr []string) []interface{} {
+	strArrTransformedValues := make([]interface{}, 0)
+	for _, value := range strArr {
+		strArrTransformedValues = append(strArrTransformedValues, interface{}(value))
+	}
+	return strArrTransformedValues
+}
+
+// Function to compare headers
+func (sms *StaticMockService) compareHeaders(mockHeaders map[string]any, incoming *http.Request) bool {
+	found := true
+	// Check if all headers in mockHeaders are subset of incoming headers
+	for key, value := range mockHeaders {
+		switch v := value.(type) {
+		case string:
+			found = found && shared.IsSubset([]interface{}{v}, sms.transStrArrToInterfaceArr(incoming.Header[key]))
+		case []interface{}:
+			found = found && shared.IsSubset(value, sms.transStrArrToInterfaceArr(incoming.Header[key]))
 		}
 	}
-	return false
+
+	return found
+}
+
+func (sms *StaticMockService) compareQueryParams(mockQueryParams map[string]any, incomingQueries url.Values) bool {
+	found := true
+	// Check if all headers in mockHeaders are subset of incoming headers
+	for key, value := range mockQueryParams {
+		switch v := value.(type) {
+		case string:
+			found = found && shared.IsSubset([]interface{}{v}, sms.transStrArrToInterfaceArr(incomingQueries[key]))
+		case []interface{}:
+			found = found && shared.IsSubset(value, sms.transStrArrToInterfaceArr(incomingQueries[key]))
+		}
+	}
+
+	return found
+}
+
+func (sms *StaticMockService) compareBody(mock StaticMockDefinitionRequest, incoming *http.Request) bool {
+	switch mb := mock.Body.(type) {
+	case string: // Case string body
+		incomingBodyBytes := sms.getBodyBytesFromHttpRequest(incoming)
+		if string(incomingBodyBytes) != string(mb) {
+			return false
+		}
+	case map[string]interface{}: // Case JSON Object
+		if !sms.compareJsonBody(mock, incoming) {
+			return false
+		}
+	case []interface{}: // Case JSON Array
+		if !sms.compareJsonBody(mock, incoming) {
+			return false
+		}
+	default:
+		sms.logger.Error("Unsupported type of body in mock definition", mb)
+		return false
+	}
+
+	return true
 }
 
 // Function to check if two requests are identical
-func isRequestMatch(incoming *http.Request, mock StaticMockDefinitionRequest) bool {
+func (sms *StaticMockService) isRequestMatch(mock StaticMockDefinitionRequest, incoming *http.Request) bool {
 	// Compare HTTP method
 	if incoming.Method != mock.Method {
 		return false
@@ -43,24 +123,24 @@ func isRequestMatch(incoming *http.Request, mock StaticMockDefinitionRequest) bo
 
 	// Compare headers
 	if mock.Header != nil {
-		mockHeaders := *mock.Header
-		for key, value := range mockHeaders {
-			if incomingValue, exists := incoming.Header[key]; !exists || len(incomingValue) != len(value) {
-				return false
-			} else {
-				for _, v := range value {
-					if contains(incomingValue, v) {
-						return false
-					}
-				}
-			}
+		if !sms.compareHeaders(*mock.Header, incoming) {
+			return false
 		}
 	}
 
-	// // Compare body content
-	// if incoming.Body != mock.Body {
-	// 	return false
-	// }
+	// Compare query parameters
+	if mock.QueryParams != nil {
+		if !sms.compareQueryParams(*mock.QueryParams, incoming.URL.Query()) {
+			return false
+		}
+	}
+
+	// Compare body content
+	if mock.Body != nil {
+		if !sms.compareBody(mock, incoming) {
+			return false
+		}
+	}
 
 	// If all checks passed, the requests match
 	return true
@@ -70,7 +150,7 @@ func (sms *StaticMockService) checkStaticMockExists(request *http.Request) *Stat
 	var matchedMockDefinition *StaticMockDefinition
 	// check for a static mock definition.
 	for _, mockDefinition := range sms.mockDefinitions {
-		if isRequestMatch(request, mockDefinition.Request) {
+		if sms.isRequestMatch(mockDefinition.Request, request) {
 			// found a match
 			matchedMockDefinition = &mockDefinition
 			break
@@ -91,15 +171,7 @@ func (sms *StaticMockService) handleStaticMockRequest(request *model.Request) {
 	}
 
 	// found a static mock, handle it.
-	body := []byte(matchedMockDefinition.Response.Body)
-	buff := bytes.NewBuffer(body)
-
-	response := &http.Response{
-		StatusCode: matchedMockDefinition.Response.StatusCode,
-		Body:       io.NopCloser(buff),
-	}
-	header := http.Header{}
-	response.Header = header
+	response := sms.getStaticMockResponse(*matchedMockDefinition)
 
 	sms.wiretapService.HandleStaticMockResponse(request, response)
 }
