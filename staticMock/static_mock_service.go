@@ -8,7 +8,6 @@ package staticMock
 import (
 	"encoding/json"
 	"log/slog"
-	"net/http"
 	"net/url"
 	"os"
 	"time"
@@ -24,17 +23,17 @@ const (
 )
 
 type StaticMockDefinitionRequest struct {
-	Method      string       `json:"method,omitempty"`
-	UrlPath     string       `json:"urlPath,omitempty"`
-	URL         *url.URL     `json:"url,omitempty"`
-	Header      *http.Header `json:"header,omitempty"`
-	Body        string       `json:"body,omitempty"`
-	QueryParams url.Values   `json:"queryParams,omitempty"`
+	Method      string          `json:"method,omitempty"`
+	UrlPath     string          `json:"urlPath,omitempty"`
+	URL         *url.URL        `json:"url,omitempty"`
+	Header      *map[string]any `json:"header,omitempty"`
+	Body        interface{}     `json:"body,omitempty"`
+	QueryParams *map[string]any `json:"queryParams,omitempty"`
 }
 
 type StaticMockDefinitionResponse struct {
 	Timestamp    int64                         `json:"timestamp,omitempty"`
-	Headers      map[string]any                `json:"headers,omitempty"`
+	Header       map[string]any                `json:"header,omitempty"`
 	StatusCode   int                           `json:"statusCode,omitempty"`
 	Body         string                        `json:"responseBody,omitempty"`
 	Cookies      map[string]*daemon.HttpCookie `json:"cookies,omitempty"`
