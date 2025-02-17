@@ -7,17 +7,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	libopenapierrs "github.com/pb33f/libopenapi-validator/errors"
-	"github.com/pb33f/libopenapi-validator/helpers"
-	"github.com/pb33f/libopenapi-validator/paths"
-	"github.com/pb33f/libopenapi/datamodel/high/v3"
-	"github.com/pb33f/libopenapi/renderer"
-	"github.com/pb33f/wiretap/shared"
-	"github.com/pb33f/wiretap/validation"
 	"net/http"
 	"strconv"
 	"strings"
+
+	libopenapierrs "github.com/pb33f/libopenapi-validator/errors"
+	"github.com/pb33f/libopenapi-validator/helpers"
+	"github.com/pb33f/libopenapi-validator/paths"
+	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/pb33f/libopenapi/renderer"
+	"github.com/pb33f/wiretap/shared"
+	"github.com/pb33f/wiretap/validation"
 )
+
+// type config ResponseMockEng
 
 type ResponseMockEngine struct {
 	doc        *v3.Document
@@ -46,6 +49,18 @@ func NewMockEngine(document *v3.Document, pretty, useAllPropertyExamples bool) *
 
 func (rme *ResponseMockEngine) GenerateResponse(request *http.Request) ([]byte, int, error) {
 	return rme.runWorkflow(request)
+}
+
+// https://swagger.io/docs/specification/v3_0/data-models/oneof-anyof-allof-not/
+// anyOf, oneOf, allOf, not
+// only supports v3 model, f the rest LOL
+func (rme *ResponseMockEngine) GetSchemaCombination(mediaType *v3.MediaType) {
+	// schema, _ := mediaType.Schema.BuildSchema()
+
+	// only handle oneOf now
+
+	// for _, types := range schema
+
 }
 
 func (rme *ResponseMockEngine) ValidateSecurity(request *http.Request, operation *v3.Operation) error {
@@ -160,14 +175,14 @@ func (rme *ResponseMockEngine) extractMediaTypeHeader(request *http.Request) str
 	if mediaTypeSting == "" {
 		mediaTypeSting = contentType // anything?
 	}
-	
+
 	if mediaTypeSting == "" {
 		// Check the Accept header for a content type
 		contentType = request.Header.Get("Accept")
 		mediaTypeSting, _, _ = helpers.ExtractContentType(contentType)
 	}
-	
-	if (mediaTypeSting == "") {
+
+	if mediaTypeSting == "" {
 		mediaTypeSting = "application/json" // default
 	}
 
@@ -243,6 +258,7 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 
 	// get path, not valid? return 404
 	path, err := rme.findPath(request)
+
 	if err != nil {
 		return rme.buildError(
 			404,

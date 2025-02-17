@@ -1,7 +1,6 @@
-import {css} from "lit";
+import { css } from "lit";
 
 export default css`
-  
   .transaction {
     border-bottom: 1px dashed var(--secondary-color-lowalpha);
     border-top: 1px dashed var(--background-color);
@@ -9,12 +8,12 @@ export default css`
     display: flex;
     justify-content: space-between;
   }
-  
+
   header {
     flex-grow: 5;
   }
-  
-  .transaction:hover{
+
+  .transaction:hover {
     //background: var(--transaction-background-color-hover);
     cursor: pointer;
     border-bottom: 1px dashed var(--secondary-color);
@@ -28,15 +27,13 @@ export default css`
     color: var(--primary-color);
   }
 
-  
   .transaction.active {
     background: var(--kv-table-header-background);
     border-bottom: 1px dashed var(--primary-color);
     border-top: 1px dashed var(--primary-color);
     color: var(--primary-color);
   }
-  
-    
+
   .tab::part(base) {
     font: var(--font-stack);
   }
@@ -44,20 +41,24 @@ export default css`
   .tab.secondary::part(base) {
     font: var(--font-stack);
   }
-  
+
   .spinner {
-    --indicator-color: var(--secondary-color); 
-    font-size: 25px; 
+    --indicator-color: var(--secondary-color);
+    font-size: 25px;
     --track-width: 3px;
     margin-top: 2px;
     margin-right: 12px;
   }
-  
+
+  .mocked-response,
+  .invalid {
+    display: block;
+    margin: 2px 12px 0 0;
+    font-size: 25px;
+  }
+
   .invalid {
     color: var(--error-color);
-    font-size: 25px;
-    margin-top: 2px;
-    margin-right: 12px;
   }
 
   .valid {
@@ -73,8 +74,6 @@ export default css`
     margin-top: 2px;
     margin-right: 12px;
   }
-
-
 
   .delay {
     text-align: right;
@@ -104,11 +103,11 @@ export default css`
   .chain sl-icon:hover {
     color: var(--terminal-yellow);
   }
-  
+
   .transaction-status {
-    display: flex; 
+    display: flex;
   }
-  
+
   .request-time {
     text-align: right;
     min-width: 60px;
@@ -123,7 +122,4 @@ export default css`
     font-size: 15px;
     color: var(--font-color-sub2);
   }
-  
-
-  
-`
+`;

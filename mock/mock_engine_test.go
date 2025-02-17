@@ -6,6 +6,7 @@ package mock
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"testing"
@@ -45,6 +46,115 @@ func resetPetstoreState() *v3.Document {
 	d, _ := libopenapi.NewDocument(petstoreBytes)
 	compiled, _ := d.BuildV3Model()
 	return &compiled.Model
+}
+
+func createCustomSpec() *v3.Document {
+	customSpec := []byte(`
+openapi: 3.0.0
+info:
+  title: User Management API
+  version: 1.0.0
+
+paths:
+  /users/{userId}:
+    get:
+      summary: Get user details
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/AdminResponse'
+                - $ref: '#/components/schemas/UserResponse'
+components:
+  schemas:
+    UserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - role
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [user]
+
+    AdminResponse:
+      type: object
+      required:
+        - userID
+        - role
+        - perms
+      properties:
+        userID:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin]
+        perms:
+          type: array
+          items:
+            type: string
+`)
+
+	d, _ := libopenapi.NewDocument(customSpec)
+	compiled, _ := d.BuildV3Model()
+
+	return &compiled.Model
+}
+
+func TestNewMockEngine_OneOf(t *testing.T) {
+
+	doc := createCustomSpec()
+	me := NewMockEngine(doc, false, true)
+
+	request, _ := http.NewRequest(http.MethodGet, "users/5", nil)
+	request.Header.Set(helpers.ContentTypeHeader, "application/json")
+
+	// str := ""
+
+	// b, status, err := me.GenerateResponse(request)
+	// get path, not valid? return 404
+	path, _ := me.findPath(request)
+
+	// find operation, not valid? return 404
+	operation := me.findOperation(request, path) // missing operation is cauight by
+
+	media, _ := me.findBestMediaTypeMatch(operation, request, []string{"200"})
+
+	schema, _ := media.Schema.BuildSchema()
+
+	for _, types := range schema.OneOf {
+		fmt.Printf("%s,%s", types.GetReference(), types.GetValueNode().Value)
+
+		// for _, nodes := range v.Content {
+		// 	fmt.Println(nodes)
+		// }
+
+	}
+
+	// m, _ := media.Render()
+	// os.WriteFile("test.txt", m, 0777)
+
+	// assert.NoError(t, err)
+	// assert.Equal(t, 200, status)
+
+	// var decoded []map[string]any
+	// _ = json.Unmarshal(b, &decoded)
+
+	// str += string(b) + "\n"
+
+	// assert.NotNil(t, path)
 }
 
 func TestNewMockEngine_findPath(t *testing.T) {

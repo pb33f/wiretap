@@ -4,6 +4,10 @@
 package cmd
 
 import (
+	"os"
+	"reflect"
+	"strconv"
+
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/plank/pkg/server"
@@ -14,9 +18,6 @@ import (
 	"github.com/pb33f/wiretap/report"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
-	"os"
-	"reflect"
-	"strconv"
 )
 
 func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenapi.Document) (server.PlatformServer, error) {

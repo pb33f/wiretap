@@ -1,0 +1,4 @@
+schema:
+    oneOf:
+        - $ref: '#/components/schemas/AdminResponse'
+        - $ref: '#/components/schemas/UserResponse'

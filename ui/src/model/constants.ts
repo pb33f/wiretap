@@ -1,3 +1,5 @@
+import { RanchUtils } from "@pb33f/ranch";
+
 export const WiretapChannel = "wiretap-broadcast";
 export const SpecChannel = "specs";
 export const WiretapControlsChannel = "controls";
@@ -18,7 +20,6 @@ export const WiretapLinkCacheStore = "http-link-cache-store";
 
 export const WiretapLinkCacheKey = "http-link-cache";
 
-
 export const WiretapFiltersKey = "wiretap-filters";
 
 export const WiretapControlsKey = "wiretap-controls";
@@ -33,6 +34,7 @@ export const WiretapLocalStorage = "wiretap-transactions";
 
 export const NoSpec = "no-spec";
 
-
 export const TopicPrefix = "/topic/";
 export const QueuePrefix = "/queue/";
+
+export const SearchID = "searchID";

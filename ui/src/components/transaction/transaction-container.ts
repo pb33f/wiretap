@@ -1,347 +1,382 @@
-import {customElement, state, query} from "lit/decorators.js";
-import {html, LitElement, TemplateResult} from "lit";
-import {Bag} from "@pb33f/saddlebag";
-import {BuildLiveTransactionFromState, HttpTransaction, HttpTransactionLink} from '@/model/http_transaction';
-import {HttpTransactionItemComponent} from "./transaction-item";
+import { customElement, state, query } from "lit/decorators.js";
+import { html, LitElement, TemplateResult } from "lit";
+import { Bag } from "@pb33f/saddlebag";
+import {
+  BuildLiveTransactionFromState,
+  HttpTransaction,
+  HttpTransactionLink,
+} from "@/model/http_transaction";
+import { HttpTransactionItemComponent } from "./transaction-item";
 import localforage from "localforage";
 import transactionContainerComponentCss from "./transaction-container.css";
-import {HttpTransactionViewComponent} from "./transaction-view";
-import {SpecEditor} from "@/components/editor/editor";
-import {ViolationLocation} from "@/model/events";
+import { HttpTransactionViewComponent } from "./transaction-view";
+import { SpecEditor } from "@/components/editor/editor";
+import { ViolationLocation } from "@/model/events";
 import {
-    NoSpec,
-    WiretapCurrentSpec,
-    WiretapFiltersKey,
-    WiretapLinkCacheStore,
-    WiretapLocalStorage
+  NoSpec,
+  WiretapCurrentSpec,
+  WiretapFiltersKey,
+  WiretapLinkCacheStore,
+  WiretapLocalStorage,
 } from "@/model/constants";
-import {AreFiltersActive, WiretapFilters} from "@/model/controls";
-import {TransactionLinkCache} from "@/model/link_cache";
-import {GetBagManager} from "@pb33f/saddlebag";
+import { AreFiltersActive, WiretapFilters } from "@/model/controls";
+import { TransactionLinkCache } from "@/model/link_cache";
+import { GetBagManager } from "@pb33f/saddlebag";
 import dividerCss from "@/components/divider.css";
-import {SpecControlsComponent} from "@/components/transaction/spec_controls";
+import { SpecControlsComponent } from "@/components/transaction/spec_controls";
 
-@customElement('http-transaction-container')
+@customElement("http-transaction-container")
 export class HttpTransactionContainerComponent extends LitElement {
+  static styles = [dividerCss, transactionContainerComponentCss];
 
-    static styles = [dividerCss, transactionContainerComponentCss];
+  private _allTransactionStore: Bag<HttpTransaction>;
+  private _selectedTransactionStore: Bag<HttpTransaction>;
+  private _specStore: Bag<String>;
+  private _transactionComponents: HttpTransactionItemComponent[] = [];
+  private _filteredTransactionComponents: HttpTransactionItemComponent[] = [];
+  private readonly _filtersStore: Bag<WiretapFilters>;
+  private _transactionLinkCache: TransactionLinkCache;
+  private readonly _linkCacheStore: Bag<
+    Map<string, Map<string, HttpTransactionLink[]>>
+  >;
+  private _specValue: string;
 
-    private _allTransactionStore: Bag<HttpTransaction>;
-    private _selectedTransactionStore: Bag<HttpTransaction>;
-    private _specStore: Bag<String>;
-    private _transactionComponents: HttpTransactionItemComponent[] = [];
-    private _filteredTransactionComponents: HttpTransactionItemComponent[] = [];
-    private readonly _filtersStore: Bag<WiretapFilters>;
-    private _transactionLinkCache: TransactionLinkCache;
-    private readonly _linkCacheStore: Bag<Map<string, Map<string, HttpTransactionLink[]>>>;
-    private _specValue: string;
+  @state()
+  private _mappedHttpTransactions: Map<string, HttpTransactionContainer>;
 
-    @state()
-    private _mappedHttpTransactions: Map<string, HttpTransactionContainer>
+  @state()
+  private _selectedTransaction: HttpTransaction;
 
-    @state()
-    private _selectedTransaction: HttpTransaction
+  @state()
+  private _showSpec: boolean = false;
 
-    @state()
-    private _showSpec: boolean = false;
+  private _transactionView: HttpTransactionViewComponent;
 
-    private _transactionView: HttpTransactionViewComponent
+  @query("spec-editor")
+  private _specEditor: SpecEditor;
 
-    @query('spec-editor')
-    private _specEditor: SpecEditor;
+  @query("spec-controls")
+  private _specControls: SpecControlsComponent;
 
-    @query('spec-controls')
-    private _specControls: SpecControlsComponent;
+  private _filters: WiretapFilters;
 
-    private _filters: WiretapFilters;
+  constructor(
+    allTransactionStore: Bag<HttpTransaction>,
+    selectedTransactionStore: Bag<HttpTransaction>,
+    specStore: Bag<String>,
+    filtersStore: Bag<WiretapFilters>
+  ) {
+    super();
+    this._allTransactionStore = allTransactionStore;
+    this._selectedTransactionStore = selectedTransactionStore;
+    this._specStore = specStore;
+    this._mappedHttpTransactions = new Map<string, HttpTransactionContainer>();
+    this._filtersStore = filtersStore;
+    this._filters = new WiretapFilters();
 
-    constructor(allTransactionStore: Bag<HttpTransaction>,
-                selectedTransactionStore: Bag<HttpTransaction>,
-                specStore: Bag<String>,
-                filtersStore: Bag<WiretapFilters>) {
-        super()
-        this._allTransactionStore = allTransactionStore
-        this._selectedTransactionStore = selectedTransactionStore
-        this._specStore = specStore;
-        this._mappedHttpTransactions = new Map<string, HttpTransactionContainer>()
-        this._filtersStore = filtersStore;
-        this._filters = new WiretapFilters();
+    // filters store & subscribe to filter changes.
+    this._filtersStore.subscribe(
+      WiretapFiltersKey,
+      this.filtersChanged.bind(this)
+    );
+    this._linkCacheStore = GetBagManager().getBag<
+      Map<string, Map<string, HttpTransactionLink[]>>
+    >(WiretapLinkCacheStore);
 
-        // filters store & subscribe to filter changes.
-        this._filtersStore.subscribe(WiretapFiltersKey, this.filtersChanged.bind(this))
-        this._linkCacheStore =
-            GetBagManager().getBag<Map<string, Map<string, HttpTransactionLink[]>>>(WiretapLinkCacheStore);
+    this._linkCacheStore.onAllChanges(this.cacheUpdated.bind(this));
+  }
 
-        this._linkCacheStore.onAllChanges(this.cacheUpdated.bind(this));
+  cacheUpdated() {
+    if (this._transactionView) {
+      this._transactionView.linkCache = this._transactionLinkCache; // make sure transaction view always has latest.
     }
+    this.filterComponents();
+    this.requestUpdate();
+  }
 
-    cacheUpdated() {
-        if (this._transactionView) {
-            this._transactionView.linkCache = this._transactionLinkCache; // make sure transaction view always has latest.
-        }
+  filtersChanged(filters: WiretapFilters) {
+    this._filters = filters;
+  }
+
+  reset(): void {
+    this._selectedTransactionStore.reset();
+  }
+
+  firstUpdated() {
+    // listen for changes to selected transaction.
+    this._selectedTransactionStore.onAllChanges(
+      this.handleSelectedTransactionChange.bind(this)
+    );
+    this._specStore.subscribe(
+      WiretapCurrentSpec,
+      this.handleSpecChange.bind(this)
+    );
+    this._allTransactionStore.onAllChanges(
+      this.handleTransactionChange.bind(this)
+    );
+    this._allTransactionStore.onPopulated(
+      (storeData: Map<string, HttpTransaction>) => {
+        // rebuild our internal state
+        const savedTransactions: Map<string, HttpTransactionContainer> =
+          new Map<string, HttpTransactionContainer>();
+        storeData.forEach((value: HttpTransaction, key: string) => {
+          const container: HttpTransactionContainer = {
+            Transaction: BuildLiveTransactionFromState(value),
+            Listener: () => {
+              this.requestUpdate();
+            },
+          };
+          savedTransactions.set(key, container);
+        });
+        // save our internal state.
+        this._mappedHttpTransactions = savedTransactions;
+
+        //extract state
+        this._mappedHttpTransactions.forEach((v: HttpTransactionContainer) => {
+          const comp = new HttpTransactionItemComponent(
+            v.Transaction,
+            this._transactionLinkCache
+          );
+          this._transactionComponents.push(comp);
+        });
+
+        // perform filtering.
         this.filterComponents();
-        this.requestUpdate();
+      }
+    );
+
+    this._transactionLinkCache = new TransactionLinkCache();
+    this._transactionView = new HttpTransactionViewComponent();
+    this._transactionView.linkCache = this._transactionLinkCache;
+  }
+
+  handleSelectedTransactionChange(key: string, transaction: HttpTransaction) {
+    if (transaction) {
+      this._selectedTransaction = transaction;
+      this._transactionView.httpTransaction = transaction;
+    } else {
+      this._selectedTransaction = null;
+      this._transactionView.httpTransaction = null;
     }
+  }
 
-    filtersChanged(filters: WiretapFilters) {
-        this._filters = filters;
+  handleSpecChange(value: string) {
+    this._specValue = value;
+    if (this?._specEditor && value) {
+      this._specEditor.setValue(value);
     }
+  }
 
-    reset(): void {
-        this._selectedTransactionStore.reset()
-    }
-
-    firstUpdated() {
-
-        // listen for changes to selected transaction.
-        this._selectedTransactionStore.onAllChanges(this.handleSelectedTransactionChange.bind(this))
-        this._specStore.subscribe(WiretapCurrentSpec, this.handleSpecChange.bind(this))
-        this._allTransactionStore.onAllChanges(this.handleTransactionChange.bind(this))
-        this._allTransactionStore.onPopulated((storeData: Map<string, HttpTransaction>) => {
-
-            // rebuild our internal state
-            const savedTransactions: Map<string, HttpTransactionContainer> = new Map<string, HttpTransactionContainer>()
-            storeData.forEach((value: HttpTransaction, key: string) => {
-                const container: HttpTransactionContainer = {
-                    Transaction: BuildLiveTransactionFromState(value),
-                    Listener: () => {
-                        this.requestUpdate();
-                    }
-                }
-                savedTransactions.set(key, container)
-            });
-            // save our internal state.
-            this._mappedHttpTransactions = savedTransactions
-
-            //extract state
-            this._mappedHttpTransactions.forEach(
-                (v: HttpTransactionContainer) => {
-                    const comp = new HttpTransactionItemComponent(v.Transaction, this._transactionLinkCache);
-                    this._transactionComponents.push(comp)
-                }
-            );
-
-            // perform filtering.
-            this.filterComponents()
-        });
-
-        this._transactionLinkCache = new TransactionLinkCache()
-        this._transactionView = new HttpTransactionViewComponent();
-        this._transactionView.linkCache = this._transactionLinkCache;
-
-    }
-
-    handleSelectedTransactionChange(key: string, transaction: HttpTransaction) {
-        if (transaction) {
-            this._selectedTransaction = transaction;
-            this._transactionView.httpTransaction = transaction;
-        } else {
-            this._selectedTransaction = null;
-            this._transactionView.httpTransaction = null;
-        }
-    }
-
-    handleSpecChange(value: string) {
-        this._specValue = value;
-        if (this?._specEditor && value) {
-            this._specEditor.setValue(value)
-        }
-    }
-
-
-    handleTransactionChange(key: string, value: HttpTransaction) {
-        if (value) {
-            // if we already have this transaction, update it.
-            if (this._mappedHttpTransactions.has(value.id)) {
-                const existingTransaction = this._mappedHttpTransactions.get(value.id)
-                existingTransaction.Listener(value)
-                const component: HttpTransactionItemComponent =
-                    this._transactionComponents.find((v: HttpTransactionItemComponent) => {
-                        return v.transactionId === value.id;
-                    });
-                component.httpTransaction = BuildLiveTransactionFromState(value);
-                component.requestUpdate()
-
-            } else {
-
-                // otherwise, add it.
-                const container: HttpTransactionContainer = {
-                    Transaction: BuildLiveTransactionFromState(value),
-                    Listener: (trans: HttpTransaction) => {
-
-                        // update db.
-                        let exp = this._allTransactionStore.export()
-                        localforage.setItem<Map<string, HttpTransaction>>
-                        (WiretapLocalStorage, exp).then(
-                            () => {
-                                this._transactionView.requestUpdate();
-                            }
-                        ).catch(
-                            (err) => {
-                                console.error(err)
-                            }
-                        )
-                    }
-                }
-                this._mappedHttpTransactions.set(value.id, container);
-                const comp: HttpTransactionItemComponent = new HttpTransactionItemComponent(value, this._transactionLinkCache);
-                this._transactionComponents.push(comp);
+  handleTransactionChange(key: string, value: HttpTransaction) {
+    if (value) {
+      // if we already have this transaction, update it.
+      if (this._mappedHttpTransactions.has(value.id)) {
+        const existingTransaction = this._mappedHttpTransactions.get(value.id);
+        existingTransaction.Listener(value);
+        const component: HttpTransactionItemComponent =
+          this._transactionComponents.find(
+            (v: HttpTransactionItemComponent) => {
+              return v.transactionId === value.id;
             }
-        } else {
-            // remove it.
-            let allTransactions = this._allTransactionStore.export();
-            allTransactions.delete(key);
-            localforage.setItem<Map<string, HttpTransaction>>(WiretapLocalStorage, allTransactions);
+          );
+        component.httpTransaction = BuildLiveTransactionFromState(value);
+        component.requestUpdate();
+      } else {
+        // otherwise, add it.
+        const container: HttpTransactionContainer = {
+          Transaction: BuildLiveTransactionFromState(value),
+          Listener: (trans: HttpTransaction) => {
+            // update db.
+            let exp = this._allTransactionStore.export();
+            localforage
+              .setItem<Map<string, HttpTransaction>>(WiretapLocalStorage, exp)
+              .then(() => {
+                this._transactionView.requestUpdate();
+              })
+              .catch((err) => {
+                console.error(err);
+              });
+          },
+        };
+        this._mappedHttpTransactions.set(value.id, container);
+        const comp: HttpTransactionItemComponent =
+          new HttpTransactionItemComponent(value, this._transactionLinkCache);
+        this._transactionComponents.push(comp);
+      }
+    } else {
+      // remove it.
+      let allTransactions = this._allTransactionStore.export();
+      allTransactions.delete(key);
+      localforage.setItem<Map<string, HttpTransaction>>(
+        WiretapLocalStorage,
+        allTransactions
+      );
 
-            // remove from components.
-            const comp: HttpTransactionItemComponent =
-                this._transactionComponents.find((v: HttpTransactionItemComponent) => {
-                    return v.transactionId === key;
-                });
-            const index = this._transactionComponents.indexOf(comp);
-            this._transactionComponents.splice(index, 1);
+      // remove from components.
+      const comp: HttpTransactionItemComponent =
+        this._transactionComponents.find((v: HttpTransactionItemComponent) => {
+          return v.transactionId === key;
+        });
+      const index = this._transactionComponents.indexOf(comp);
+      this._transactionComponents.splice(index, 1);
+    }
+    if (this._filters) {
+      this.filterComponents();
+    }
+    this.requestUpdate();
+    this._transactionLinkCache.sync();
+  }
+
+  filterComponents() {
+    let filtered: HttpTransactionItemComponent[] = this._transactionComponents;
+
+    // filter by method
+    if (this._filters?.filterMethod.keyword.length > 0) {
+      filtered = this._transactionComponents.filter(
+        (v: HttpTransactionItemComponent) => {
+          const filter = v.httpTransaction.matchesMethodFilter(this._filters);
+          return filter != false;
         }
-        if (this._filters) {
-            this.filterComponents();
-        }
-        this.requestUpdate();
-        this._transactionLinkCache.sync();
+      );
     }
 
-    filterComponents() {
-
-        let filtered: HttpTransactionItemComponent[] = this._transactionComponents;
-
-        // filter by method
-        if (this._filters?.filterMethod.keyword.length > 0) {
-            filtered = this._transactionComponents.filter(
-                (v: HttpTransactionItemComponent) => {
-                    const filter = v.httpTransaction.matchesMethodFilter(this._filters);
-                    return filter != false;
-                });
-        }
-
-        // re-filter by keywords
-        if (this._filters?.filterKeywords.length > 0) {
-            filtered = filtered.filter((v: HttpTransactionItemComponent) => {
-                const filter = v.httpTransaction.matchesKeywordFilter(this._filters);
-                return filter != false;
-            })
-        }
-
-        // re-filter by chains
-        if (this._filters?.filterChain.length > 0) {
-            filtered = filtered.filter((v: HttpTransactionItemComponent) => {
-                const filter = v.httpTransaction.containsActiveLink(this._filters);
-                v.httpTransaction.containsChainLink = (filter != false);
-                v.requestUpdate()
-                return true
-            })
-        } else {
-            // wipe out links, nothing to link.
-            filtered.forEach((v: HttpTransactionItemComponent) => {
-                v.httpTransaction.containsChainLink = false;
-                v.requestUpdate()
-            })
-        }
-
-        this._filteredTransactionComponents = filtered;
-        this.requestUpdate();
+    // re-filter by keywords
+    if (this._filters.filterKeywords[0].keyword.length > 0) {
+      filtered = filtered.filter((v: HttpTransactionItemComponent) => {
+        const filter = v.httpTransaction.matchesKeywordFilter(this._filters);
+        return filter != false;
+      });
     }
 
-    render() {
+    // re-filter by chains
+    if (this._filters?.filterChain.length > 0) {
+      filtered = filtered.filter((v: HttpTransactionItemComponent) => {
+        const filter = v.httpTransaction.containsActiveLink(this._filters);
+        v.httpTransaction.containsChainLink = filter != false;
+        v.requestUpdate();
+        return true;
+      });
+    } else {
+      // wipe out links, nothing to link.
+      filtered.forEach((v: HttpTransactionItemComponent) => {
+        v.httpTransaction.containsChainLink = false;
+        v.requestUpdate();
+      });
+    }
 
-        let components = this._transactionComponents;
-        if (this._filters && AreFiltersActive(this._filters)) {
-            components = this._filteredTransactionComponents;
-        }
+    this._filteredTransactionComponents = filtered;
+    this.requestUpdate();
+  }
 
-        const reversed = components.sort(
-            (a: HttpTransactionItemComponent, b: HttpTransactionItemComponent) => {
-                return b.httpTransaction.timestamp - a.httpTransaction.timestamp
-            });
+  render() {
+    let components = this._transactionComponents;
+    if (this._filters && AreFiltersActive(this._filters)) {
+      components = this._filteredTransactionComponents;
+    }
 
+    const reversed = components.sort(
+      (a: HttpTransactionItemComponent, b: HttpTransactionItemComponent) => {
+        return b.httpTransaction.timestamp - a.httpTransaction.timestamp;
+      }
+    );
 
-        let specControls: TemplateResult
-        if (this._specValue != NoSpec) {
-            specControls = html` <spec-controls @toggleSpecification=${this.toggleSpec} ></spec-controls>`
-        }
+    let specControls: TemplateResult;
+    if (this._specValue != NoSpec) {
+      specControls = html` <spec-controls
+        @toggleSpecification=${this.toggleSpec}
+      ></spec-controls>`;
+    }
 
-        return html`
-            <section class="split-panel-divider">
-                <sl-split-panel vertical position-in-pixels="300">
-                    <sl-icon slot="divider" name="grip-horizontal" class="grip-horizontal"></sl-icon>
-                    <div slot="start" class="transactions-container"
-                         @httpTransactionSelected="${this.updateSelectedTransactionState}">
-                        ${reversed}
-                    </div>
-                    <div slot="end">
-                        <section class="bottom-panel" @violationLocationSelected=${this.locationSelected}>
-                            ${this.renderBottomPanel()}
-                            ${specControls}
-                        </section>
-                    </div>
-                </sl-split-panel>
+    return html`
+      <section class="split-panel-divider">
+        <sl-split-panel vertical position-in-pixels="300">
+          <sl-icon
+            slot="divider"
+            name="grip-horizontal"
+            class="grip-horizontal"
+          ></sl-icon>
+          <div
+            slot="start"
+            class="transactions-container"
+            @httpTransactionSelected="${this.updateSelectedTransactionState}"
+          >
+            ${reversed}
+          </div>
+          <div slot="end">
+            <section
+              class="bottom-panel"
+              @violationLocationSelected=${this.locationSelected}
+            >
+              ${this.renderBottomPanel()} ${specControls}
             </section>
-        `
-    }
+          </div>
+        </sl-split-panel>
+      </section>
+    `;
+  }
 
-    renderBottomPanel(): TemplateResult {
-        if (this._showSpec) {
-            return html`
-                <sl-split-panel class="editor-split" position="60">
-                    <sl-icon slot="divider" name="grip-vertical" class="grip-vertical"></sl-icon>
-                    <div slot="start" class="transaction-view-container">
-                       ${this._transactionView}
-                    </div>
-                    <div slot="end" class="transaction-view-container">
-                        <spec-editor id="spec-editor" code="${this._specValue}">
-                        </spec-editor>
-                    </div>
-                </sl-split-panel>`
-        } else {
-            return html`
-                <div slot="start" class="transaction-view-container">
-                    ${this._transactionView}
-                </div>`
+  renderBottomPanel(): TemplateResult {
+    if (this._showSpec) {
+      return html` <sl-split-panel class="editor-split" position="60">
+        <sl-icon
+          slot="divider"
+          name="grip-vertical"
+          class="grip-vertical"
+        ></sl-icon>
+        <div slot="start" class="transaction-view-container">
+          ${this._transactionView}
+        </div>
+        <div slot="end" class="transaction-view-container">
+          <spec-editor id="spec-editor" code="${this._specValue}">
+          </spec-editor>
+        </div>
+      </sl-split-panel>`;
+    } else {
+      return html` <div slot="start" class="transaction-view-container">
+        ${this._transactionView}
+      </div>`;
+    }
+  }
+
+  toggleSpec(e: CustomEvent<boolean>) {
+    this._showSpec = e.detail;
+    this.requestUpdate();
+  }
+
+  locationSelected(e: CustomEvent<ViolationLocation>) {
+    this._showSpec = true;
+    this._specControls.specVisible = true;
+    this.requestUpdate();
+    // wait for the dom to update, then select the location in the editor.
+    setTimeout(() => {
+      const editorRef = this._specEditor.editor;
+      editorRef.setPosition({
+        column: e.detail.column,
+        lineNumber: e.detail.line,
+      });
+      editorRef.revealLinesInCenter(e.detail.line, e.detail.line);
+      editorRef.revealPositionInCenter({
+        column: e.detail.column,
+        lineNumber: e.detail.line,
+      });
+      editorRef.focus();
+    }, 20);
+  }
+
+  updateSelectedTransactionState(d: CustomEvent<HttpTransaction>): void {
+    this._transactionComponents.forEach((v: HttpTransactionItemComponent) => {
+      if (v._httpTransaction.id !== d.detail.id) {
+        if (v.active) {
+          v.disable();
         }
-
-    }
-
-    toggleSpec(e: CustomEvent<boolean>) {
-        this._showSpec = e.detail
-        this.requestUpdate();
-    }
-
-    locationSelected(e: CustomEvent<ViolationLocation>) {
-        this._showSpec = true;
-        this._specControls.specVisible = true;
-        this.requestUpdate();
-        // wait for the dom to update, then select the location in the editor.
-        setTimeout(() => {
-            const editorRef = this._specEditor.editor
-            editorRef.setPosition({column: e.detail.column, lineNumber: e.detail.line});
-            editorRef.revealLinesInCenter(e.detail.line, e.detail.line);
-            editorRef.revealPositionInCenter({column: e.detail.column, lineNumber: e.detail.line})
-            editorRef.focus();
-        }, 20)
-    }
-
-    updateSelectedTransactionState(d: CustomEvent<HttpTransaction>): void {
-        this._transactionComponents.forEach((v: HttpTransactionItemComponent) => {
-            if (v._httpTransaction.id !== d.detail.id) {
-                if (v.active) {
-                    v.disable();
-                }
-            }
-        });
-        // update the store.
-        this._selectedTransactionStore.set(d.detail.id, d.detail);
-    }
-
+      }
+    });
+    // update the store.
+    this._selectedTransactionStore.set(d.detail.id, d.detail);
+  }
 }
 
 interface HttpTransactionContainer {
-    Transaction: HttpTransaction
-    Listener: (update: HttpTransaction) => void
+  Transaction: HttpTransaction;
+  Listener: (update: HttpTransaction) => void;
 }

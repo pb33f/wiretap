@@ -7,12 +7,13 @@ package daemon
 import (
 	"bytes"
 	"fmt"
-	"github.com/pb33f/ranch/model"
-	configModel "github.com/pb33f/wiretap/config"
-	"github.com/pb33f/wiretap/shared"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/pb33f/ranch/model"
+	configModel "github.com/pb33f/wiretap/config"
+	"github.com/pb33f/wiretap/shared"
 )
 
 func (ws *WiretapService) handleMockRequest(
@@ -57,6 +58,10 @@ func (ws *WiretapService) handleMockRequest(
 			header.Add(k, fmt.Sprint(v))
 		}
 	}
+
+	const mocked = "this response has been mocked"
+	request.HttpResponseWriter.Header().Set("wiretap-mock", fmt.Sprintf(mocked))
+	header.Add("wiretap-mock", fmt.Sprintf(mocked))
 
 	// if there was an error building the mock, return a 404
 	if mockErr != nil && len(mock) == 0 {

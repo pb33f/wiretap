@@ -63,7 +63,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/json-iterator/go v1.1.12
+require (
+	github.com/json-iterator/go v1.1.12
+	gopkg.in/yaml.v2 v2.4.0
+)
 
 require (
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect

@@ -38,12 +38,7 @@ func (c *wiretapTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
-
-	configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
-
-	// create a new request from the original request, but replace the path
-	wiretapConfig := configStore.(*shared.WiretapConfiguration)
+func (ws *WiretapService) rewritingPath(req *http.Request, wiretapConfig *shared.WiretapConfiguration) string {
 
 	// lookup path and determine if we need to redirect it.
 	replaced := config.RewritePath(req.URL.Path, req, wiretapConfig)
@@ -60,6 +55,16 @@ func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 		}
 		req.URL = newUrl
 	}
+	return req.URL.String()
+}
+
+func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
+
+	configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
+
+	// create a new request from the original request, but replace the path
+	wiretapConfig := configStore.(*shared.WiretapConfiguration)
+	ws.rewritingPath(req, wiretapConfig)
 
 	tr := newWiretapTransport()
 	var client *http.Client
