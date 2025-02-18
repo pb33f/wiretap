@@ -34,7 +34,7 @@ func IsSubset(json, superSet interface{}) bool {
 		// Check if superSet is a string
 		if ssStr, ok := superSet.(string); ok {
 			// Call helper function to compare strings
-			return stringCompare(str, ssStr)
+			return StringCompare(str, ssStr)
 		}
 
 		// if json is a string and superSet is not, then it can't be a subset
@@ -94,7 +94,7 @@ func isPotentialRegex(s string) bool {
 
 // Helper function to compare strings. Since mock definitions support
 // regex, we need to check if the string is a regex and if so, compare it
-func stringCompare(patternOrStr, str string) bool {
+func StringCompare(patternOrStr, str string) bool {
 	// Try to compile the pattern to check if it's a valid regex
 	if isPotentialRegex(patternOrStr) {
 		if _, err := regexp.Compile(patternOrStr); err != nil {

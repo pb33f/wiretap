@@ -5,6 +5,7 @@
 package daemon
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 
@@ -15,8 +16,17 @@ func (ws *WiretapService) handleStaticMockResponse(request *model.Request, respo
 	// validate response async
 	go ws.broadcastResponse(request, response)
 
-	// if the mock is empty
-	request.HttpResponseWriter.WriteHeader(response.StatusCode)
+	for k, v := range response.Header {
+		for _, j := range v {
+			request.HttpResponseWriter.Header().Set(k, fmt.Sprint(j))
+		}
+	}
+
+	responseCodeToReturn := 200
+	if response.StatusCode != 0 {
+		responseCodeToReturn = response.StatusCode
+	}
+	request.HttpResponseWriter.WriteHeader(responseCodeToReturn)
 
 	if response.Body == nil {
 		return
