@@ -15,12 +15,25 @@ import (
 	"github.com/pb33f/wiretap/shared"
 )
 
-func (sms *StaticMockService) getBodyBytesFromHttpRequest(request *http.Request) []byte {
+func (sms *StaticMockService) getBodyFromHttpRequest(request *http.Request) interface{} {
 	bodyBytes, err := io.ReadAll(request.Body)
 	if err != nil {
 		panic(err)
 	}
-	return bodyBytes
+
+	var bodyJsonObj interface{}
+
+	if len(bodyBytes) == 0 {
+		return bodyJsonObj
+	}
+
+	err = json.Unmarshal(bodyBytes, &bodyJsonObj)
+	if err != nil {
+		sms.logger.Error("Error decoding JSON of incoming request")
+		panic(err)
+	}
+
+	return bodyJsonObj
 }
 
 func (sms *StaticMockService) compareJsonBody(mock StaticMockDefinitionRequest, request *http.Request) bool {
@@ -29,15 +42,10 @@ func (sms *StaticMockService) compareJsonBody(mock StaticMockDefinitionRequest, 
 		return false
 	}
 
-	incomingBodyBytes := sms.getBodyBytesFromHttpRequest(request)
-	var incomingBodyJson interface{}
-	err := json.Unmarshal(incomingBodyBytes, &incomingBodyJson)
-	if err != nil {
-		sms.logger.Error("Error decoding JSON of incoming request")
-		panic(err)
-	}
+	incomingBody := sms.getBodyFromHttpRequest(request)
+
 	// Check if the JSON object or array is a subset of the incoming body
-	return shared.IsSubset(mock.Body, incomingBodyJson)
+	return shared.IsSubset(mock.Body, incomingBody)
 }
 
 // Function to transform []string values to []interface{}(string)
@@ -83,7 +91,11 @@ func (sms *StaticMockService) compareQueryParams(mockQueryParams map[string]any,
 func (sms *StaticMockService) compareBody(mock StaticMockDefinitionRequest, incoming *http.Request) bool {
 	switch mb := mock.Body.(type) {
 	case string: // Case string body
-		incomingBodyBytes := sms.getBodyBytesFromHttpRequest(incoming)
+		incomingBodyBytes, err := io.ReadAll(incoming.Body)
+		if err != nil {
+			panic(err)
+		}
+
 		if string(incomingBodyBytes) != string(mb) {
 			return false
 		}
@@ -105,19 +117,18 @@ func (sms *StaticMockService) compareBody(mock StaticMockDefinitionRequest, inco
 
 // Function to check if two requests are identical
 func (sms *StaticMockService) isRequestMatch(mock StaticMockDefinitionRequest, incoming *http.Request) bool {
+	// Compare Host if defined
+	if mock.Host != "" && !shared.StringCompare(mock.Host, incoming.Host) {
+		return false
+	}
+
 	// Compare HTTP method
 	if incoming.Method != mock.Method {
 		return false
 	}
 
-	// Compare URL
-	// Condition where urlPath is defined in mock
-	if mock.UrlPath != "" && incoming.URL.Path != mock.UrlPath {
-		return false
-	}
-
-	// Condition where url object is defined in mock
-	if mock.URL != nil && incoming.URL != mock.URL {
+	// Compare url of the request
+	if mock.UrlPath != "" && !shared.StringCompare(mock.UrlPath, incoming.URL.Path) {
 		return false
 	}
 
@@ -171,7 +182,7 @@ func (sms *StaticMockService) handleStaticMockRequest(request *model.Request) {
 	}
 
 	// found a static mock, handle it.
-	response := sms.getStaticMockResponse(*matchedMockDefinition)
+	response := sms.getStaticMockResponse(*matchedMockDefinition, request.HttpRequest)
 
 	sms.wiretapService.HandleStaticMockResponse(request, response)
 }

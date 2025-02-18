@@ -192,7 +192,7 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	headers := ExtractHeaders(returnedResponse)
 
 	// wiretap needs to work from anywhere, so allow everything.
-	setCORSHeaders(headers)
+	shared.SetCORSHeaders(headers)
 
 	if config.StrictRedirectLocation && is3xxStatusCode(returnedResponse.StatusCode) {
 		setStrictLocationHeader(config, headers)
@@ -376,12 +376,6 @@ func (ws *WiretapService) handleWebsocketRequest(request *model.Request) {
 			return
 		}
 	}
-}
-
-func setCORSHeaders(headers map[string][]string) {
-	headers["Access-Control-Allow-Headers"] = []string{"*"}
-	headers["Access-Control-Allow-Origin"] = []string{"*"}
-	headers["Access-Control-Allow-Methods"] = []string{"OPTIONS,POST,GET,DELETE,PATCH,PUT"}
 }
 
 // setStrictLocationHeader rewrites any `Location` headers to wiretap's ApiGatewayHost. Some web servers specify

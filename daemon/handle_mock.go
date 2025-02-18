@@ -7,12 +7,13 @@ package daemon
 import (
 	"bytes"
 	"fmt"
-	"github.com/pb33f/ranch/model"
-	configModel "github.com/pb33f/wiretap/config"
-	"github.com/pb33f/wiretap/shared"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/pb33f/ranch/model"
+	configModel "github.com/pb33f/wiretap/config"
+	"github.com/pb33f/wiretap/shared"
 )
 
 func (ws *WiretapService) handleMockRequest(
@@ -38,7 +39,7 @@ func (ws *WiretapService) handleMockRequest(
 
 	// wiretap needs to work from anywhere, so allow everything.
 	headers := make(map[string][]string)
-	setCORSHeaders(headers)
+	shared.SetCORSHeaders(headers)
 	headers["Content-Type"] = []string{"application/json"}
 
 	buff := bytes.NewBuffer(mock)
