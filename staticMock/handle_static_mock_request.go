@@ -6,6 +6,7 @@
 package staticMock
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -172,6 +173,22 @@ func (sms *StaticMockService) checkStaticMockExists(request *http.Request) *Stat
 }
 
 func (sms *StaticMockService) handleStaticMockRequest(request *model.Request) {
+	defer func() {
+		if r := recover(); r != nil {
+			sms.logger.Error("Recovered from panic in handleStaticMockRequest:", r)
+			errorMessage := "Error in static mock handler"
+			if err, ok := r.(error); ok && err.Error() != "" {
+				errorMessage = err.Error()
+			}
+			errorBody := shared.MarshalError(shared.GenerateError(errorMessage, 500, "Internal server error", "", r))
+			errorResponse := http.Response{
+				StatusCode: 500,
+				Body:       io.NopCloser(bytes.NewBuffer([]byte(errorBody))),
+			}
+			sms.wiretapService.HandleStaticMockResponse(request, &errorResponse)
+		}
+	}()
+
 	// check for a static mock definition.
 	matchedMockDefinition := sms.checkStaticMockExists(request.HttpRequest)
 
