@@ -1,7 +1,5 @@
 # Static Mocking in Wiretap
 
-This feature allows static mocking of APIs in the Wiretap service. It enables the server to match incoming requests against predefined mock definitions and return corresponding mock responses. If no match is found, the request is forwarded to the Wiretap service's handler for further processing.
-
 ## Table of Contents
 - [Overview](#overview)
 - [How to Enable Static Mocking](#how-to-enable-static-mocking)
@@ -15,7 +13,7 @@ This feature allows static mocking of APIs in the Wiretap service. It enables th
 
 ## Overview
 
-Wiretap allows you to mock API responses by defining static mock definitions in JSON files. These mock definitions specify the conditions under which the server will respond with predefined mock responses instead of processing the request. The mock responses can either be specified directly in the mock definition or by referencing a separate JSON file.
+This feature allows static mocking of APIs in the Wiretap service by defining mock definitions in JSON files. It enables the server to match incoming requests against predefined mock definitions and return corresponding mock responses. If no match is found, the request is forwarded to the Wiretap's httpRequestHandler for further processing.
 
 ## How to Enable Static Mocking
 
@@ -206,5 +204,5 @@ With this configuration, when Wiretap receives a `GET` request to `/test`, it wi
 
 ## Notes
 
-- If no mock definition is found that matches an incoming request, Wiretap will forward the request to the wiretap service's request handler and let it return a response.
+- If no mock definition is found that matches an incoming request, Wiretap will forward the request to the wiretap's request handler and let it return a response.
 - The mock definitions can contain either a single object or an array of objects. In the case of an array, each object represents a separate mock definition.
