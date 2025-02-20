@@ -9,6 +9,11 @@ import (
 	"github.com/pterm/pterm"
 )
 
+var (
+	rePathSplit    = regexp.MustCompile(`\.`)
+	reTemplateVars = regexp.MustCompile(`\$\{([a-zA-Z0-9._\[\]]+)\}`)
+)
+
 // IsSubset method to check if json (interface{}) is a subset of a superSet
 func IsSubset(json, superSet interface{}) bool {
 	// Check if json is an object
@@ -118,8 +123,7 @@ func StringCompare(patternOrStr, str string) bool {
 // getValueByPath Helper function to get the value based on a JSON path (dot notation or array index).
 func getValueByPath(data interface{}, path string) (interface{}, error) {
 	// Split the path by dots and array indices (i.e., "[7]")
-	re := regexp.MustCompile(`\.`)
-	parts := re.Split(path, -1)
+	parts := rePathSplit.Split(path, -1)
 
 	// Traverse the path
 	for _, part := range parts {
@@ -160,9 +164,8 @@ func getValueByPath(data interface{}, path string) (interface{}, error) {
 // ReplaceTemplateVars Function to replace template variables in JSON path format
 func ReplaceTemplateVars(jsonStr string, vars interface{}) (string, error) {
 	// Regular expression to match the ${var} format (full path)
-	re := regexp.MustCompile(`\$\{([a-zA-Z0-9._\[\]]+)\}`)
 
-	matches := re.Match([]byte(jsonStr))
+	matches := reTemplateVars.Match([]byte(jsonStr))
 	pterm.Info.Println(matches)
 
 	var handleMatchedString = func(match string) string {
@@ -191,7 +194,7 @@ func ReplaceTemplateVars(jsonStr string, vars interface{}) (string, error) {
 	}
 
 	// Replace the placeholders with corresponding values
-	result := re.ReplaceAllStringFunc(jsonStr, handleMatchedString)
+	result := reTemplateVars.ReplaceAllStringFunc(jsonStr, handleMatchedString)
 
 	return result, nil
 }
