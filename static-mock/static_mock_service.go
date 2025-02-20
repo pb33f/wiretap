@@ -18,6 +18,8 @@ import (
 const (
 	StaticMockServiceChan = "static-mock-service"
 	IncomingHttpRequest   = "incoming-http-request"
+	MockDefinitionsPath   = "/mock-definitions"
+	MockBodyJsonsPath     = "/body-jsons/"
 )
 
 type StaticMockDefinitionRequest struct {
@@ -57,6 +59,7 @@ func NewStaticMockService(wiretapService *daemon.WiretapService, logger *slog.Lo
 	}
 }
 
+// getDefinitionFromJson converts a JSON object to a StaticMockDefinition
 func getDefinitionFromJson(mockInterface map[string]interface{}) (StaticMockDefinition, error) {
 	var mockDefinition StaticMockDefinition
 
@@ -73,9 +76,10 @@ func getDefinitionFromJson(mockInterface map[string]interface{}) (StaticMockDefi
 	return mockDefinition, nil
 }
 
+// loadStaticMockRequestsAndResponses loads the static mock definitions from the JSON files
 func loadStaticMockRequestsAndResponses(wiretapService *daemon.WiretapService, logger *slog.Logger) []StaticMockDefinition {
 	var staticMockDefinitions []StaticMockDefinition
-	mocksPath := wiretapService.StaticMockDir + "/mock-definitions"
+	mocksPath := wiretapService.StaticMockDir + MockDefinitionsPath
 
 	files, err := os.ReadDir(mocksPath)
 	if err != nil {
@@ -97,7 +101,7 @@ func loadStaticMockRequestsAndResponses(wiretapService *daemon.WiretapService, l
 
 			err = json.Unmarshal(data, &mockDefinitions)
 			if err != nil {
-				logger.Error(err.Error())
+				logger.Error("Error parsing json file %s: %v\n", filePath, err)
 				continue
 			}
 
@@ -125,7 +129,7 @@ func loadStaticMockRequestsAndResponses(wiretapService *daemon.WiretapService, l
 
 			default:
 				// If it's neither an object nor an array
-				logger.Error("JSON not in the right format.")
+				logger.Error("JSON not in the right format. \nFile => %s\n JSON => \n%s", file.Name(), string(data))
 			}
 		}
 	}

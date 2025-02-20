@@ -12,11 +12,21 @@ import (
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/wiretap/daemon"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/pb33f/wiretap/staticMock"
+	staticMock "github.com/pb33f/wiretap/static-mock"
 	"github.com/pterm/pterm"
 )
 
-func handleHttpTraffic(wiretapConfig *shared.WiretapConfiguration, wtService *daemon.WiretapService, staticMockService *staticMock.StaticMockService) {
+type HandleHttpTraffic struct {
+	WiretapConfig     *shared.WiretapConfiguration
+	WiretapService    *daemon.WiretapService
+	StaticMockService *staticMock.StaticMockService
+}
+
+func handleHttpTraffic(hht *HandleHttpTraffic) {
+	wiretapConfig := hht.WiretapConfig
+	wtService := hht.WiretapService
+	staticMockService := hht.StaticMockService
+
 	go func() {
 		handleTraffic := func(w http.ResponseWriter, r *http.Request) {
 			id, _ := uuid.NewUUID()
