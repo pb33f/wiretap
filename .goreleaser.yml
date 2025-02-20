@@ -44,7 +44,7 @@ brews:
       bin.install "wiretap"
 
 snapshot:
-  name_template: "{{ .Tag }}"
+  version_template: "{{ .Tag }}"
 
 upx:
   -

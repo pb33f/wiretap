@@ -267,7 +267,7 @@ var (
 				pterm.Println()
 			}
 
-			if mockMode || len(config.MockModeList) > 0 && spec == "" {
+			if (mockMode || len(config.MockModeList) > 0) && spec == "" {
 				pterm.Println()
 				pterm.Error.Println("Cannot enable mock mode, no OpenAPI specification provided!\n" +
 					"Please provide a path to an OpenAPI specification using the --spec or -s flags.\n" +
