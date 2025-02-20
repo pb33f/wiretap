@@ -11,12 +11,13 @@ import (
 	"github.com/pb33f/wiretap/shared"
 )
 
+// getBodyFromMockDefinition returns the body from the matched static mock
 func (sms *StaticMockService) getBodyFromMockDefinition(matchedMockDefinition StaticMockDefinition, request *http.Request) string {
 	bodyStr := matchedMockDefinition.Response.Body
 
 	// If the BodyJsonPath is defined then set the body to contents of the file
 	if matchedMockDefinition.Response.BodyJsonFilename != "" {
-		bodyJsonFilePath := sms.wiretapService.StaticMockDir + "/body-jsons/" + matchedMockDefinition.Response.BodyJsonFilename
+		bodyJsonFilePath := sms.wiretapService.StaticMockDir + MockBodyJsonsPath + matchedMockDefinition.Response.BodyJsonFilename
 
 		file, err := os.ReadFile(bodyJsonFilePath)
 		if err != nil {
@@ -68,6 +69,7 @@ func (sms *StaticMockService) getBodyFromMockDefinition(matchedMockDefinition St
 	return templateReplacedBodyStr
 }
 
+// getHeadersFromMockDefinition returns headers from the matched static mock
 func (sms *StaticMockService) getHeadersFromMockDefinition(matchedMockDefinition StaticMockDefinition) http.Header {
 	header := http.Header{}
 	// wiretap needs to work from anywhere, so allow everything.
@@ -88,6 +90,7 @@ func (sms *StaticMockService) getHeadersFromMockDefinition(matchedMockDefinition
 	return header
 }
 
+// getStaticMockResponse returns response from the matched static mock
 func (sms *StaticMockService) getStaticMockResponse(matchedMockDefinition StaticMockDefinition, request *http.Request) *http.Response {
 	body := sms.getBodyFromMockDefinition(matchedMockDefinition, request)
 

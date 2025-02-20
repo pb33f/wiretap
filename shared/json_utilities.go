@@ -9,7 +9,7 @@ import (
 	"github.com/pterm/pterm"
 )
 
-// Function to check if json is a subset of superSet
+// IsSubset method to check if json (interface{}) is a subset of a superSet
 func IsSubset(json, superSet interface{}) bool {
 	// Check if json is an object
 	if obj, ok := json.(map[string]interface{}); ok {
@@ -45,7 +45,7 @@ func IsSubset(json, superSet interface{}) bool {
 	return json == superSet
 }
 
-// Helper function to check if objOne is a subset of objTwo
+// isMapSubset Helper function to check if objOne (map[string]interface{}) is a subset of objTwo
 func isMapSubset(objOne, objTwo map[string]interface{}) bool {
 	for key, valueObjOne := range objOne {
 		// Check if the key exists in objTwo
@@ -60,7 +60,7 @@ func isMapSubset(objOne, objTwo map[string]interface{}) bool {
 	return true
 }
 
-// Helper function to check if arrOne is a subset of arrTwo
+// isSliceSubset Helper function to check if arrOne ([]interface{}) is a subset of arrTwo
 func isSliceSubset(arrOne, arrTwo []interface{}) bool {
 	// Check if all elements of arrOne exist in arrTwo
 	for _, elementOne := range arrOne {
@@ -78,7 +78,7 @@ func isSliceSubset(arrOne, arrTwo []interface{}) bool {
 	return true
 }
 
-// Function to check if a string contains regex-specific characters
+// isPotentialRegex Function to check if a string contains regex-specific characters
 func isPotentialRegex(s string) bool {
 	// Regex characters to check for
 	regexChars := []string{".", "*", "+", "?", "^", "$", "[", "]", "(", ")", "|", "{", "}"}
@@ -92,7 +92,7 @@ func isPotentialRegex(s string) bool {
 	return false
 }
 
-// Helper function to compare strings. Since mock definitions support
+// StringCompare Helper function to compare strings. Since mock definitions support
 // regex, we need to check if the string is a regex and if so, compare it
 func StringCompare(patternOrStr, str string) bool {
 	// Try to compile the pattern to check if it's a valid regex
@@ -115,7 +115,7 @@ func StringCompare(patternOrStr, str string) bool {
 	return patternOrStr == str
 }
 
-// Helper function to get the value based on a JSON path (dot notation or array index).
+// getValueByPath Helper function to get the value based on a JSON path (dot notation or array index).
 func getValueByPath(data interface{}, path string) (interface{}, error) {
 	// Split the path by dots and array indices (i.e., "[7]")
 	re := regexp.MustCompile(`\.`)
@@ -157,7 +157,7 @@ func getValueByPath(data interface{}, path string) (interface{}, error) {
 	return data, nil
 }
 
-// Function to replace template variables in JSON path format
+// ReplaceTemplateVars Function to replace template variables in JSON path format
 func ReplaceTemplateVars(jsonStr string, vars interface{}) (string, error) {
 	// Regular expression to match the ${var} format (full path)
 	re := regexp.MustCompile(`\$\{([a-zA-Z0-9._\[\]]+)\}`)

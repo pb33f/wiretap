@@ -18,7 +18,7 @@ import (
 	"github.com/pb33f/wiretap/report"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
-	"github.com/pb33f/wiretap/staticMock"
+	staticMock "github.com/pb33f/wiretap/static-mock"
 )
 
 func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenapi.Document) (server.PlatformServer, error) {
@@ -116,7 +116,12 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenap
 	bootedMessage(wiretapConfig)
 
 	// boot the http handler
-	handleHttpTraffic(wiretapConfig, wtService, staticMockService)
+	hht := HandleHttpTraffic{
+		WiretapConfig:     wiretapConfig,
+		WiretapService:    wtService,
+		StaticMockService: staticMockService,
+	}
+	handleHttpTraffic(&hht)
 
 	// boot the monitor
 	serveMonitor(wiretapConfig)

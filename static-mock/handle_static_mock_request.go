@@ -16,6 +16,7 @@ import (
 	"github.com/pb33f/wiretap/shared"
 )
 
+// getBodyFromHttpRequest reads the body of the incoming request and returns it as an interface{}
 func (sms *StaticMockService) getBodyFromHttpRequest(request *http.Request) interface{} {
 	bodyBytes, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -30,13 +31,14 @@ func (sms *StaticMockService) getBodyFromHttpRequest(request *http.Request) inte
 
 	err = json.Unmarshal(bodyBytes, &bodyJsonObj)
 	if err != nil {
-		sms.logger.Error("Error decoding JSON of incoming request")
+		sms.logger.Error("Error decoding JSON of incoming request. JSON => \n%s", string(bodyBytes), err)
 		panic(err)
 	}
 
 	return bodyJsonObj
 }
 
+// compareJsonBody compares the JSON body of the incoming request with the mock definition
 func (sms *StaticMockService) compareJsonBody(mock StaticMockDefinitionRequest, request *http.Request) bool {
 	// Mock body is JSON but incoming body is not JSON
 	if request.Header.Get("Content-Type") != "application/json" {
@@ -49,7 +51,7 @@ func (sms *StaticMockService) compareJsonBody(mock StaticMockDefinitionRequest, 
 	return shared.IsSubset(mock.Body, incomingBody)
 }
 
-// Function to transform []string values to []interface{}(string)
+// transStrArrToInterfaceArr transforms a string array to an interface array (helper method)
 func (sms *StaticMockService) transStrArrToInterfaceArr(strArr []string) []interface{} {
 	strArrTransformedValues := make([]interface{}, 0)
 	for _, value := range strArr {
@@ -58,7 +60,7 @@ func (sms *StaticMockService) transStrArrToInterfaceArr(strArr []string) []inter
 	return strArrTransformedValues
 }
 
-// Function to compare headers
+// compareHeaders compares the headers of the incoming request with the mock definition
 func (sms *StaticMockService) compareHeaders(mockHeaders map[string]any, incoming *http.Request) bool {
 	found := true
 	// Check if all headers in mockHeaders are subset of incoming headers
@@ -74,6 +76,7 @@ func (sms *StaticMockService) compareHeaders(mockHeaders map[string]any, incomin
 	return found
 }
 
+// compareQueryParams compares the query parameters of the incoming request with the mock definition
 func (sms *StaticMockService) compareQueryParams(mockQueryParams map[string]any, incomingQueries url.Values) bool {
 	found := true
 	// Check if all headers in mockHeaders are subset of incoming headers
@@ -89,6 +92,7 @@ func (sms *StaticMockService) compareQueryParams(mockQueryParams map[string]any,
 	return found
 }
 
+// compareBody compares the body of the incoming request with the mock definition
 func (sms *StaticMockService) compareBody(mock StaticMockDefinitionRequest, incoming *http.Request) bool {
 	switch mb := mock.Body.(type) {
 	case string: // Case string body
@@ -116,7 +120,7 @@ func (sms *StaticMockService) compareBody(mock StaticMockDefinitionRequest, inco
 	return true
 }
 
-// Function to check if two requests are identical
+// isRequestMatch checks if the incoming request matches a mock definition
 func (sms *StaticMockService) isRequestMatch(mock StaticMockDefinitionRequest, incoming *http.Request) bool {
 	// Compare Host if defined
 	if mock.Host != "" && !shared.StringCompare(mock.Host, incoming.Host) {
@@ -158,6 +162,7 @@ func (sms *StaticMockService) isRequestMatch(mock StaticMockDefinitionRequest, i
 	return true
 }
 
+// checkStaticMockExists checks if a static mock definition exists for the incoming request.
 func (sms *StaticMockService) checkStaticMockExists(request *http.Request) *StaticMockDefinition {
 	var matchedMockDefinition *StaticMockDefinition
 	// check for a static mock definition.
@@ -172,6 +177,7 @@ func (sms *StaticMockService) checkStaticMockExists(request *http.Request) *Stat
 	return matchedMockDefinition
 }
 
+// handleStaticMockRequest handles incoming requests and checks against static mock definitions.
 func (sms *StaticMockService) handleStaticMockRequest(request *model.Request) {
 	defer func() {
 		if r := recover(); r != nil {
