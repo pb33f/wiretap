@@ -187,7 +187,7 @@ The `--static-mock-dir` should point to a directory that contains the following 
     "header": {
       "something-header": "test-ok"
     },
-    "bodyJsonFilename": "test.json",
+    "bodyJsonFilename": "test.json"
   }
 }
 ```
