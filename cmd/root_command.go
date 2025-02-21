@@ -276,7 +276,7 @@ var (
 				return nil
 			}
 
-			if !mockMode && redirectURL == "" && harFlag == "" {
+			if !(mockMode || len(config.MockModeList) > 0) && len(config.StaticMockDir) == 0 && len(staticMockDir) == 0 && redirectURL == "" && harFlag == "" {
 				pterm.Println()
 				pterm.Error.Println("No redirect URL provided. " +
 					"Please provide a URL to redirect API traffic to using the --url or -u flags.")
