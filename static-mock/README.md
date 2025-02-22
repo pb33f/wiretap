@@ -21,7 +21,7 @@ To enable static mocking, you need to set the `--static-mock-dir` argument to a 
 
 Example:
 ```bash
-wiretap --static-mock-dir /path/to/mocks
+wiretap --static-mock-dir /path/to/mocks -u http://some.api-host-outhere.some-domain.com
 ```
 
 When this path is set, Wiretap will expect mock definitions and response body JSON files in the following structure:
@@ -200,7 +200,31 @@ The `--static-mock-dir` should point to a directory that contains the following 
 }
 ```
 
-With this configuration, when Wiretap receives a `GET` request to `/test`, it will respond with the content of `test.json`.
+4. **Run wiretap**:
+
+```bash
+wiretap -u "http://localhost:8089" --static-mock-dir "/path/to/mocks" --port 80
+```
+
+Note: Any requests not matching a static mock will be proxied to the URL specified by the `-u` parameter.
+
+5. **Make a request via curl**:
+
+```bash
+curl --location --request GET 'http://localhost/test?test=ok&arr=1&arr=2' \
+--header 'Content-Type: application/json' \
+--data '{
+    "test": "ok"
+}'
+```
+
+With this configuration, when Wiretap receives a `GET` request to `/test`, it will respond with the following JSON which represents the content of `test.json` after substituting the appropriate query parameter value:
+
+```json
+{
+        "test": "2"
+}
+```
 
 ## Notes
 
