@@ -9,9 +9,11 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/fsnotify/fsevents"
+	"github.com/fsnotify/fsnotify"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/wiretap/daemon"
@@ -143,6 +145,51 @@ func loadStaticMockRequestsAndResponses(wiretapService *daemon.WiretapService, l
 func (sms *StaticMockService) StartWatcher() {
 	pathToWatch := sms.wiretapService.StaticMockDir + MockDefinitionsPath
 
+	if runtime.GOOS == "darwin" {
+		sms.macOSWatcher(pathToWatch)
+	} else {
+		sms.nonMacOSWatcher(pathToWatch)
+	}
+}
+
+// nonMacOSWatcher Watcher method for Linux/Windows
+func (sms *StaticMockService) nonMacOSWatcher(pathToWatch string) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		sms.logger.Error("Error when creating fsnotify.NewWatcher '%s'", err.Error(), err)
+	}
+	defer watcher.Close()
+
+	err = watcher.Add(pathToWatch)
+	if err != nil {
+		sms.logger.Error("Error adding path to watch. path => '%s'", pathToWatch, err)
+	}
+
+	go func(sms *StaticMockService) {
+		// Event loop
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				// If files are created, deleted or modified, call the handler
+				mockDefinitionsModified := event.Has(fsnotify.Write) || event.Has(fsnotify.Create) || event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename)
+				if mockDefinitionsModified {
+					sms.handleStaticMockChange()
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				sms.logger.Error("Error while watching files => '%s'", err.Error(), err)
+			}
+		}
+	}(sms)
+}
+
+// macOSWatcher Watcher method for MacOS since fsnotify doesn't seem to be working on macOS
+func (sms *StaticMockService) macOSWatcher(pathToWatch string) {
 	dev, err := fsevents.DeviceForPath(pathToWatch)
 	if err != nil {
 		sms.logger.Error("Error when starting fsevents for path => '%s'...\n\n", pathToWatch, err)
