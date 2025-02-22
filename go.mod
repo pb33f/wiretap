@@ -23,7 +23,6 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dprotaso/go-yit v0.0.0-20240618133044-5a0af90af097 // indirect
 	github.com/fatih/color v1.17.0 // indirect
-	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-stomp/stomp/v3 v3.1.2 // indirect
 	github.com/gobwas/glob v0.2.3
 	github.com/gookit/color v1.5.4 // indirect
@@ -63,7 +62,11 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/json-iterator/go v1.1.12
+require (
+	github.com/fsnotify/fsevents v0.2.0
+	github.com/fsnotify/fsnotify v1.7.0
+	github.com/json-iterator/go v1.1.12
+)
 
 require (
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect

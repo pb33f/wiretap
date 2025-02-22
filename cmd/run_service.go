@@ -78,6 +78,8 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenap
 		staticMockService, staticMock.StaticMockServiceChan); err != nil {
 		panic(err)
 	}
+	// Start watcher to look for changes to static mock definitions
+	staticMockService.StartWatcher()
 
 	// register spec service
 	if err = platformServer.RegisterService(

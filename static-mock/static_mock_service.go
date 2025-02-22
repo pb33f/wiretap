@@ -9,7 +9,9 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+	"time"
 
+	"github.com/fsnotify/fsevents"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/wiretap/daemon"
@@ -135,6 +137,48 @@ func loadStaticMockRequestsAndResponses(wiretapService *daemon.WiretapService, l
 	}
 
 	return staticMockDefinitions
+}
+
+// StartWatcher Function to start a watcher on mock-definitions folder
+func (sms *StaticMockService) StartWatcher() {
+	pathToWatch := sms.wiretapService.StaticMockDir + MockDefinitionsPath
+
+	dev, err := fsevents.DeviceForPath(pathToWatch)
+	if err != nil {
+		sms.logger.Error("Error when starting fsevents for path => '%s'...\n\n", pathToWatch, err)
+	}
+
+	// Create an event stream
+	es := &fsevents.EventStream{
+		Paths:   []string{pathToWatch},
+		Latency: 100 * time.Millisecond, // Debounce time
+		Device:  dev,
+		Flags:   fsevents.FileEvents | fsevents.WatchRoot, // FileEvents enables detailed file monitoring
+	}
+
+	// Start the event stream
+	es.Start()
+
+	go func(sms *StaticMockService) {
+		for msg := range es.Events {
+			for _, event := range msg {
+				// If files are created, deleted or modified, call the handler
+				mockDefinitionsModified := event.Flags&fsevents.ItemCreated != 0 || event.Flags&fsevents.ItemModified != 0 || event.Flags&fsevents.ItemRemoved != 0 || event.Flags&fsevents.ItemRenamed != 0
+				if mockDefinitionsModified {
+					sms.handleStaticMockChange()
+				}
+			}
+		}
+	}(sms)
+
+}
+
+// handleStaticMockChange Function to handle changes to mock definitions. It loads the mock definitions in realtime
+// so that the entire wiretap service doesn't need a restart
+func (sms *StaticMockService) handleStaticMockChange() {
+	sms.logger.Info("Mock definitions modified. Rebuilding mocks...")
+	sms.mockDefinitions = loadStaticMockRequestsAndResponses(sms.wiretapService, sms.logger)
+	sms.logger.Info("New mock definitions loaded")
 }
 
 func (sms *StaticMockService) HandleServiceRequest(request *model.Request, core service.FabricServiceCore) {
