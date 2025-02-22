@@ -157,7 +157,7 @@ The `--static-mock-dir` should point to a directory that contains the following 
 1. **Directory Structure:**
 
 ```
-/mocks/
+./mocks/
   ├── mock-definitions/
   │     ├── get-test-mock.json
   └── body-jsons/
@@ -203,7 +203,7 @@ The `--static-mock-dir` should point to a directory that contains the following 
 4. **Run wiretap**:
 
 ```bash
-wiretap -u "http://localhost:8089" --static-mock-dir "/path/to/mocks" --port 80
+wiretap -u "http://localhost:8089" --static-mock-dir ./mocks --port 80
 ```
 
 Note: Any requests not matching a static mock will be proxied to the URL specified by the `-u` parameter.
