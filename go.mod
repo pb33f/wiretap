@@ -63,8 +63,7 @@ require (
 )
 
 require (
-	github.com/fsnotify/fsevents v0.2.0
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/json-iterator/go v1.1.12
 )
 
