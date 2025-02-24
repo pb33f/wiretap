@@ -81,6 +81,11 @@ func getDefinitionFromJson(mockInterface map[string]interface{}) (StaticMockDefi
 // loadStaticMockRequestsAndResponses loads the static mock definitions from the JSON files
 func loadStaticMockRequestsAndResponses(wiretapService *daemon.WiretapService, logger *slog.Logger) []StaticMockDefinition {
 	var staticMockDefinitions []StaticMockDefinition
+
+	if len(wiretapService.StaticMockDir) == 0 {
+		return staticMockDefinitions
+	}
+
 	mocksPath := wiretapService.StaticMockDir + MockDefinitionsPath
 
 	files, err := os.ReadDir(mocksPath)
@@ -141,6 +146,10 @@ func loadStaticMockRequestsAndResponses(wiretapService *daemon.WiretapService, l
 
 // StartWatcher Function to start a watcher on mock-definitions folder
 func (sms *StaticMockService) StartWatcher() {
+	if len(sms.wiretapService.StaticMockDir) == 0 {
+		return
+	}
+
 	pathToWatch := sms.wiretapService.StaticMockDir + MockDefinitionsPath
 
 	watcher, err := fsnotify.NewWatcher()
