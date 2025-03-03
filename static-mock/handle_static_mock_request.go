@@ -23,6 +23,9 @@ func (sms *StaticMockService) getBodyFromHttpRequest(request *http.Request) inte
 		panic(err)
 	}
 
+	// Restore request.Body so it can be read again
+	request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+
 	var bodyJsonObj interface{}
 
 	if len(bodyBytes) == 0 {
