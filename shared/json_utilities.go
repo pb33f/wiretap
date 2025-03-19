@@ -52,17 +52,19 @@ func IsSubset(json, superSet interface{}) bool {
 
 // isMapSubset Helper function to check if objOne (map[string]interface{}) is a subset of objTwo
 func isMapSubset(objOne, objTwo map[string]interface{}) bool {
+	// Accumulator to check if all key-value pairs in objOne exist in objTwo
+	objMatches := true
 	for key, valueObjOne := range objOne {
 		// Check if the key exists in objTwo
 		if valueObjTwo, exists := objTwo[key]; exists {
 			// Recursively check if the values are deeply equal
-			return IsSubset(valueObjOne, valueObjTwo)
+			objMatches = objMatches && IsSubset(valueObjOne, valueObjTwo)
 		} else {
 			// Key doesn't exist in objTwo
 			return false
 		}
 	}
-	return true
+	return objMatches
 }
 
 // isSliceSubset Helper function to check if arrOne ([]interface{}) is a subset of arrTwo
