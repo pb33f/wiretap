@@ -160,14 +160,14 @@ func (rme *ResponseMockEngine) extractMediaTypeHeader(request *http.Request) str
 	if mediaTypeSting == "" {
 		mediaTypeSting = contentType // anything?
 	}
-	
+
 	if mediaTypeSting == "" {
 		// Check the Accept header for a content type
 		contentType = request.Header.Get("Accept")
 		mediaTypeSting, _, _ = helpers.ExtractContentType(contentType)
 	}
-	
-	if (mediaTypeSting == "") {
+
+	if mediaTypeSting == "" {
 		mediaTypeSting = "application/json" // default
 	}
 
