@@ -59,25 +59,31 @@ func ValidateHAR(har *harhar.HAR, apiDocumentModels []shared.ApiDocumentModel, c
 					var httpValidator validation.HttpValidator
 					var validatorSpec string
 
-					pathFound := false
-					for _, hValidator := range validators {
-						// Find the first path match between all provided specifications
-						pathItem, _, _ := paths.FindPath(httpRequest, &hValidator.docModel.Model)
-
-						if pathItem != nil {
-							httpValidator = hValidator.validator
-							validatorSpec = hValidator.documentName
-							pathFound = true
-							break
-						}
-					}
-
-					// If we haven't found a path, let's pick the first validator to validate against
-					if !pathFound && len(validators) > 0 {
+					if len(validators) == 1 {
 						httpValidator = validators[0].validator
+						validatorSpec = validators[0].documentName
 					} else {
-						pterm.Error.Printf("no validators available; a valid specification must be provided in order to perform HAR validation")
-						return nil
+						pathFound := false
+						for _, hValidator := range validators {
+							// Find the first path match between all provided specifications
+							pathItem, _, _ := paths.FindPath(httpRequest, &hValidator.docModel.Model)
+
+							if pathItem != nil {
+								httpValidator = hValidator.validator
+								validatorSpec = hValidator.documentName
+								pathFound = true
+								break
+							}
+						}
+
+						// If we haven't found a path, let's pick the first validator to validate against
+						if !pathFound && len(validators) > 0 {
+							httpValidator = validators[0].validator
+							validatorSpec = validators[0].documentName
+						} else {
+							pterm.Error.Printf("no validators available; a valid specification must be provided in order to perform HAR validation")
+							return nil
+						}
 					}
 
 					validRequest, requestValidationErrors := httpValidator.ValidateHttpRequest(httpRequest)
