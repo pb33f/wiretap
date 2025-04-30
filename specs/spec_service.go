@@ -21,11 +21,11 @@ type SpecService struct {
 	serviceCore service.FabricServiceCore
 }
 
-func NewSpecService(document libopenapi.Document) *SpecService {
+func NewSpecService(primarySpec libopenapi.Document) *SpecService {
 	ss := &SpecService{}
-	if document != nil {
-		m, _ := document.BuildV3Model()
-		ss.document = document
+	if primarySpec != nil {
+		m, _ := primarySpec.BuildV3Model()
+		ss.document = primarySpec
 		ss.docModel = &m.Model
 	}
 	return ss

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pb33f/libopenapi"
-	"github.com/pb33f/libopenapi-validator/errors"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
@@ -26,27 +25,31 @@ const (
 	IncomingHttpRequest     = "incoming-http-request"
 )
 
+type documentValidator struct {
+	documentName string
+	document     libopenapi.Document
+	docModel     *v3.Document
+	validator    validation.HttpValidator
+	mockEngine   *mock.ResponseMockEngine
+}
 type WiretapService struct {
-	transport        *http.Transport
-	document         libopenapi.Document
-	docModel         *v3.Document
-	serviceCore      service.FabricServiceCore
-	broadcastChan    *bus.Channel
-	bus              bus.EventBus
-	controlsStore    bus.BusStore
-	transactionStore bus.BusStore
-	config           *shared.WiretapConfiguration
-	fs               http.Handler
-	mockEngine       *mock.ResponseMockEngine
-	validator        validation.HttpValidator
-	stream           bool
-	streamChan       chan []*errors.ValidationError
-	streamViolations []*errors.ValidationError
-	reportFile       string
-	StaticMockDir    string
+	transport          *http.Transport
+	serviceCore        service.FabricServiceCore
+	broadcastChan      *bus.Channel
+	bus                bus.EventBus
+	controlsStore      bus.BusStore
+	transactionStore   bus.BusStore
+	config             *shared.WiretapConfiguration
+	fs                 http.Handler
+	documentValidators []documentValidator
+	stream             bool
+	streamChan         chan []*shared.WiretapValidationError
+	streamViolations   []*shared.WiretapValidationError
+	reportFile         string
+	StaticMockDir      string
 }
 
-func NewWiretapService(document libopenapi.Document, config *shared.WiretapConfiguration) *WiretapService {
+func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapConfiguration) *WiretapService {
 	storeManager := bus.GetBus().GetStoreManager()
 	controlsStore := storeManager.CreateStore(controls.ControlServiceChan)
 	transactionStore := storeManager.CreateStore(WiretapServiceChan)
@@ -59,25 +62,30 @@ func NewWiretapService(document libopenapi.Document, config *shared.WiretapConfi
 	wts := &WiretapService{
 		stream:           config.StreamReport,
 		reportFile:       config.ReportFile,
-		streamChan:       make(chan []*errors.ValidationError),
+		streamChan:       make(chan []*shared.WiretapValidationError),
 		transport:        tr,
 		controlsStore:    controlsStore,
 		transactionStore: transactionStore,
 		StaticMockDir:    config.StaticMockDir,
 	}
-	if document != nil {
-		m, _ := document.BuildV3Model()
+
+	for _, document := range documents {
+		m, _ := document.Document.BuildV3Model()
 		docModel := &m.Model
-		wts.document = document
-		wts.docModel = docModel
 
 		// create a new validator
-		wts.validator = validation.NewHttpValidator(docModel)
-	}
+		newHttpValidator := validation.NewHttpValidator(docModel)
+		// create a new mock engine
+		newMockEngine := mock.NewMockEngine(docModel, config.MockModePretty, config.UseAllMockResponseFields)
 
-	// create a new mock engine
-	wts.mockEngine = mock.NewMockEngine(wts.docModel, config.MockModePretty,
-		config.UseAllMockResponseFields)
+		wts.documentValidators = append(wts.documentValidators, documentValidator{
+			documentName: document.DocumentName,
+			document:     document.Document,
+			docModel:     docModel,
+			validator:    newHttpValidator,
+			mockEngine:   newMockEngine,
+		})
+	}
 
 	// hard-wire the config, change this later if needed.
 	wts.config = config

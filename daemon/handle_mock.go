@@ -7,6 +7,7 @@ package daemon
 import (
 	"bytes"
 	"fmt"
+	"github.com/pb33f/libopenapi-validator/paths"
 	"io"
 	"net/http"
 	"time"
@@ -28,8 +29,27 @@ func (ws *WiretapService) handleMockRequest(
 		}
 	}
 
-	// build a mock based on the request.
-	mock, mockStatus, mockErr := ws.mockEngine.GenerateResponse(request.HttpRequest)
+	var mock []byte
+	var mockStatus int
+	var mockErr error
+
+	pathFound := false
+	for _, docValidator := range ws.documentValidators {
+		// Find the first path match between all provided specifications
+		pathItem, _, _ := paths.FindPath(request.HttpRequest, docValidator.docModel)
+
+		if pathItem != nil {
+			// build a mock based on the request.
+			mock, mockStatus, mockErr = docValidator.mockEngine.GenerateResponse(request.HttpRequest)
+			pathFound = true
+			break
+		}
+	}
+
+	// If we haven't found a path, let's pick the first mock engine
+	if !pathFound && len(ws.documentValidators) > 0 {
+		mock, mockStatus, mockErr = ws.documentValidators[0].mockEngine.GenerateResponse(request.HttpRequest)
+	}
 
 	// validate http request.
 	ws.ValidateRequest(request, newReq)

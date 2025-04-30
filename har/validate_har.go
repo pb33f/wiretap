@@ -5,7 +5,8 @@ package har
 
 import (
 	"github.com/pb33f/harhar"
-	"github.com/pb33f/libopenapi-validator/errors"
+	"github.com/pb33f/libopenapi"
+	"github.com/pb33f/libopenapi-validator/paths"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/validation"
@@ -18,11 +19,25 @@ type Transaction struct {
 	Response *harhar.Response
 }
 
-func ValidateHAR(har *harhar.HAR, doc *v3.Document, configFile *shared.WiretapConfiguration) []*errors.ValidationError {
+type harValidator struct {
+	documentName string
+	docModel     *libopenapi.DocumentModel[v3.Document]
+	validator    validation.HttpValidator
+}
 
-	var validationErrors []*errors.ValidationError
+func ValidateHAR(har *harhar.HAR, apiDocumentModels []shared.ApiDocumentModel, configFile *shared.WiretapConfiguration) []*shared.WiretapValidationError {
 
-	validator := validation.NewHttpValidator(doc)
+	var validationErrors []*shared.WiretapValidationError
+	validators := make([]harValidator, 0)
+
+	for _, apiDocumentModel := range apiDocumentModels {
+		newHarValidator := harValidator{
+			documentName: apiDocumentModel.DocumentName,
+			docModel:     apiDocumentModel.DocumentModel,
+			validator:    validation.NewHttpValidator(&apiDocumentModel.DocumentModel.Model),
+		}
+		validators = append(validators, newHarValidator)
+	}
 
 	for _, entry := range har.Log.Entries {
 
@@ -41,17 +56,41 @@ func ValidateHAR(har *harhar.HAR, doc *v3.Document, configFile *shared.WiretapCo
 					path := strings.Replace(httpRequest.URL.Path, allow, "", 1)
 					httpRequest.URL.Path = path
 
-					validRequest, requestValidationErrors := validator.ValidateHttpRequest(httpRequest)
+					var httpValidator validation.HttpValidator
+					var validatorSpec string
+
+					pathFound := false
+					for _, hValidator := range validators {
+						// Find the first path match between all provided specifications
+						pathItem, _, _ := paths.FindPath(httpRequest, &hValidator.docModel.Model)
+
+						if pathItem != nil {
+							httpValidator = hValidator.validator
+							validatorSpec = hValidator.documentName
+							pathFound = true
+							break
+						}
+					}
+
+					// If we haven't found a path, let's pick the first validator to validate against
+					if !pathFound && len(validators) > 0 {
+						httpValidator = validators[0].validator
+					} else {
+						pterm.Error.Printf("no validators available; a valid specification must be provided in order to perform HAR validation")
+						return nil
+					}
+
+					validRequest, requestValidationErrors := httpValidator.ValidateHttpRequest(httpRequest)
 					if !validRequest {
-						validationErrors = append(validationErrors, requestValidationErrors...)
+						validationErrors = append(validationErrors, shared.ConvertValidationErrors(validatorSpec, requestValidationErrors)...)
 					} else {
 						configFile.Logger.Debug("[HAR] valid request", "path", httpRequest.URL.Path)
 					}
 
 					httpResponse := harhar.ConvertResponseIntoHttpResponse(entry.Response)
-					validResponse, responseValidationErrors := validator.ValidateHttpResponse(httpRequest, httpResponse)
+					validResponse, responseValidationErrors := httpValidator.ValidateHttpResponse(httpRequest, httpResponse)
 					if !validResponse {
-						validationErrors = append(validationErrors, responseValidationErrors...)
+						validationErrors = append(validationErrors, shared.ConvertValidationErrors(validatorSpec, responseValidationErrors)...)
 					} else {
 						configFile.Logger.Debug("[HAR] valid response", "path", httpRequest.URL.Path)
 					}

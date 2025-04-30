@@ -21,7 +21,7 @@ import (
 	staticMock "github.com/pb33f/wiretap/static-mock"
 )
 
-func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenapi.Document) (server.PlatformServer, error) {
+func runWiretapService(wiretapConfig *shared.WiretapConfiguration, docs []shared.ApiDocument, primaryDoc libopenapi.Document) (server.PlatformServer, error) {
 
 	var err error
 
@@ -65,7 +65,7 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenap
 	platformServer := server.NewPlatformServer(ranchConfig)
 
 	// create wiretap service
-	wtService := daemon.NewWiretapService(doc, wiretapConfig)
+	wtService := daemon.NewWiretapService(docs, wiretapConfig)
 
 	// register wiretap service
 	if err = platformServer.RegisterService(wtService, daemon.WiretapServiceChan); err != nil {
@@ -83,7 +83,7 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, doc libopenap
 
 	// register spec service
 	if err = platformServer.RegisterService(
-		specs.NewSpecService(doc), specs.SpecServiceChan); err != nil {
+		specs.NewSpecService(primaryDoc), specs.SpecServiceChan); err != nil {
 		panic(err)
 	}
 
