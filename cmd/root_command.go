@@ -7,7 +7,6 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
@@ -670,14 +669,10 @@ var (
 
 						for _, e := range validationErrors {
 
-							// TODO: add support for the specific openapi contract in the validation error
-							location := pterm.Sprintf("Violation location: %s:%d:%d", pterm.LightCyan(config.Contracts[0]), e.SpecLine, e.SpecCol)
+							location := pterm.Sprintf("Violation location: %s:%d:%d", pterm.LightCyan(e.SpecName), e.SpecLine, e.SpecCol)
 							var items []pterm.BulletListItem
 							items = append(items, pterm.BulletListItem{
 								Level: 0, Text: pterm.LightRed(e.Message),
-							})
-							items = append(items, pterm.BulletListItem{
-								Level: 1, Text: pterm.Gray(fmt.Sprintf("Specification: %s", e.SpecName)),
 							})
 							if e.Reason != e.Message {
 								items = append(items, pterm.BulletListItem{
@@ -692,7 +687,7 @@ var (
 								if e.SchemaValidationErrors[0].Line >= 1 {
 									items = append(items, pterm.BulletListItem{
 										Level: 3, Text: pterm.Sprintf("Schema violation Location: %s:%d:%d",
-											pterm.LightCyan(config.Contracts[0]), e.SchemaValidationErrors[0].Line,
+											pterm.LightCyan(e.SpecName), e.SchemaValidationErrors[0].Line,
 											e.SchemaValidationErrors[0].Column),
 									})
 								}
