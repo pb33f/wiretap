@@ -7,14 +7,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/wiretap/shared"
 	"net/http"
 )
 
 func (ws *WiretapService) broadcastRequestValidationErrors(request *model.Request,
-	errors []*errors.ValidationError, transaction *HttpTransaction) {
+	errors []*shared.WiretapValidationError, transaction *HttpTransaction) {
 	id, _ := uuid.NewUUID()
 	ht := transaction
 	ht.RequestValidation = errors
@@ -82,7 +81,7 @@ func (ws *WiretapService) broadcastResponseError(request *model.Request, respons
 	})
 }
 
-func (ws *WiretapService) broadcastResponseValidationErrors(request *model.Request, response *http.Response, errors []*errors.ValidationError) {
+func (ws *WiretapService) broadcastResponseValidationErrors(request *model.Request, response *http.Response, errors []*shared.WiretapValidationError) {
 	id, _ := uuid.NewUUID()
 
 	ht := BuildResponse(request, response)

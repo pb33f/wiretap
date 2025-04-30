@@ -7,8 +7,11 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"github.com/pb33f/libopenapi"
+	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"log/slog"
 	"regexp"
+	"strings"
 
 	"github.com/pb33f/libopenapi/orderedmap"
 	"gopkg.in/yaml.v3"
@@ -17,8 +20,17 @@ import (
 	"github.com/pb33f/harhar"
 )
 
+type ApiDocument struct {
+	DocumentName string
+	Document     libopenapi.Document
+}
+type ApiDocumentModel struct {
+	DocumentName  string
+	DocumentModel *libopenapi.DocumentModel[v3.Document]
+}
 type WiretapConfiguration struct {
-	Contract                    string                                      `json:"-" yaml:"-"`
+	Contracts                   []string                                    `json:"-" yaml:"-"`
+	PrimaryContract             string                                      `json:"-" yaml:"-"`
 	RedirectHost                string                                      `json:"redirectHost,omitempty" yaml:"redirectHost,omitempty"`
 	RedirectPort                string                                      `json:"redirectPort,omitempty" yaml:"redirectPort,omitempty"`
 	RedirectBasePath            string                                      `json:"redirectBasePath,omitempty" yaml:"redirectBasePath,omitempty"`
@@ -36,6 +48,7 @@ type WiretapConfiguration struct {
 	StaticPaths                 []string                                    `json:"staticPaths,omitempty" yaml:"staticPaths,omitempty"`
 	Variables                   map[string]string                           `json:"variables,omitempty" yaml:"variables,omitempty"`
 	Spec                        string                                      `json:"contract,omitempty" yaml:"contract,omitempty"`
+	Specs                       []string                                    `json:"contracts,omitempty" yaml:"contracts,omitempty"`
 	Certificate                 string                                      `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	CertificateKey              string                                      `json:"certificateKey,omitempty" yaml:"certificateKey,omitempty"`
 	HardErrors                  bool                                        `json:"hardValidation,omitempty" yaml:"hardValidation,omitempty"`
@@ -236,6 +249,10 @@ func (wtc *WiretapConfiguration) GetApiGatewayHost() string {
 
 func (wtc *WiretapConfiguration) GetMonitorUI() string {
 	return fmt.Sprintf("%s://localhost:%s", wtc.GetHttpProtocol(), wtc.MonitorPort)
+}
+
+func (wtc *WiretapConfiguration) GetContractList() string {
+	return strings.Join(wtc.Contracts, ", ")
 }
 
 type WiretapWebsocketConfig struct {

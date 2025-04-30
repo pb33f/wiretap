@@ -17,7 +17,6 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/ranch/model"
 	configModel "github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/shared"
@@ -133,8 +132,8 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		return
 	}
 
-	var requestErrors []*errors.ValidationError
-	var responseErrors []*errors.ValidationError
+	var requestErrors []*shared.WiretapValidationError
+	var responseErrors []*shared.WiretapValidationError
 
 	ws.config.Logger.Info("[wiretap] handling API request", "url", request.HttpRequest.URL.String())
 

@@ -4,7 +4,7 @@
 package daemon
 
 import (
-	"github.com/pb33f/libopenapi-validator/errors"
+	"github.com/pb33f/wiretap/shared"
 	"net/textproto"
 	"time"
 )
@@ -47,11 +47,11 @@ type HttpResponse struct {
 }
 
 type HttpTransaction struct {
-	Request            *HttpRequest              `json:"httpRequest,omitempty"`
-	RequestValidation  []*errors.ValidationError `json:"requestValidation,omitempty"`
-	Response           *HttpResponse             `json:"httpResponse,omitempty"`
-	ResponseValidation []*errors.ValidationError `json:"responseValidation,omitempty"`
-	Id                 string                    `json:"id,omitempty"`
+	Request            *HttpRequest                     `json:"httpRequest,omitempty"`
+	RequestValidation  []*shared.WiretapValidationError `json:"requestValidation,omitempty"`
+	Response           *HttpResponse                    `json:"httpResponse,omitempty"`
+	ResponseValidation []*shared.WiretapValidationError `json:"responseValidation,omitempty"`
+	Id                 string                           `json:"id,omitempty"`
 }
 
 type FormPart struct {

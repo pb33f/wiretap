@@ -6,7 +6,7 @@ package daemon
 import (
 	"fmt"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/pb33f/libopenapi-validator/errors"
+	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
 	"os"
 	"sync"
@@ -14,7 +14,7 @@ import (
 
 func (ws *WiretapService) listenForValidationErrors() {
 
-	ws.streamViolations = []*errors.ValidationError{}
+	ws.streamViolations = []*shared.WiretapValidationError{}
 	var lock sync.RWMutex
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
 

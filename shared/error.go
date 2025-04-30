@@ -3,7 +3,10 @@
 
 package shared
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"github.com/pb33f/libopenapi-validator/errors"
+)
 
 // WiretapError is an rfc7807 compliant error struct
 type WiretapError struct {
@@ -32,4 +35,24 @@ func GenerateError(title string,
 func MarshalError(err *WiretapError) []byte {
 	b, _ := json.Marshal(err)
 	return b
+}
+
+type WiretapValidationError struct {
+	errors.ValidationError
+	SpecName string `json:"specName" yaml:"specName"`
+}
+
+func ConvertValidationErrors(specName string, validationErrors []*errors.ValidationError) []*WiretapValidationError {
+
+	wiretapValidationErrors := make([]*WiretapValidationError, 0)
+	for _, validationError := range validationErrors {
+		wiretapValidationError := &WiretapValidationError{
+			ValidationError: *validationError,
+			SpecName:        specName,
+		}
+
+		wiretapValidationErrors = append(wiretapValidationErrors, wiretapValidationError)
+	}
+
+	return wiretapValidationErrors
 }

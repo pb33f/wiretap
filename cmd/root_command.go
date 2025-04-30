@@ -7,6 +7,7 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/pb33f/harhar"
 	"github.com/pb33f/libopenapi"
-	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pb33f/wiretap/har"
 	"github.com/pb33f/wiretap/shared"
@@ -40,7 +40,8 @@ var (
 
 			configFlag, _ := cmd.Flags().GetString("config")
 
-			var spec string
+			specs := make([]string, 0)
+			var primarySpec string
 			var port string
 			var monitorPort string
 			var wsPort string
@@ -104,8 +105,19 @@ var (
 			}
 
 			specFlag, _ := cmd.Flags().GetString("spec")
-			if specFlag != "" {
-				spec = specFlag
+			if len(specFlag) != 0 && specFlag != "" {
+				specs = append(specs, specFlag)
+				if primarySpec == "" {
+					primarySpec = specFlag
+				}
+			}
+
+			specsFlag, _ := cmd.Flags().GetStringSlice("specs")
+			if len(specsFlag) > 0 && specsFlag[0] != "" {
+				specs = append(specs, specsFlag...)
+				if primarySpec == "" {
+					primarySpec = specsFlag[0]
+				}
 			}
 
 			monitorPortFlag, _ := cmd.Flags().GetString("monitor-port")
@@ -182,8 +194,18 @@ var (
 				if config.StaticIndex == "" {
 					config.StaticIndex = staticIndex
 				}
+				if len(config.Specs) != 0 {
+					for _, spec := range config.Specs {
+						if spec != "" {
+							specs = append(specs, spec)
+						}
+					}
+				}
 				if config.Spec != "" {
-					spec = config.Spec
+					specs = append(specs, config.Spec)
+					if primarySpec == "" {
+						primarySpec = config.Spec
+					}
 				}
 				if len(staticMockDir) != 0 {
 					if len(config.StaticMockDir) == 0 {
@@ -258,16 +280,26 @@ var (
 				config.HARPathAllowList = harWhiteList
 			}
 
-			if spec == "" {
+			// If no primary specification has been provided, then we'll default to the first specification in the list
+			// Priority for primary specification is (in order):
+			// 1. -spec option on the CLI
+			// 2. First -specs option on the CLI if defined
+			// 3. `contract` key in the yaml config
+			// 4. First specification in the list final specification list
+			if primarySpec == "" && len(specs) != 0 {
+				primarySpec = specs[0]
+			}
+
+			if len(specs) == 0 {
 				pterm.Println()
 				pterm.Warning.Println("No OpenAPI specification provided. " +
-					"Please provide a path to an OpenAPI specification using the --spec or -s flags. \n" +
+					"Please provide a path to at least one OpenAPI specification using the --spec or -s flags. \n" +
 					"Without an OpenAPI specification, wiretap will not be able to validate " +
 					"requests and responses")
 				pterm.Println()
 			}
 
-			if (mockMode || len(config.MockModeList) > 0) && spec == "" {
+			if (mockMode || len(config.MockModeList) > 0) && len(specs) == 0 {
 				pterm.Println()
 				pterm.Error.Println("Cannot enable mock mode, no OpenAPI specification provided!\n" +
 					"Please provide a path to an OpenAPI specification using the --spec or -s flags.\n" +
@@ -307,8 +339,9 @@ var (
 				redirectBasePath = parsedURL.Path
 			}
 
-			if spec != "" {
-				config.Contract = spec
+			if len(specs) != 0 {
+				config.Contracts = specs
+				config.PrimaryContract = primarySpec
 			}
 			config.RedirectURL = redirectURL
 			config.RedirectHost = redirectHost
@@ -511,8 +544,8 @@ var (
 
 			// check if we want to validate the HAR file against the OpenAPI spec.
 			// but only if we're not in mock mode and there is a spec provided
-			if config.HARValidate && !config.MockMode && config.Contract != "" {
-				pterm.Printf("🔍 Validating HAR file against OpenAPI specification: %s\n", pterm.LightMagenta(config.Contract))
+			if config.HARValidate && !config.MockMode && len(config.Contracts) != 0 {
+				pterm.Printf("🔍 Validating HAR file against OpenAPI specification(s): %s\n", pterm.LightMagenta(config.GetContractList()))
 
 				// check if whitelist is empty, if so, fail.
 				if len(config.HARPathAllowList) == 0 {
@@ -531,7 +564,7 @@ var (
 				}
 
 				// if there is no spec, print an error
-				if config.HARValidate && config.Contract == "" {
+				if config.HARValidate && len(config.Contracts) == 0 {
 					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification, no specification provided, use '-s'")
 					pterm.Println()
 					return nil
@@ -562,18 +595,18 @@ var (
 			}
 
 			// load the openapi spec
-			var doc libopenapi.Document
-			var docModel *libopenapi.DocumentModel[v3.Document]
-			var err error
-			if config.Contract != "" {
-				doc, err = loadOpenAPISpec(config.Contract, config.Base)
+			var primaryDoc libopenapi.Document
+			docs := make([]shared.ApiDocument, 0)
+			docModels := make([]shared.ApiDocumentModel, 0)
+			for _, contract := range config.Contracts {
+				doc, err := loadOpenAPISpec(contract, config.Base)
 				if err != nil {
 					return err
 				}
 
 				// build a model
 				var errs []error
-				docModel, errs = doc.BuildV3Model()
+				docModel, errs := doc.BuildV3Model()
 				if len(errs) > 0 && docModel != nil {
 					pterm.Warning.Printf("OpenAPI Specification loaded, but there %s %d %s detected...\n",
 						shared.Pluralize(len(errs), "was", "were"),
@@ -587,16 +620,27 @@ var (
 					pterm.Error.Printf("Failed to load / read OpenAPI specification.")
 					return errors.Join(errs...)
 				}
+
+				docs = append(docs, shared.ApiDocument{Document: doc, DocumentName: contract})
+				docModels = append(docModels, shared.ApiDocumentModel{
+					DocumentName:  contract,
+					DocumentModel: docModel,
+				})
+
+				if contract == config.PrimaryContract {
+					primaryDoc = doc
+				}
 			}
 
-			if doc != nil {
-				pterm.Info.Printf("OpenAPI Specification: '%s' parsed and read\n", config.Contract)
+			if len(docs) != 0 {
+				pterm.Info.Printf("OpenAPI Specification(s): '%s' parsed and read\n", config.GetContractList())
+				pterm.Info.Printf("Primary OpenAPI Specification: '%s'\n", config.PrimaryContract)
 			}
 
 			if !config.HARValidate {
 
 				// ready to boot, let's go!
-				_, pErr := runWiretapService(&config, doc)
+				_, pErr := runWiretapService(&config, docs, primaryDoc)
 
 				if pErr != nil {
 					pterm.Println()
@@ -618,18 +662,22 @@ var (
 						}
 					}
 
-					validationErrors := har.ValidateHAR(harFile, &docModel.Model, &config)
+					validationErrors := har.ValidateHAR(harFile, docModels, &config)
 					if len(validationErrors) > 0 {
 						pterm.Println()
-						pterm.Error.Printf("HAR file failed validation against OpenAPI specification: %s\n", config.Contract)
+						pterm.Error.Printf("HAR file failed validation against OpenAPI specification(s): %s\n", config.GetContractList())
 						pterm.Println()
 
 						for _, e := range validationErrors {
 
-							location := pterm.Sprintf("Violation location: %s:%d:%d", pterm.LightCyan(config.Contract), e.SpecLine, e.SpecCol)
+							// TODO: add support for the specific openapi contract in the validation error
+							location := pterm.Sprintf("Violation location: %s:%d:%d", pterm.LightCyan(config.Contracts[0]), e.SpecLine, e.SpecCol)
 							var items []pterm.BulletListItem
 							items = append(items, pterm.BulletListItem{
 								Level: 0, Text: pterm.LightRed(e.Message),
+							})
+							items = append(items, pterm.BulletListItem{
+								Level: 1, Text: pterm.Gray(fmt.Sprintf("Specification: %s", e.SpecName)),
 							})
 							if e.Reason != e.Message {
 								items = append(items, pterm.BulletListItem{
@@ -644,7 +692,7 @@ var (
 								if e.SchemaValidationErrors[0].Line >= 1 {
 									items = append(items, pterm.BulletListItem{
 										Level: 3, Text: pterm.Sprintf("Schema violation Location: %s:%d:%d",
-											pterm.LightCyan(config.Contract), e.SchemaValidationErrors[0].Line,
+											pterm.LightCyan(config.Contracts[0]), e.SchemaValidationErrors[0].Line,
 											e.SchemaValidationErrors[0].Column),
 									})
 								}
@@ -702,7 +750,8 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringP("monitor-port", "m", "", "Set port on which to serve the monitor UI (default is 9091)")
 	rootCmd.Flags().StringP("ws-port", "w", "", "Set port on which to serve the monitor UI websocket (default is 9092)")
 	rootCmd.Flags().StringP("ws-host", "v", "localhost", "Set the backend hostname for wiretap, for remotely deployed service")
-	rootCmd.Flags().StringP("spec", "s", "", "Set the path to the OpenAPI specification to use")
+	rootCmd.Flags().StringP("spec", "s", "", "List of paths to the OpenAPI specification to use")
+	rootCmd.Flags().StringSliceP("specs", "$", []string{}, "List of paths to the OpenAPI specification to use")
 	rootCmd.Flags().StringP("static", "t", "", "Set the path to a directory of static files to serve")
 	rootCmd.Flags().StringP("static-index", "i", "index.html", "Set the index filename for static file serving (default is index.html)")
 	rootCmd.Flags().StringP("cert", "n", "", "Set the path to the TLS certificate to use for TLS/HTTPS")
