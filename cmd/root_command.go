@@ -746,7 +746,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringP("ws-port", "w", "", "Set port on which to serve the monitor UI websocket (default is 9092)")
 	rootCmd.Flags().StringP("ws-host", "v", "localhost", "Set the backend hostname for wiretap, for remotely deployed service")
 	rootCmd.Flags().StringP("spec", "s", "", "List of paths to the OpenAPI specification to use")
-	rootCmd.Flags().StringSliceP("specs", "$", []string{}, "List of paths to the OpenAPI specification to use")
+	rootCmd.Flags().StringSliceP("specs", "S", []string{}, "List of paths to the OpenAPI specification to use")
 	rootCmd.Flags().StringP("static", "t", "", "Set the path to a directory of static files to serve")
 	rootCmd.Flags().StringP("static-index", "i", "index.html", "Set the index filename for static file serving (default is index.html)")
 	rootCmd.Flags().StringP("cert", "n", "", "Set the path to the TLS certificate to use for TLS/HTTPS")
