@@ -10,35 +10,40 @@ import (
 	"net/http"
 )
 
-func (ws *WiretapService) ValidateResponse(
-	request *model.Request,
-	returnedResponse *http.Response) []*shared.WiretapValidationError {
-
-	var validationErrors []*shared.WiretapValidationError
+func (ws *WiretapService) getValidatorForRequest(request *model.Request) *documentValidator {
 
 	if len(ws.documentValidators) == 1 {
-		_, newValidationErrors := ws.documentValidators[0].validator.ValidateHttpResponse(request.HttpRequest, returnedResponse)
-		validationErrors = shared.ConvertValidationErrors(ws.documentValidators[0].documentName, newValidationErrors)
+		return &ws.documentValidators[0]
 	} else {
-		pathFound := false
 
 		for _, docValidator := range ws.documentValidators {
 			// Find the first path match between all provided specifications
 			pathItem, _, _ := paths.FindPath(request.HttpRequest, docValidator.docModel)
 
 			if pathItem != nil {
-				_, newValidationErrors := docValidator.validator.ValidateHttpResponse(request.HttpRequest, returnedResponse)
-				validationErrors = shared.ConvertValidationErrors(docValidator.documentName, newValidationErrors)
-				pathFound = true
-				break
+				return &docValidator
 			}
 		}
 
 		// If we haven't found a path, let's pick the first validator to validate against. This should just produce a path not found error.
-		if !pathFound && len(ws.documentValidators) > 0 {
-			_, newValidationErrors := ws.documentValidators[0].validator.ValidateHttpResponse(request.HttpRequest, returnedResponse)
-			validationErrors = shared.ConvertValidationErrors(ws.documentValidators[0].documentName, newValidationErrors)
+		if len(ws.documentValidators) > 0 {
+			return &ws.documentValidators[0]
 		}
+	}
+
+	return nil
+}
+
+func (ws *WiretapService) ValidateResponse(
+	request *model.Request,
+	returnedResponse *http.Response) []*shared.WiretapValidationError {
+
+	var validationErrors []*shared.WiretapValidationError
+
+	docValidator := ws.getValidatorForRequest(request)
+	if docValidator != nil {
+		_, newValidationErrors := docValidator.validator.ValidateHttpResponse(request.HttpRequest, returnedResponse)
+		validationErrors = shared.ConvertValidationErrors(docValidator.documentName, newValidationErrors)
 	}
 
 	// wipe out any path not found errors, they are not relevant to the response.
@@ -70,29 +75,10 @@ func (ws *WiretapService) ValidateRequest(
 
 	var validationErrors, cleanedErrors []*shared.WiretapValidationError
 
-	if len(ws.documentValidators) == 1 {
-		_, newValidationErrors := ws.documentValidators[0].validator.ValidateHttpRequest(httpRequest)
-		validationErrors = shared.ConvertValidationErrors(ws.documentValidators[0].documentName, newValidationErrors)
-	} else {
-		pathFound := false
-
-		for _, docValidator := range ws.documentValidators {
-			// Find the first path match between all provided specifications
-			pathItem, _, _ := paths.FindPath(modelRequest.HttpRequest, docValidator.docModel)
-
-			if pathItem != nil {
-				_, newValidationErrors := docValidator.validator.ValidateHttpRequest(httpRequest)
-				validationErrors = shared.ConvertValidationErrors(docValidator.documentName, newValidationErrors)
-				pathFound = true
-				break
-			}
-		}
-
-		// If we haven't found a path, let's pick the first validator to validate against. This should just produce a path not found error.
-		if !pathFound && len(ws.documentValidators) > 0 {
-			_, newValidationErrors := ws.documentValidators[0].validator.ValidateHttpRequest(httpRequest)
-			validationErrors = shared.ConvertValidationErrors(ws.documentValidators[0].documentName, newValidationErrors)
-		}
+	docValidator := ws.getValidatorForRequest(modelRequest)
+	if docValidator != nil {
+		_, newValidationErrors := docValidator.validator.ValidateHttpRequest(httpRequest)
+		validationErrors = shared.ConvertValidationErrors(docValidator.documentName, newValidationErrors)
 	}
 
 	for _, validationError := range validationErrors {

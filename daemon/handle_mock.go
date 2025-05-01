@@ -7,7 +7,6 @@ package daemon
 import (
 	"bytes"
 	"fmt"
-	"github.com/pb33f/libopenapi-validator/paths"
 	"io"
 	"net/http"
 	"time"
@@ -33,26 +32,12 @@ func (ws *WiretapService) handleMockRequest(
 	var mockStatus int
 	var mockErr error
 
-	if len(ws.documentValidators) == 1 {
-		mock, mockStatus, mockErr = ws.documentValidators[0].mockEngine.GenerateResponse(request.HttpRequest)
+	docValidator := ws.getValidatorForRequest(request)
+	if docValidator != nil {
+		mock, mockStatus, mockErr = docValidator.mockEngine.GenerateResponse(request.HttpRequest)
 	} else {
-		pathFound := false
-		for _, docValidator := range ws.documentValidators {
-			// Find the first path match between all provided specifications
-			pathItem, _, _ := paths.FindPath(request.HttpRequest, docValidator.docModel)
-
-			if pathItem != nil {
-				// build a mock based on the request.
-				mock, mockStatus, mockErr = docValidator.mockEngine.GenerateResponse(request.HttpRequest)
-				pathFound = true
-				break
-			}
-		}
-
-		// If we haven't found a path, let's pick the first mock engine
-		if !pathFound && len(ws.documentValidators) > 0 {
-			mock, mockStatus, mockErr = ws.documentValidators[0].mockEngine.GenerateResponse(request.HttpRequest)
-		}
+		mockStatus = http.StatusInternalServerError
+		mockErr = fmt.Errorf("mock engine has not been intialized; configure an OpenAPI specification to use this option")
 	}
 
 	// validate http request.
