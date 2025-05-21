@@ -6,8 +6,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
 	github.com/pb33f/harhar v0.0.0-20240111233202-e393c2a39a60
-	github.com/pb33f/libopenapi v0.19.1
-	github.com/pb33f/libopenapi-validator v0.3.0
+	github.com/pb33f/libopenapi v0.21.12
+	github.com/pb33f/libopenapi-validator v0.4.5
 	github.com/pb33f/ranch v0.4.0
 	github.com/pterm/pterm v0.12.79
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
@@ -57,7 +57,7 @@ require (
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/text v0.25.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 )
