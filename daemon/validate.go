@@ -18,7 +18,7 @@ func (ws *WiretapService) getValidatorForRequest(request *model.Request) *docume
 
 		for _, docValidator := range ws.documentValidators {
 			// Find the first path match between all provided specifications
-			pathItem, _, _ := paths.FindPath(request.HttpRequest, docValidator.docModel)
+			pathItem, _, _ := paths.FindPath(request.HttpRequest, docValidator.docModel, nil)
 
 			if pathItem != nil {
 				return &docValidator
