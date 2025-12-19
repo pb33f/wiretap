@@ -16,7 +16,7 @@ WORKDIR /wt_build/ui
 RUN yarn install
 RUN yarn build
 
-FROM golang:1.23-bookworm AS gobuilder
+FROM golang:1.25-bookworm AS gobuilder
 
 ARG TARGETOS
 ARG TARGETARCH
