@@ -6,7 +6,6 @@ package cmd
 import (
 	"embed"
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"net/url"
 	"os"
@@ -19,7 +18,7 @@ import (
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 var (
@@ -604,20 +603,14 @@ var (
 				}
 
 				// build a model
-				var errs []error
-				docModel, errs := doc.BuildV3Model()
-				if len(errs) > 0 && docModel != nil {
-					pterm.Warning.Printf("OpenAPI Specification loaded, but there %s %d %s detected...\n",
-						shared.Pluralize(len(errs), "was", "were"),
-						len(errs),
-						shared.Pluralize(len(errs), "issue", "issues"))
-					for _, e := range errs {
-						pterm.Warning.Printf("--> %s\n", e.Error())
-					}
+				docModel, docErr := doc.BuildV3Model()
+				if docErr != nil && docModel != nil {
+					pterm.Warning.Printf("OpenAPI Specification loaded, but there was an issue detected...\n")
+					pterm.Warning.Printf("--> %s\n", docErr.Error())
 				}
-				if len(errs) > 0 && docModel == nil {
+				if docErr != nil && docModel == nil {
 					pterm.Error.Printf("Failed to load / read OpenAPI specification.")
-					return errors.Join(errs...)
+					return docErr
 				}
 
 				docs = append(docs, shared.ApiDocument{Document: doc, DocumentName: contract})

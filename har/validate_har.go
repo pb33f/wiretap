@@ -66,7 +66,7 @@ func ValidateHAR(har *harhar.HAR, apiDocumentModels []shared.ApiDocumentModel, c
 						pathFound := false
 						for _, hValidator := range validators {
 							// Find the first path match between all provided specifications
-							pathItem, _, _ := paths.FindPath(httpRequest, &hValidator.docModel.Model)
+							pathItem, _, _ := paths.FindPath(httpRequest, &hValidator.docModel.Model, nil)
 
 							if pathItem != nil {
 								httpValidator = hValidator.validator

@@ -7,6 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+
 	libopenapierrs "github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/libopenapi-validator/helpers"
 	"github.com/pb33f/libopenapi-validator/paths"
@@ -14,9 +19,6 @@ import (
 	"github.com/pb33f/libopenapi/renderer"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/validation"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 type ResponseMockEngine struct {
@@ -24,6 +26,7 @@ type ResponseMockEngine struct {
 	validator  validation.HttpValidator
 	mockEngine *renderer.MockGenerator
 	pretty     bool
+	regexCache *sync.Map
 }
 
 func NewMockEngine(document *v3.Document, pretty, useAllPropertyExamples bool) *ResponseMockEngine {
@@ -41,6 +44,7 @@ func NewMockEngine(document *v3.Document, pretty, useAllPropertyExamples bool) *
 		validator:  validation.NewHttpValidator(document),
 		mockEngine: me,
 		pretty:     pretty,
+		regexCache: &sync.Map{},
 	}
 }
 
@@ -175,7 +179,7 @@ func (rme *ResponseMockEngine) extractMediaTypeHeader(request *http.Request) str
 }
 
 func (rme *ResponseMockEngine) findPath(request *http.Request) (*v3.PathItem, error) {
-	path, errs, _ := paths.FindPath(request, rme.doc)
+	path, errs, _ := paths.FindPath(request, rme.doc, rme.regexCache)
 	return path, rme.packErrors(errs)
 }
 
