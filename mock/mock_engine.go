@@ -22,11 +22,12 @@ import (
 )
 
 type ResponseMockEngine struct {
-	doc        *v3.Document
-	validator  validation.HttpValidator
-	mockEngine *renderer.MockGenerator
-	pretty     bool
-	regexCache *sync.Map
+	doc            *v3.Document
+	validator      validation.HttpValidator
+	mockEngine     *renderer.MockGenerator
+	pretty         bool
+	regexCache     *sync.Map
+	hardValidation bool // when true, reject requests with validation errors
 }
 
 func NewMockEngine(document *v3.Document, pretty, useAllPropertyExamples bool) *ResponseMockEngine {
@@ -40,11 +41,12 @@ func NewMockEngine(document *v3.Document, pretty, useAllPropertyExamples bool) *
 	}
 
 	return &ResponseMockEngine{
-		doc:        document,
-		validator:  validation.NewHttpValidator(document),
-		mockEngine: me,
-		pretty:     pretty,
-		regexCache: &sync.Map{},
+		doc:            document,
+		validator:      validation.NewHttpValidator(document),
+		mockEngine:     me,
+		pretty:         pretty,
+		regexCache:     &sync.Map{},
+		hardValidation: true, // default to rejecting on validation errors for backward compatibility
 	}
 }
 
@@ -61,21 +63,28 @@ func NewStrictMockEngine(document *v3.Document, pretty, useAllPropertyExamples b
 	}
 
 	return &ResponseMockEngine{
-		doc:        document,
-		validator:  validation.NewStrictHttpValidator(document),
-		mockEngine: me,
-		pretty:     pretty,
-		regexCache: &sync.Map{},
+		doc:            document,
+		validator:      validation.NewStrictHttpValidator(document),
+		mockEngine:     me,
+		pretty:         pretty,
+		regexCache:     &sync.Map{},
+		hardValidation: true, // default to rejecting on validation errors for backward compatibility
 	}
 }
 
 // NewMockEngineWithConfig creates a mock engine based on configuration.
 // When strictMode is true, undeclared request elements are validated strictly.
-func NewMockEngineWithConfig(document *v3.Document, pretty, useAllPropertyExamples, strictMode bool) *ResponseMockEngine {
+// When hardValidation is true, requests with validation errors are rejected with 422.
+// When hardValidation is false, validation errors are reported but mocks are still served.
+func NewMockEngineWithConfig(document *v3.Document, pretty, useAllPropertyExamples, strictMode, hardValidation bool) *ResponseMockEngine {
+	var engine *ResponseMockEngine
 	if strictMode {
-		return NewStrictMockEngine(document, pretty, useAllPropertyExamples)
+		engine = NewStrictMockEngine(document, pretty, useAllPropertyExamples)
+	} else {
+		engine = NewMockEngine(document, pretty, useAllPropertyExamples)
 	}
-	return NewMockEngine(document, pretty, useAllPropertyExamples)
+	engine.hardValidation = hardValidation
+	return engine
 }
 
 func (rme *ResponseMockEngine) GenerateResponse(request *http.Request) ([]byte, int, error) {
@@ -319,8 +328,11 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 	}
 
 	// validate the request against the document.
+	// Only reject with error response if hardValidation is enabled.
+	// When hardValidation is false, validation errors are reported separately via the daemon,
+	// but the mock is still served to allow development/testing workflows.
 	_, validationErrors := rme.validator.ValidateHttpRequest(request)
-	if len(validationErrors) > 0 {
+	if rme.hardValidation && len(validationErrors) > 0 {
 		mt, _ := rme.findBestMediaTypeMatch(operation, request, []string{"422", "400"})
 		if mt == nil {
 			// no default, no valid response, inform use with a 500
