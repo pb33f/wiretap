@@ -73,17 +73,16 @@ func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapCon
 		m, _ := document.Document.BuildV3Model()
 		docModel := &m.Model
 
-		// create a new validator
-		newHttpValidator := validation.NewHttpValidator(docModel)
-		// create a new mock engine
-		newMockEngine := mock.NewMockEngine(docModel, config.MockModePretty, config.UseAllMockResponseFields)
-
 		wts.documentValidators = append(wts.documentValidators, documentValidator{
 			documentName: document.DocumentName,
 			document:     document.Document,
 			docModel:     docModel,
-			validator:    newHttpValidator,
-			mockEngine:   newMockEngine,
+			validator:    validation.NewHttpValidatorWithConfig(docModel, config.StrictMode),
+			mockEngine: mock.NewMockEngineWithConfig(
+				docModel,
+				config.MockModePretty,
+				config.UseAllMockResponseFields,
+				config.StrictMode),
 		})
 	}
 

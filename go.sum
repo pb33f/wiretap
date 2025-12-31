@@ -113,10 +113,8 @@ github.com/pb33f/harhar v0.0.0-20250707194835-e48f2c16e9c3 h1:kDdCUiwo/THbsEL5wv
 github.com/pb33f/harhar v0.0.0-20250707194835-e48f2c16e9c3/go.mod h1:sJHiXr/Rdkg2j8P5FYGEcqPP1ptdk8zn6xeJ3aZfAvw=
 github.com/pb33f/jsonpath v0.7.0 h1:3oG6yu1RqNoMZpqnRjBMqi8fSIXWoDAKDrsB0QGTcoU=
 github.com/pb33f/jsonpath v0.7.0/go.mod h1:/+JlSIjWA2ijMVYGJ3IQPF4Q1nLMYbUTYNdk0exCDPQ=
-github.com/pb33f/libopenapi v0.30.3 h1:MhZx2mU53LVq76TTtbtxzuuC1Z4eczlot55yE4FsGGM=
-github.com/pb33f/libopenapi v0.30.3/go.mod h1:4MP76dnaTMY+DM+bRhKBneAIhVISEEZM6G6sd7A9pus=
-github.com/pb33f/libopenapi-validator v0.9.4 h1:cplXfKjCiNv7zD947URP+CFFHaA8LjRJ0RV4cb/sB38=
-github.com/pb33f/libopenapi-validator v0.9.4/go.mod h1:Ew29zgM7t1XqeAjpuktdjPjYbBWaw6joe64sak3ARHQ=
+github.com/pb33f/libopenapi v0.31.1 h1:smGr45U2Y+hHWYKiEV13oS2tP9IUnscqNb5qsvT9+YI=
+github.com/pb33f/libopenapi v0.31.1/go.mod h1:oaebeA5l58AFbZ7qRKTtMnu15JEiPlaBas1vLDcw9vs=
 github.com/pb33f/ordered-map/v2 v2.3.0 h1:k2OhVEQkhTCQMhAicQ3Z6iInzoZNQ7L9MVomwKBZ5WQ=
 github.com/pb33f/ordered-map/v2 v2.3.0/go.mod h1:oe5ue+6ZNhy7QN9cPZvPA23Hx0vMHnNVeMg4fGdCANw=
 github.com/pb33f/ranch v0.6.0 h1:W+um1FhYpfokWI+h+0NdwUuvw3uOl22+JnclHNI0Pm8=
@@ -206,6 +204,8 @@ golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJ
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.1.0/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
+golang.org/x/sync v0.19.0 h1:vV+1eWNmZ5geRlYjzm2adRgW2/mcpevXNg50YZtPCE4=
+golang.org/x/sync v0.19.0/go.mod h1:9KTHXmSnoGruLpwFjVSX0lNNA75CykiMECbovNTZqGI=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20201119102817-f84b799fce68/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=

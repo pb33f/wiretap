@@ -94,6 +94,7 @@ var (
 			hardErrorReturnCode, _ = cmd.Flags().GetInt("hard-validation-return-code")
 			streamReport, _ := cmd.Flags().GetBool("stream-report")
 			strictRedirectLocation, _ := cmd.Flags().GetBool("strict-redirect-location")
+			strictMode, _ := cmd.Flags().GetBool("strict-mode")
 
 			portFlag, _ := cmd.Flags().GetString("port")
 			if portFlag != "" {
@@ -230,6 +231,11 @@ var (
 						config.StrictRedirectLocation = true
 					}
 				}
+				if strictMode {
+					if !config.StrictMode {
+						config.StrictMode = true
+					}
+				}
 
 				if reportFilename != "" {
 					config.ReportFile = reportFilename
@@ -268,6 +274,9 @@ var (
 				}
 				if strictRedirectLocation {
 					config.StrictRedirectLocation = true
+				}
+				if strictMode {
+					config.StrictMode = true
 				}
 				if base != "" {
 					config.Base = base
@@ -489,6 +498,13 @@ var (
 			if config.MockMode {
 				pterm.Printf("Ⓜ️ %s. All responses will be mocked and no traffic will be sent to the target API.\n",
 					pterm.LightCyan("Mock mode enabled"))
+				pterm.Println()
+			}
+
+			// strict mode
+			if config.StrictMode {
+				pterm.Printf("🔬 %s. Undeclared properties, parameters, headers, and cookies will be reported as validation errors.\n",
+					pterm.LightCyan("Strict validation mode enabled"))
 				pterm.Println()
 			}
 
@@ -759,6 +775,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringP("report-filename", "f", "wiretap-report.json", "Filename for any headless report generation output")
 	rootCmd.Flags().BoolP("stream-report", "a", false, "Stream violations to report JSON file as they occur (headless mode)")
 	rootCmd.Flags().BoolP("strict-redirect-location", "r", false, "Rewrite the redirect `Location` header on redirect responses to wiretap's API Gateway Host")
+	rootCmd.Flags().Bool("strict-mode", false, "Enable strict validation to detect undeclared properties, parameters, headers, and cookies")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

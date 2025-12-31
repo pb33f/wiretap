@@ -31,12 +31,11 @@ func ValidateHAR(har *harhar.HAR, apiDocumentModels []shared.ApiDocumentModel, c
 	validators := make([]harValidator, 0)
 
 	for _, apiDocumentModel := range apiDocumentModels {
-		newHarValidator := harValidator{
+		validators = append(validators, harValidator{
 			documentName: apiDocumentModel.DocumentName,
 			docModel:     apiDocumentModel.DocumentModel,
-			validator:    validation.NewHttpValidator(&apiDocumentModel.DocumentModel.Model),
-		}
-		validators = append(validators, newHarValidator)
+			validator:    validation.NewHttpValidatorWithConfig(&apiDocumentModel.DocumentModel.Model, configFile.StrictMode),
+		})
 	}
 
 	for _, entry := range har.Log.Entries {

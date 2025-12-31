@@ -48,6 +48,36 @@ func NewMockEngine(document *v3.Document, pretty, useAllPropertyExamples bool) *
 	}
 }
 
+// NewStrictMockEngine creates a mock engine with strict validation enabled.
+// Strict mode detects undeclared properties, parameters, headers, and cookies in requests.
+func NewStrictMockEngine(document *v3.Document, pretty, useAllPropertyExamples bool) *ResponseMockEngine {
+	me := renderer.NewMockGenerator(renderer.JSON)
+	if pretty {
+		me.SetPretty()
+	}
+
+	if useAllPropertyExamples {
+		me.DisableRequiredCheck()
+	}
+
+	return &ResponseMockEngine{
+		doc:        document,
+		validator:  validation.NewStrictHttpValidator(document),
+		mockEngine: me,
+		pretty:     pretty,
+		regexCache: &sync.Map{},
+	}
+}
+
+// NewMockEngineWithConfig creates a mock engine based on configuration.
+// When strictMode is true, undeclared request elements are validated strictly.
+func NewMockEngineWithConfig(document *v3.Document, pretty, useAllPropertyExamples, strictMode bool) *ResponseMockEngine {
+	if strictMode {
+		return NewStrictMockEngine(document, pretty, useAllPropertyExamples)
+	}
+	return NewMockEngine(document, pretty, useAllPropertyExamples)
+}
+
 func (rme *ResponseMockEngine) GenerateResponse(request *http.Request) ([]byte, int, error) {
 	return rme.runWorkflow(request)
 }

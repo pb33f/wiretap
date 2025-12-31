@@ -4,13 +4,11 @@ go 1.25.0
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
 	github.com/pb33f/harhar v0.0.0-20250707194835-e48f2c16e9c3
-	github.com/pb33f/libopenapi v0.30.3
-	github.com/pb33f/libopenapi-validator v0.9.4
+	github.com/pb33f/libopenapi v0.31.1
+	github.com/pb33f/libopenapi-validator v0.10.1
 	github.com/pb33f/ranch v0.6.0
 	github.com/pterm/pterm v0.12.82
-	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 )
 
 require (
@@ -32,6 +30,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
 	github.com/lithammer/fuzzysearch v1.1.8 // indirect
+	github.com/lucasjones/reggen v0.0.0-20200904144131-37ba4fa293bb // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -49,6 +48,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/term v0.38.0 // indirect
@@ -76,4 +76,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
 )
+
+replace github.com/pb33f/libopenapi-validator => ../libopenapi-validator
