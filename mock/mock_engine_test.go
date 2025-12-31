@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/pb33f/libopenapi"
@@ -17,32 +18,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// var doc *v3.Document
 var giftshopBytes []byte
-var petstoreBytes []byte
 
 func resetGiftshopState() *v3.Document {
 	if len(giftshopBytes) <= 0 {
-		resp, err := http.Get("https://api.pb33f.io/wiretap/giftshop-openapi.yaml")
+		var err error
+		giftshopBytes, err = os.ReadFile("../testdata/giftshop-openapi.yaml")
 		if err != nil {
 			panic(err)
 		}
-		giftshopBytes, _ = io.ReadAll(resp.Body)
 	}
 	d, _ := libopenapi.NewDocument(giftshopBytes)
-	compiled, _ := d.BuildV3Model()
-	return &compiled.Model
-}
-
-func resetPetstoreState() *v3.Document {
-	if len(petstoreBytes) <= 0 {
-		resp, err := http.Get("https://raw.githubusercontent.com/swagger-api/swagger-petstore/master/src/main/resources/openapi.yaml")
-		if err != nil {
-			panic(err)
-		}
-		petstoreBytes, _ = io.ReadAll(resp.Body)
-	}
-	d, _ := libopenapi.NewDocument(petstoreBytes)
 	compiled, _ := d.BuildV3Model()
 	return &compiled.Model
 }
@@ -1527,4 +1513,65 @@ components:
 
 	assert.Equal(t, http.StatusOK, status)
 	assert.Equal(t, `{"id":123,"name":"John Doe"}`, string(b))
+}
+
+func loadStrictTestSpec(t *testing.T) *v3.Document {
+	spec, err := io.ReadAll(mustOpen(t, "../testdata/strict_mode_test.yaml"))
+	if err != nil {
+		t.Fatalf("failed to read strict mode test spec: %v", err)
+	}
+	d, err := libopenapi.NewDocument(spec)
+	if err != nil {
+		t.Fatalf("failed to parse strict mode test spec: %v", err)
+	}
+	compiled, err := d.BuildV3Model()
+	if err != nil {
+		t.Fatalf("failed to build v3 model: %v", err)
+	}
+	return &compiled.Model
+}
+
+func mustOpen(t *testing.T, path string) io.Reader {
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("failed to open file %s: %v", path, err)
+	}
+	return f
+}
+
+func TestNewMockEngineStrict_RejectsUndeclaredProperty(t *testing.T) {
+	doc := loadStrictTestSpec(t)
+	engine := NewStrictMockEngine(doc, false, true)
+
+	// POST /users with undeclared property "extra"
+	body := bytes.NewBufferString(`{"name": "test", "extra": "undeclared"}`)
+	request, _ := http.NewRequest(http.MethodPost, "http://localhost/users", body)
+	request.Header.Set(helpers.ContentTypeHeader, "application/json")
+
+	b, statusCode, err := engine.GenerateResponse(request)
+
+	// Assert: GenerateResponse returns 422 for validation failures
+	assert.Equal(t, 422, statusCode)
+	assert.NotNil(t, err)
+
+	// Assert body contains validation error payload
+	var decoded map[string]any
+	_ = json.Unmarshal(b, &decoded)
+	assert.Equal(t, "Invalid request (422)", decoded["title"])
+}
+
+func TestNewMockEngine_AllowsUndeclaredProperty(t *testing.T) {
+	doc := loadStrictTestSpec(t)
+	engine := NewMockEngine(doc, false, true)
+
+	// POST /users with undeclared property "extra" - should be allowed in non-strict mode
+	body := bytes.NewBufferString(`{"name": "test", "extra": "undeclared"}`)
+	request, _ := http.NewRequest(http.MethodPost, "http://localhost/users", body)
+	request.Header.Set(helpers.ContentTypeHeader, "application/json")
+
+	_, statusCode, err := engine.GenerateResponse(request)
+
+	// Assert: Returns 2xx success, no validation error
+	assert.Equal(t, 201, statusCode)
+	assert.NoError(t, err)
 }

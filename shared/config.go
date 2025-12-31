@@ -73,6 +73,7 @@ type WiretapConfiguration struct {
 	IgnoreValidation            []string                                    `json:"ignoreValidation,omitempty" yaml:"ignoreValidation,omitempty"`
 	ValidationAllowList         []string                                    `json:"validationAllowList,omitempty" yaml:"validationAllowList,omitempty"`
 	StrictRedirectLocation      bool                                        `json:"strictRedirectLocation,omitempty" yaml:"strictRedirectLocation,omitempty"`
+	StrictMode                  bool                                        `json:"strictMode,omitempty" yaml:"strictMode,omitempty"`
 	IgnorePathRewrite           []*IgnoreRewriteConfig                      `json:"ignorePathRewrite,omitempty" yaml:"ignorePathRewrite,omitempty"`
 	HARFile                     *harhar.HAR                                 `json:"-" yaml:"-"`
 	CompiledMockModeList        []glob.Glob                                 `json:"-" yaml:"-"`

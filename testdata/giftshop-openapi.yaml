@@ -1,0 +1,488 @@
+openapi: 3.1.0
+info:
+  title: "pb33f t-shirt store API"
+  summary: |
+    We sell t-shirts, hoodies and other merchandise for pb33f.
+  description: |
+    Want some cool gear, to go with your cool code? We've got you covered. Buy a t-shirt, hoodie or other merchandise 
+    from our store to show your support for pb33f.
+  version: 0.0.1
+  contact:
+    url: https://pb33f.io/company
+    name: Dave Shanley
+    email: buckaroo@pb33f.io
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.en.html
+servers:
+  - url: https://api.pb33f.io/wiretap/giftshop
+    description: Live production endpoint for general use.
+tags:
+  - name: cart
+    description: shopping cart operations
+  - name: product
+    description: product operations
+  - name: checkout
+    description: checkout operations
+paths:
+  /products:
+    post:
+      security:
+        - ApiKeyAuth:
+            - write:products
+      tags:
+        - product
+      operationId: createProduct
+      description: |
+        Create a new product. If the product already exists, or the data is invalid a 400 error will be returned.
+      summary: |
+        Create a new product.
+      requestBody:
+        description: The new product to create.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+            examples:
+              newProduct:
+                $ref: '#/components/examples/NewProductExample'
+      responses:
+        "200":
+          $ref: '#/components/responses/Product'
+        "500":
+          $ref: '#/components/responses/ServerError'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: '#/components/responses/AuthorizationError'
+        "429":
+          $ref: '#/components/responses/ServerError'
+    get:
+      security:
+        - {}
+      parameters:
+        - $ref: '#/components/parameters/Category'
+      tags:
+        - product
+      operationId: getAllProducts
+      description: |
+        Retrieve all products available for purchase, in a single list. Products can be filtered by category by using the
+        `category` query parameter. If a category is not supplied or the category is invalid, all products will be returned.
+      summary: |
+        Get a list of all products.
+      responses:
+        "200":
+          $ref: '#/components/responses/ProductList'
+        "500":
+          $ref: '#/components/responses/ServerError'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/AuthorizationError'
+        "429":
+          $ref: '#/components/responses/ServerError'
+  /products/{id}:
+    get:
+      security:
+        - {}
+      tags:
+        - product
+      operationId: getProductById
+      description: |
+        Get a specific product by its unique identifier (`id`) or by its short code (`shortCode`) values.
+        If the product does not exist, a 404 error will be returned.
+      summary: |
+        Get a product by its `id` or `shortCode`
+      parameters:
+        - $ref: '#/components/parameters/ProductPathId'
+      responses:
+        "200":
+          $ref: '#/components/responses/Product'
+        "500":
+          $ref: '#/components/responses/ServerError'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: '#/components/responses/AuthorizationError'
+        "429":
+          $ref: '#/components/responses/ServerError'
+    delete:
+      security:
+        - ApiKeyAuth:
+            - delete:products
+      tags:
+        - product
+      operationId: deleteProduct
+      description: |
+        Remove a product from the database
+      summary: |
+        Remove a product
+      parameters:
+        - $ref: '#/components/parameters/ProductPathId'
+      responses:
+        "200":
+          headers:
+            Retry-After:
+              $ref: '#/components/headers/Retry-After'
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+          description: OK
+        "500":
+          $ref: '#/components/responses/ServerError'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: '#/components/responses/AuthorizationError'
+        "429":
+          $ref: '#/components/responses/ServerError'
+    post:
+      security:
+        - ApiKeyAuth:
+            - write:products
+      tags:
+        - product
+      operationId: updateProductById
+      requestBody:
+        description: The updated product.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+            examples:
+              updatedProduct:
+                $ref: '#/components/examples/NewProductExample'
+      description: |
+        Update a specific product by its unique identifier. If the product does not exist, a 404 error will be returned.
+      summary: |
+        Update a product
+      parameters:
+        - $ref: '#/components/parameters/ProductPathId'
+      responses:
+        "200":
+          $ref: '#/components/responses/Product'
+        "500":
+          $ref: '#/components/responses/ServerError'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: '#/components/responses/AuthorizationError'
+        "429":
+          $ref: '#/components/responses/ServerError'
+  /search:
+    get:
+      security:
+        - { }
+      tags:
+        - product
+      operationId: searchProducts
+      description: |
+        Search products for a keyword.
+      summary: |
+        Search products.
+      parameters:
+        - $ref: '#/components/parameters/KeywordSearch'
+      responses:
+        "200":
+          $ref: '#/components/responses/ProductList'
+        "500":
+          $ref: '#/components/responses/ServerError'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: '#/components/responses/AuthorizationError'
+        "429":
+          $ref: '#/components/responses/ServerError'
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      description: |
+        API Key authentication. Provide your API key as the value of the `X-API-Key` header.
+      type: apiKey
+      in: header
+      name: X-API-Key
+  examples:
+    NewProductExample:
+      summary: A product to create
+      description: An example of a product that can be returned by the API.
+      value:
+        id: abc-def
+        shortCode: pb0001
+        name: "pb33f t-shirt"
+        description: "A t-shirt with the pb33f logo on it."
+        price: 19.99
+        category: "shirts"
+        image: "https://pb33f.io/images/t-shirt.png"
+  parameters:
+    Category:
+      name: category
+      in: query
+      description: Category to filter products by. Should be the name of a category, e.g. `shirts`.
+      schema:
+        type: string
+        maxLength: 50
+        format: string
+        example: shirts
+    ProductPathId:
+      name: id
+      in: path
+      required: true
+      description: Product ID of the item to retrieve.
+      schema:
+        type: string
+        maxLength: 36
+        format: uuid
+        example: 50cf5a6e-9bc1-4abf-846c-e6b33a2ccd11
+    KeywordSearch:
+      name: query
+      in: query
+      required: true
+      description: The search string to use when searching for products.
+      schema:
+        type: string
+        maxLength: 50
+        format: string
+        example: hacker
+  headers:
+    Retry-After:
+      description: The number of seconds to wait before retrying the request.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 10000
+        format: int32
+        example: 1000
+    X-RateLimit-Limit:
+      description: The number of requests allowed in the current period.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 10000
+        format: int32
+        example: 1000
+  responses:
+    AuthorizationError:
+      headers:
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/X-RateLimit-Limit'
+      description: Unauthorized request, you must be authenticated to perform this operation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            serverError:
+              summary: "Sorry, computer said no."
+              value:
+                message: "This request requires authentication. You are not authenticated."
+                code: "authentication"
+                url: "https://pb33f.io/errors/authentication"
+    ServerError:
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/Retry-After'
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/X-RateLimit-Limit'
+      description: Something went wrong and a server error occurred, unable to process the request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            serverError:
+              summary: "Example of a server error."
+              value:
+                message: "Something went wrong and a server error occurred, unable to process the request."
+                code: "server-error"
+                url: "https://pb33f.io/errors/server-error"
+    NotFound:
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/Retry-After'
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/X-RateLimit-Limit'
+      description: The item requested could not be found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            notFound:
+              summary: "Not Found"
+              value:
+                message: "The item requested does not exist or could not be found."
+                code: "not-found"
+                url: "https://pb33f.io/errors/not-found"
+    BadRequest:
+      headers:
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/X-RateLimit-Limit'
+      description: A bad request, the URL supplied was not valid or could not be processed correctly.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            badRequest:
+              summary: "Example of a bad request"
+              value:
+                message: "The URL supplied was not valid or could not be processed correctly."
+                code: "bad-request"
+                url: "https://pb33f.io/errors/bad-request"
+    ProductList:
+      description: ProductList is an array of Product objects.
+      headers:
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/X-RateLimit-Limit'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProductList'
+    Product:
+      description: Product is a single product object.
+      headers:
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/X-RateLimit-Limit'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Product'
+  schemas:
+    ProductList:
+      type: [array]
+      description: A list of all products available for purchase.
+      minItems: 0
+      maxItems: 1000
+      items:
+        $ref: '#/components/schemas/Product'
+      example:
+        - id: d1404c5c-69bd-4cd2-a4cf-b47c79a30112
+          shortCode: "pb0001"
+          name: "pb33f t-shirt"
+          description: "An example t-shirt with the pb33f logo on it."
+          price: 19.99
+          category: "shirts"
+          image: "https://pb33f.io/images/t-shirt.png"
+        - id: 50cf5a6e-9bc1-4abf-846c-e6b33a2ccd11
+          shortCode: "pb0002"
+          name: "pb33f hoodie"
+          description: "An example hoodie with the pb33f logo on it."
+          price: 29.99
+          category: "hoodies"
+          image: "https://pb33f.io/images/hoodie.png"
+    Product:
+      description: A product is something that can be sold by the gift shop
+      type: [object]
+      required:
+        - id
+        - shortCode
+        - name
+        - description
+        - price
+        - category
+        - image
+      properties:
+        id:
+          type: [string]
+          maxLength: 50
+          format: uuid
+          description: "The unique identifier for the product"
+          example: d1404c5c-69bd-4cd2-a4cf-b47c79a30112
+        shortCode:
+          type: [ string ]
+          maxLength: 50
+          format: string
+          description: "a short code for the product, easily human readable"
+          example: "pb0001"
+        name:
+          type: [string]
+          description: "The name of the product"
+          maxLength: 50
+          format: string
+          example: "pb33f t-shirt"
+        description:
+          type: [string]
+          description: "A description of the product"
+          maxLength: 500
+          format: string
+          example: "A t-shirt with the pb33f logo on the front"
+        price:
+          type: [number]
+          format: float
+          maxLength: 5
+          description: "The price of the product, as a floating point number"
+          example: 19.99
+        category:
+          type: [string]
+          maxLength: 50
+          format: string
+          description: "The category of the product"
+          example: "shirts"
+        image:
+          type: [string]
+          maxLength: 100
+          format: string
+          description: "The URL of the product image"
+          example: "https://pb33f.io/images/t-shirt.png"
+      example:
+        id: d1404c5c-69bd-4cd2-a4cf-b47c79a30112
+        shortCode: "pb0001"
+        name: "pb33f t-shirt"
+        description: "A t-shirt with the pb33f logo on the front"
+        price: 19.99
+        category: "shirts"
+        image: "https://pb33f.io/images/t-shirt.png"
+    Error:
+      type: [object]
+      description: "An error response from the API"
+      example:
+        type: failure
+        title: Something went wrong
+        status: 500
+        detail: A problem happened when we were doing something
+        instance: https://pb33f.io/errors/general
+      properties:
+        type:
+          type: [string]
+          maxLength: 100
+          format: string
+          description: "The URI of the error type."
+          example: "https://quobix.com/vacuum/tube/error"
+        title:
+          description: "A short, human-readable summary of the problem type."
+          type: [string]
+          maxLength: 200
+          format: string
+          example: "Bad Request"
+        status:
+          description: "The HTTP status code applicable to this problem, expressed as a string value."
+          type: [integer]
+          maxLength: 3
+          minimum: 100
+          maximum: 500
+          format: int32
+          example: 400
+        detail:
+          description: "A human-readable explanation specific to this occurrence of the problem."
+          type: [string]
+          maxLength: 500
+          format: string
+          example: "The URL supplied was not valid or could not be processed correctly."
+        instance:
+          description: |
+            A URI reference that identifies the specific occurrence of the problem. 
+            It may or may not yield further information if dereferenced.
+          type: [string]
+          maxLength: 500
+          format: string
+          example: "https://quobix.com/vacuum/tube/error/400"
+
