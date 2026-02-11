@@ -26,31 +26,53 @@ func (sms *StaticMockService) getBodyFromHttpRequest(request *http.Request) inte
 	// Restore request.Body so it can be read again
 	request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 
-	var bodyJsonObj interface{}
-
 	if len(bodyBytes) == 0 {
-		return bodyJsonObj
+		return nil
 	}
 
+	contentType := request.Header.Get("Content-Type")
+
+	// Handle application/x-www-form-urlencoded
+	if contentType == "application/x-www-form-urlencoded" {
+		parsedForm, err := url.ParseQuery(string(bodyBytes))
+		if err != nil {
+			// If parsing fails, return as raw string
+			return string(bodyBytes)
+		}
+		// Convert url.Values to map[string]interface{} for consistent handling
+		formMap := make(map[string]interface{})
+		for key, values := range parsedForm {
+			if len(values) == 1 {
+				formMap[key] = values[0]
+			} else {
+				formMap[key] = values
+			}
+		}
+		return formMap
+	}
+
+	// Handle JSON (application/json or default)
+	var bodyJsonObj interface{}
 	err = json.Unmarshal(bodyBytes, &bodyJsonObj)
 	if err != nil {
-		sms.logger.Error("Error decoding JSON of incoming request. JSON => \n%s", string(bodyBytes), err)
-		panic(err)
+		// Body is not JSON, return as raw string
+		return string(bodyBytes)
 	}
 
 	return bodyJsonObj
 }
 
-// compareJsonBody compares the JSON body of the incoming request with the mock definition
-func (sms *StaticMockService) compareJsonBody(mock StaticMockDefinitionRequest, request *http.Request) bool {
-	// Mock body is JSON but incoming body is not JSON
-	if request.Header.Get("Content-Type") != "application/json" {
+// compareStructuredBody compares the structured body (JSON or form-urlencoded) of the incoming request with the mock definition
+func (sms *StaticMockService) compareStructuredBody(mock StaticMockDefinitionRequest, request *http.Request) bool {
+	contentType := request.Header.Get("Content-Type")
+	// Only support JSON and form-urlencoded for structured body comparison
+	if contentType != "application/json" && contentType != "application/x-www-form-urlencoded" {
 		return false
 	}
 
 	incomingBody := sms.getBodyFromHttpRequest(request)
 
-	// Check if the JSON object or array is a subset of the incoming body
+	// Check if the mock body is a subset of the incoming body
 	return shared.IsSubset(mock.Body, incomingBody)
 }
 
@@ -108,11 +130,11 @@ func (sms *StaticMockService) compareBody(mock StaticMockDefinitionRequest, inco
 			return false
 		}
 	case map[string]interface{}: // Case JSON Object
-		if !sms.compareJsonBody(mock, incoming) {
+		if !sms.compareStructuredBody(mock, incoming) {
 			return false
 		}
 	case []interface{}: // Case JSON Array
-		if !sms.compareJsonBody(mock, incoming) {
+		if !sms.compareStructuredBody(mock, incoming) {
 			return false
 		}
 	default:
