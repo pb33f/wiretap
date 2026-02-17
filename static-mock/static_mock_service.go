@@ -18,10 +18,12 @@ import (
 )
 
 const (
-	StaticMockServiceChan = "static-mock-service"
-	IncomingHttpRequest   = "incoming-http-request"
-	MockDefinitionsPath   = "/mock-definitions"
-	MockBodyJsonsPath     = "/body-jsons/"
+	StaticMockServiceChan      = "static-mock-service"
+	IncomingHttpRequest        = "incoming-http-request"
+	MockDefinitionsPath        = "/mock-definitions"
+	MockBodyJsonsPath          = "/body-jsons/"
+	ContentTypeFormUrlEncoded  = "application/x-www-form-urlencoded"
+	ContentTypeJson            = "application/json"
 )
 
 type StaticMockDefinitionRequest struct {

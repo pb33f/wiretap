@@ -33,7 +33,15 @@ func (sms *StaticMockService) getBodyFromMockDefinition(matchedMockDefinition St
 		Host:    request.Host,
 	}
 	if (request.Body != nil) && (request.Body != http.NoBody) {
-		requestObjectWithIncomingRequestValues.Body = sms.getBodyFromHttpRequest(request)
+		contentType := request.Header.Get("Content-Type")
+		switch contentType {
+		case ContentTypeFormUrlEncoded:
+			requestObjectWithIncomingRequestValues.Body = sms.getFormBodyFromHttpRequest(request)
+		case ContentTypeJson:
+			requestObjectWithIncomingRequestValues.Body = sms.getJsonBodyFromHttpRequest(request)
+		default:
+			sms.logger.Error("Unsupported Content-Type: %s", contentType)
+		}
 	}
 	queryParams := make(map[string]any)
 	if request.URL.Query() != nil {
