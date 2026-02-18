@@ -154,7 +154,7 @@ func (sms *StaticMockService) compareBody(mock StaticMockDefinitionRequest, inco
 				return false
 			}
 		default:
-			sms.logger.Error("Unsupported Content-Type: %s", contentType)
+			sms.logger.Error("Unsupported Content-Type", "contentType", contentType)
 			return false
 		}
 	case []interface{}: // Case JSON Array
