@@ -40,7 +40,7 @@ func (sms *StaticMockService) getBodyFromMockDefinition(matchedMockDefinition St
 		case ContentTypeJson:
 			requestObjectWithIncomingRequestValues.Body = sms.getJsonBodyFromHttpRequest(request)
 		default:
-			sms.logger.Error("Unsupported Content-Type: %s", contentType)
+			sms.logger.Error("Unsupported Content-Type", "contentType", contentType)
 		}
 	}
 	queryParams := make(map[string]any)
