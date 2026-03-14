@@ -51,10 +51,10 @@ jobs:
         with:
           node-version: ${{matrix.node-version}}
 
-      - name: Install yarn
-        run: yarn install
+      - name: Install dependencies
+        run: npm install
         working-directory: ui
 
       - name: Build
-        run: yarn build
+        run: npm run build
         working-directory: ui

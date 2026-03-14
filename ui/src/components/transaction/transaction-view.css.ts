@@ -34,7 +34,7 @@ export default css`
   }
   
   sl-tab-panel::part(base) {
-    padding: 8px 0 0 0;
+    padding: 8px 0 0 20px;
   }
   
   h3 {
@@ -173,7 +173,6 @@ export default css`
 
   .request-destination {
     padding: 10px 10px 10px 20px;
-    margin-bottom: 8px;
     border-bottom: 1px dashed var(--secondary-color-lowalpha);
     font-size: 0.85rem;
   }
