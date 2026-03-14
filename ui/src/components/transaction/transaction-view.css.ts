@@ -33,6 +33,10 @@ export default css`
     height: 100%;
   }
   
+  sl-tab-panel::part(base) {
+    padding: 8px 0 0 0;
+  }
+  
   h3 {
     margin-top: 5px;
     margin-bottom: 15px;
@@ -166,5 +170,23 @@ export default css`
   .response-code {
     font-size: 0.8rem;
   }
-  
+
+  .request-destination {
+    padding: 10px 10px 10px 20px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed var(--secondary-color-lowalpha);
+    font-size: 0.85rem;
+  }
+
+  .destination-label {
+    color: var(--dark-font-color);
+    margin-right: 8px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+  }
+
+  .destination-value {
+    color: var(--secondary-color);
+    word-break: break-all;
+  }
 `
