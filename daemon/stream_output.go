@@ -4,7 +4,6 @@
 package daemon
 
 import (
-	"fmt"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
@@ -27,33 +26,18 @@ func (ws *WiretapService) listenForValidationErrors() {
 
 	go func() {
 		defer f.Close()
-		if _, e := f.WriteString("[]"); e != nil {
-			pterm.Error.Println("cannot write violation to stream: " + err.Error())
-		}
 		for {
 			select {
 			case violations := <-ws.streamChan:
-
 				if ws.stream {
 					lock.Lock()
-
-					fi, _ := f.Stat()
-					_ = os.Truncate(ws.reportFile, fi.Size()-1)
-					if fi.Size() > 2 {
-						_, _ = f.WriteString(",\n")
-					}
 					ws.streamViolations = append(ws.streamViolations, violations...)
-
-					for i, v := range violations {
+					for _, v := range violations {
 						bytes, _ := json.Marshal(v)
-						if _, e := f.WriteString(fmt.Sprintf("%s", bytes)); e != nil {
-							pterm.Error.Println("cannot write violation to stream: " + err.Error())
-						}
-						if i > len(violations)-1 {
-							_, _ = f.WriteString(",\n")
+						if _, e := f.WriteString(string(bytes) + "\n"); e != nil {
+							pterm.Error.Println("cannot write violation to stream: " + e.Error())
 						}
 					}
-					_, _ = f.WriteString("]")
 					lock.Unlock()
 				}
 			}

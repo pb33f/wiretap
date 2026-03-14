@@ -772,7 +772,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringP("har", "z", "", "Load a HAR file instead of sniffing traffic")
 	rootCmd.Flags().BoolP("har-validate", "g", false, "Load a HAR file instead of sniffing traffic, and validate against the OpenAPI specification (requires -s)")
 	rootCmd.Flags().StringArrayP("har-allow", "j", nil, "Add a path to the HAR allow list, can use arg multiple times")
-	rootCmd.Flags().StringP("report-filename", "f", "wiretap-report.json", "Filename for any headless report generation output")
+	rootCmd.Flags().StringP("report-filename", "f", "wiretap-report.jsonl", "Filename for any headless report generation output")
 	rootCmd.Flags().BoolP("stream-report", "a", false, "Stream violations to report JSON file as they occur (headless mode)")
 	rootCmd.Flags().BoolP("strict-redirect-location", "r", false, "Rewrite the redirect `Location` header on redirect responses to wiretap's API Gateway Host")
 	rootCmd.Flags().Bool("strict-mode", false, "Enable strict validation to detect undeclared properties, parameters, headers, and cookies")
