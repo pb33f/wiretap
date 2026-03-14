@@ -216,6 +216,11 @@ export class HttpTransactionViewComponent extends LitElement {
             }
 
             const tabGroup: TemplateResult = html`
+                ${req.url ? html`
+                <div class="request-destination">
+                    <span class="destination-label">Destination</span>
+                    <span class="destination-value">${req.url}</span>
+                </div>` : null}
                 <sl-tab-group id="tabs" @sl-tab-show=${this.tabSelected}>
                     <sl-tab slot="nav" panel="violations" id="violation-tab" class="tab">${violations}</sl-tab>
                     <sl-tab slot="nav" panel="request" class="tab">Request</sl-tab>

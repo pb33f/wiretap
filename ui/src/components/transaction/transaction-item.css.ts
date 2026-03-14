@@ -123,7 +123,13 @@ export default css`
     font-size: 15px;
     color: var(--font-color-sub2);
   }
-  
 
-  
+  .destination-url {
+    font-size: 11px;
+    padding-left: 86px; 
+    color: var(--font-color-sub2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 `

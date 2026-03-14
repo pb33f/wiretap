@@ -148,6 +148,16 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 		}
 	}
 
+	// If newUrl has no host (e.g. no path rewriting configured), fill in the
+	// destination scheme/host from the cloned request so the UI can display
+	// the full destination URL.
+	if newUrl.Host == "" && newReq.URL != nil && newReq.URL.Host != "" {
+		destUrl := *newUrl
+		destUrl.Scheme = newReq.URL.Scheme
+		destUrl.Host = newReq.URL.Host
+		newUrl = &destUrl
+	}
+
 	return &HttpTransaction{
 		Id: build.ID.String(),
 		Request: &HttpRequest{

@@ -147,7 +147,7 @@ export class HttpTransactionItemComponent extends LitElement {
                 <header>
                    <pb33f-http-method method="${req.method}"></pb33f-http-method>
                     ${decodeURI(req.path)}
-              
+                    ${req.url ? html`<div class="destination-url">\u2192 ${req.url}</div>` : ''}
                 </header>
                 ${delay}
                 <div class="request-time">
