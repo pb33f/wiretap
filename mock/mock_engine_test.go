@@ -518,7 +518,7 @@ components:
 	buf := bytes.NewBuffer([]byte(payload))
 	request, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/auth", buf)
 	request.Header.Set(helpers.ContentTypeHeader, "application/json")
-	request.Header.Set(helpers.AuthorizationHeader, "the science man")
+	request.Header.Set(helpers.AuthorizationHeader, "Basic dGVzdFVzZXI6dGVzdFBhc3M=")
 
 	b, status, err := me.GenerateResponse(request)
 	assert.NoError(t, err)
