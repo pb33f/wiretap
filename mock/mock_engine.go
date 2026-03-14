@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/pb33f/libopenapi-validator/config"
 	libopenapierrs "github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/libopenapi-validator/helpers"
 	"github.com/pb33f/libopenapi-validator/paths"
@@ -26,7 +27,7 @@ type ResponseMockEngine struct {
 	validator      validation.HttpValidator
 	mockEngine     *renderer.MockGenerator
 	pretty         bool
-	regexCache     *sync.Map
+	validationOpts *config.ValidationOptions
 	hardValidation bool // when true, reject requests with validation errors
 }
 
@@ -45,7 +46,7 @@ func NewMockEngine(document *v3.Document, pretty, useAllPropertyExamples bool) *
 		validator:      validation.NewHttpValidator(document),
 		mockEngine:     me,
 		pretty:         pretty,
-		regexCache:     &sync.Map{},
+		validationOpts: config.NewValidationOptions(config.WithRegexCache(&sync.Map{})),
 		hardValidation: true, // default to rejecting on validation errors for backward compatibility
 	}
 }
@@ -67,7 +68,7 @@ func NewStrictMockEngine(document *v3.Document, pretty, useAllPropertyExamples b
 		validator:      validation.NewStrictHttpValidator(document),
 		mockEngine:     me,
 		pretty:         pretty,
-		regexCache:     &sync.Map{},
+		validationOpts: config.NewValidationOptions(config.WithRegexCache(&sync.Map{})),
 		hardValidation: true, // default to rejecting on validation errors for backward compatibility
 	}
 }
@@ -218,7 +219,7 @@ func (rme *ResponseMockEngine) extractMediaTypeHeader(request *http.Request) str
 }
 
 func (rme *ResponseMockEngine) findPath(request *http.Request) (*v3.PathItem, error) {
-	path, errs, _ := paths.FindPath(request, rme.doc, rme.regexCache)
+	path, errs, _ := paths.FindPath(request, rme.doc, rme.validationOpts)
 	return path, rme.packErrors(errs)
 }
 
