@@ -28,7 +28,7 @@
     "monaco-editor": "^0.38.0",
     "prismjs": "^1.29.0"
   },
-  "resolutions": {
+  "overrides": {
     "postcss": ">=8.4.31",
     "semver": ">=7.5.2",
     "nanoid": ">=3.3.8",
