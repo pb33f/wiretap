@@ -17,7 +17,7 @@ import (
 )
 
 func (ws *WiretapService) handleMockRequest(
-	request *model.Request, config *shared.WiretapConfiguration, newReq *http.Request) {
+	request *model.Request, config *shared.WiretapConfiguration, newReq *http.Request, txnConfig ...HttpTransactionConfig) {
 	// dip out early if we're in mock mode.
 	delay := configModel.FindPathDelay(request.HttpRequest.URL.Path, config)
 	if delay > 0 {
@@ -41,7 +41,7 @@ func (ws *WiretapService) handleMockRequest(
 	}
 
 	// validate http request.
-	ws.ValidateRequest(request, newReq)
+	ws.ValidateRequest(request, newReq, txnConfig...)
 
 	// sleep for a few ms, this prevents responses from being sent out of order.
 	time.Sleep(5 * time.Millisecond)
@@ -77,7 +77,7 @@ func (ws *WiretapService) handleMockRequest(
 
 		// validate response async
 		resp.StatusCode = mockStatus
-		go ws.broadcastResponse(request, resp)
+		go ws.broadcastResponse(request, BuildResponse(request, resp))
 		return
 	}
 
@@ -90,13 +90,13 @@ func (ws *WiretapService) handleMockRequest(
 
 		// validate response async
 		resp.StatusCode = mockStatus
-		go ws.broadcastResponse(request, resp)
+		go ws.broadcastResponse(request, BuildResponse(request, resp))
 		return
 	}
 
 	// validate response async
 	resp.StatusCode = mockStatus
-	go ws.broadcastResponse(request, resp)
+	go ws.broadcastResponse(request, BuildResponse(request, resp))
 
 	// if the mock is empty
 	request.HttpResponseWriter.WriteHeader(mockStatus)

@@ -6,16 +6,16 @@ package har
 import (
 	"fmt"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/pb33f/harhar"
+	harModel "github.com/pb33f/harific/motor/model"
 )
 
-func BuildHAR(har []byte) (*harhar.HAR, error) {
+func BuildHAR(har []byte) (*harModel.HAR, error) {
 	if har == nil {
 		return nil, fmt.Errorf("HAR bytes are empty")
 	}
 
 	var json = jsoniter.ConfigCompatibleWithStandardLibrary
-	var harFile harhar.HAR
+	var harFile harModel.HAR
 
 	err := json.Unmarshal(har, &harFile)
 

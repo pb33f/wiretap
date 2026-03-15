@@ -5,7 +5,6 @@ package daemon
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -23,44 +22,42 @@ type HttpTransactionConfig struct {
 	NewRequest        *http.Request
 	ID                *uuid.UUID
 	TransactionConfig *shared.WiretapConfiguration
+	DropHeaders       []string
+	InjectHeaders     map[string]string
+	Auth              string
+	BasePath          string
+	BodyBytes         []byte
 }
 
 func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 
-	var dropHeaders []string
-	var injectHeaders map[string]string
-
 	cf := build.TransactionConfig
 
-	// add global headers with injection.
-	if cf.Headers != nil {
-		dropHeaders = cf.Headers.DropHeaders
-		injectHeaders = cf.Headers.InjectHeaders
-	}
+	dropHeaders := build.DropHeaders
+	injectHeaders := build.InjectHeaders
+	auth := build.Auth
+	basePath := build.BasePath
 
-	// now add path specific headers.
-	matchedPaths := config.FindPaths(build.OriginalRequest.URL.Path, cf)
-	auth := ""
-
-	if len(matchedPaths) > 0 {
-		var matchedPath *shared.WiretapPathConfig
-
-		// First check if we have a path matching our RewriteId
-		matchedPath = config.FindPathWithRewriteId(matchedPaths, build.NewRequest)
-
-		// Get the first matched value in the list
-		if matchedPath == nil {
-			matchedPath = matchedPaths[0]
+	// If pre-resolved headers were not provided, resolve them now (backward compat).
+	// Uses copy-on-write to avoid mutating shared config state.
+	if dropHeaders == nil && injectHeaders == nil {
+		if cf.Headers != nil {
+			dropHeaders = append([]string(nil), cf.Headers.DropHeaders...)
+			injectHeaders = mergeInjectHeaders(nil, cf.Headers.InjectHeaders)
 		}
 
-		auth = matchedPath.Auth
-		if matchedPath.Headers != nil {
-			dropHeaders = append(dropHeaders, matchedPath.Headers.DropHeaders...)
-			newInjectHeaders := matchedPath.Headers.InjectHeaders
-			for key := range injectHeaders {
-				newInjectHeaders[key] = injectHeaders[key]
+		matchedPaths := config.FindPaths(build.OriginalRequest.URL.Path, cf)
+		if len(matchedPaths) > 0 {
+			var matchedPath *shared.WiretapPathConfig
+			matchedPath = config.FindPathWithRewriteId(matchedPaths, build.NewRequest)
+			if matchedPath == nil {
+				matchedPath = matchedPaths[0]
 			}
-			injectHeaders = newInjectHeaders
+			auth = matchedPath.Auth
+			if matchedPath.Headers != nil {
+				dropHeaders = append(dropHeaders, matchedPath.Headers.DropHeaders...)
+				injectHeaders = mergeInjectHeaders(matchedPath.Headers.InjectHeaders, injectHeaders)
+			}
 		}
 	}
 
@@ -68,10 +65,12 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 		Request:       build.NewRequest,
 		Protocol:      cf.RedirectProtocol,
 		Host:          cf.RedirectHost,
+		BasePath:      basePath,
 		Port:          cf.RedirectPort,
 		DropHeaders:   dropHeaders,
 		Auth:          auth,
 		InjectHeaders: injectHeaders,
+		BodyBytes:     build.BodyBytes,
 	})
 
 	var requestBody []byte
@@ -184,20 +183,26 @@ func ReconstructURL(r *http.Request, protocol, host, basepath string, port strin
 	if protocol == "" {
 		protocol = "http"
 	}
-	url := fmt.Sprintf("%s://%s", protocol, host)
+	var b strings.Builder
+	b.Grow(len(protocol) + 3 + len(host) + 1 + len(port) + len(basepath) + len(r.URL.Path) + 1 + len(r.URL.RawQuery))
+	b.WriteString(protocol)
+	b.WriteString("://")
+	b.WriteString(host)
 	if port != "" {
-		url += fmt.Sprintf(":%s", port)
+		b.WriteByte(':')
+		b.WriteString(port)
 	}
 	if basepath != "" {
-		url += basepath
+		b.WriteString(basepath)
 	}
 	if r.URL.Path != "" {
-		url += r.URL.Path
+		b.WriteString(r.URL.Path)
 	}
 	if r.URL.RawQuery != "" {
-		url += fmt.Sprintf("?%s", r.URL.RawQuery)
+		b.WriteByte('?')
+		b.WriteString(r.URL.RawQuery)
 	}
-	return url
+	return b.String()
 }
 
 func ExtractHeaders(resp *http.Response) map[string][]string {

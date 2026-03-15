@@ -4,7 +4,7 @@
 package har
 
 import (
-	"github.com/pb33f/harhar"
+	harModel "github.com/pb33f/harific/motor/model"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi-validator/paths"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
@@ -15,8 +15,8 @@ import (
 )
 
 type Transaction struct {
-	Request  *harhar.Request
-	Response *harhar.Response
+	Request  *harModel.Request
+	Response *harModel.Response
 }
 
 type harValidator struct {
@@ -25,7 +25,7 @@ type harValidator struct {
 	validator    validation.HttpValidator
 }
 
-func ValidateHAR(har *harhar.HAR, apiDocumentModels []shared.ApiDocumentModel, configFile *shared.WiretapConfiguration) []*shared.WiretapValidationError {
+func ValidateHAR(har *harModel.HAR, apiDocumentModels []shared.ApiDocumentModel, configFile *shared.WiretapConfiguration) []*shared.WiretapValidationError {
 
 	var validationErrors []*shared.WiretapValidationError
 	validators := make([]harValidator, 0)
@@ -40,7 +40,7 @@ func ValidateHAR(har *harhar.HAR, apiDocumentModels []shared.ApiDocumentModel, c
 
 	for _, entry := range har.Log.Entries {
 
-		httpRequest, err := harhar.ConvertRequestIntoHttpRequest(entry.Request)
+		httpRequest, err := harModel.ConvertRequestIntoHttpRequest(entry.Request)
 
 		if err != nil {
 			pterm.Error.Printf("error converting request: %s", err.Error())
@@ -92,7 +92,7 @@ func ValidateHAR(har *harhar.HAR, apiDocumentModels []shared.ApiDocumentModel, c
 						configFile.Logger.Debug("[HAR] valid request", "path", httpRequest.URL.Path)
 					}
 
-					httpResponse := harhar.ConvertResponseIntoHttpResponse(entry.Response)
+					httpResponse := harModel.ConvertResponseIntoHttpResponse(entry.Response)
 					validResponse, responseValidationErrors := httpValidator.ValidateHttpResponse(httpRequest, httpResponse)
 					if !validResponse {
 						validationErrors = append(validationErrors, shared.ConvertValidationErrors(validatorSpec, responseValidationErrors)...)

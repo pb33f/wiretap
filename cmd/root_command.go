@@ -11,7 +11,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pb33f/harhar"
+	harModel "github.com/pb33f/harific/motor/model"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pb33f/wiretap/har"
@@ -522,7 +522,7 @@ var (
 			}
 
 			var harBytes []byte
-			var harFile *harhar.HAR
+			var harFile *harModel.HAR
 
 			// check if we're using a HAR file
 			if config.HAR != "" {

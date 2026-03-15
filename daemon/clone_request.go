@@ -25,12 +25,18 @@ type CloneRequest struct {
 	InjectHeaders map[string]string
 	Auth          string
 	Variables     map[string]*shared.CompiledVariable
+	BodyBytes     []byte
 }
 
 func CloneExistingRequest(request CloneRequest) *http.Request {
-	// sniff and replace body.
-	b, _ := io.ReadAll(request.Request.Body)
-	_ = request.Request.Body.Close()
+	// use pre-read body bytes if available, otherwise read from the request body
+	var b []byte
+	if request.BodyBytes != nil {
+		b = request.BodyBytes
+	} else {
+		b, _ = io.ReadAll(request.Request.Body)
+		_ = request.Request.Body.Close()
+	}
 	request.Request.Body = io.NopCloser(bytes.NewBuffer(b))
 
 	var newURL string
@@ -46,15 +52,15 @@ func CloneExistingRequest(request CloneRequest) *http.Request {
 		return nil
 	}
 
+	// build set of lowercased drop header names for O(1) lookup
+	dropSet := make(map[string]struct{}, len(request.DropHeaders))
+	for _, h := range request.DropHeaders {
+		dropSet[strings.ToLower(h)] = struct{}{}
+	}
+
 	// copy headers, drop those that are specified.
 	for k, v := range request.Request.Header {
-		skip := false
-		for h := range request.DropHeaders {
-			if strings.EqualFold(request.DropHeaders[h], k) {
-				skip = true
-			}
-		}
-		if !skip {
+		if _, drop := dropSet[strings.ToLower(k)]; !drop {
 			newReq.Header.Set(k, v[0])
 		}
 	}

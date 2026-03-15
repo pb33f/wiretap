@@ -17,7 +17,7 @@ import (
 	"go.yaml.in/yaml/v4"
 
 	"github.com/gobwas/glob"
-	"github.com/pb33f/harhar"
+	harModel "github.com/pb33f/harific/motor/model"
 )
 
 type ApiDocument struct {
@@ -75,7 +75,7 @@ type WiretapConfiguration struct {
 	StrictRedirectLocation      bool                                        `json:"strictRedirectLocation,omitempty" yaml:"strictRedirectLocation,omitempty"`
 	StrictMode                  bool                                        `json:"strictMode,omitempty" yaml:"strictMode,omitempty"`
 	IgnorePathRewrite           []*IgnoreRewriteConfig                      `json:"ignorePathRewrite,omitempty" yaml:"ignorePathRewrite,omitempty"`
-	HARFile                     *harhar.HAR                                 `json:"-" yaml:"-"`
+	HARFile                     *harModel.HAR                                 `json:"-" yaml:"-"`
 	CompiledMockModeList        []glob.Glob                                 `json:"-" yaml:"-"`
 	CompiledPathDelays          map[string]*CompiledPathDelay               `json:"-" yaml:"-"`
 	CompiledVariables           map[string]*CompiledVariable                `json:"-" yaml:"-"`

@@ -4,7 +4,6 @@
 package daemon
 
 import (
-	"crypto/tls"
 	"net/http"
 	"net/url"
 
@@ -19,11 +18,9 @@ type wiretapTransport struct {
 	originalTransport     http.RoundTripper
 }
 
-func newWiretapTransport() *wiretapTransport {
-	// Disable ssl cert checks
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+func (ws *WiretapService) newWiretapTransport() *wiretapTransport {
 	return &wiretapTransport{
-		originalTransport: http.DefaultTransport,
+		originalTransport: ws.transport,
 	}
 }
 
@@ -38,15 +35,18 @@ func (c *wiretapTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
+func (ws *WiretapService) callAPI(req *http.Request, wiretapConfig ...*shared.WiretapConfiguration) (*http.Response, error) {
 
-	configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
-
-	// create a new request from the original request, but replace the path
-	wiretapConfig := configStore.(*shared.WiretapConfiguration)
+	var cfg *shared.WiretapConfiguration
+	if len(wiretapConfig) > 0 && wiretapConfig[0] != nil {
+		cfg = wiretapConfig[0]
+	} else {
+		configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
+		cfg = configStore.(*shared.WiretapConfiguration)
+	}
 
 	// lookup path and determine if we need to redirect it.
-	replaced := config.RewritePath(req.URL.Path, req, wiretapConfig)
+	replaced := config.RewritePath(req.URL.Path, req, cfg)
 	if replaced.RewrittenPath != req.URL.Path {
 		newUrl, _ := url.Parse(replaced.RewrittenPath)
 		if req.URL.RawQuery != "" {
@@ -61,11 +61,11 @@ func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 		req.URL = newUrl
 	}
 
-	tr := newWiretapTransport()
+	tr := ws.newWiretapTransport()
 	var client *http.Client
 
 	// create a client based on if wiretap should redirect on the path or not
-	if config.IgnoreRedirectOnPath(req.URL.Path, wiretapConfig) && !config.PathRedirectAllowListed(req.URL.Path, wiretapConfig) {
+	if config.IgnoreRedirectOnPath(req.URL.Path, cfg) && !config.PathRedirectAllowListed(req.URL.Path, cfg) {
 		client = &http.Client{
 			Transport: tr,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -81,10 +81,10 @@ func (ws *WiretapService) callAPI(req *http.Request) (*http.Response, error) {
 		// retain original referer for logging
 		req.Header.Set("X-Original-Referer", req.Header.Get("Referer"))
 		req.Header.Set("Referer", ReconstructURL(req,
-			wiretapConfig.RedirectProtocol,
-			wiretapConfig.RedirectHost,
-			wiretapConfig.RedirectBasePath,
-			wiretapConfig.RedirectPort))
+			cfg.RedirectProtocol,
+			cfg.RedirectHost,
+			cfg.RedirectBasePath,
+			cfg.RedirectPort))
 	}
 	resp, err := client.Do(req)
 
