@@ -5,8 +5,8 @@ go 1.25.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/pb33f/harhar v0.0.0-20250707194835-e48f2c16e9c3
-	github.com/pb33f/libopenapi v0.34.2
-	github.com/pb33f/libopenapi-validator v0.13.0
+	github.com/pb33f/libopenapi v0.34.3
+	github.com/pb33f/libopenapi-validator v0.13.2
 	github.com/pb33f/ranch v0.8.0
 	github.com/pterm/pterm v0.12.83
 )
@@ -24,8 +24,8 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0
-	github.com/go-openapi/jsonpointer v0.22.4 // indirect
-	github.com/go-openapi/swag/jsonname v0.25.4 // indirect
+	github.com/go-openapi/jsonpointer v0.22.5 // indirect
+	github.com/go-openapi/swag/jsonname v0.25.5 // indirect
 	github.com/go-stomp/stomp/v3 v3.1.3 // indirect
 	github.com/gobwas/glob v0.2.3
 	github.com/gookit/color v1.6.0 // indirect
@@ -64,11 +64,11 @@ require (
 	go.uber.org/multierr v1.10.0 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.4
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
-	golang.org/x/net v0.49.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/net v0.50.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/term v0.40.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

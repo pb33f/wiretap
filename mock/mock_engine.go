@@ -401,6 +401,17 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 		), 422, mockErr
 	}
 
+	// The mock generator always JSON-encodes values (including scalars), which wraps
+	// plain strings in quotes and escapes HTML characters. For non-JSON content types
+	// (e.g. text/html, text/plain), unwrap the JSON string encoding to return raw content.
+	mediaTypeString := rme.extractMediaTypeHeader(request)
+	if !strings.Contains(mediaTypeString, "json") && len(mock) > 0 {
+		var raw string
+		if err := json.Unmarshal(mock, &raw); err == nil {
+			mock = []byte(raw)
+		}
+	}
+
 	if len(mock) == 0 {
 		return rme.buildError(
 			200,
