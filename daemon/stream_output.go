@@ -5,7 +5,6 @@ package daemon
 
 import (
 	jsoniter "github.com/json-iterator/go"
-	"github.com/pb33f/wiretap/shared"
 	"github.com/pterm/pterm"
 	"os"
 	"sync"
@@ -13,7 +12,6 @@ import (
 
 func (ws *WiretapService) listenForValidationErrors() {
 
-	ws.streamViolations = []*shared.WiretapValidationError{}
 	var lock sync.RWMutex
 	json := jsoniter.ConfigCompatibleWithStandardLibrary
 
@@ -31,7 +29,6 @@ func (ws *WiretapService) listenForValidationErrors() {
 			case violations := <-ws.streamChan:
 				if ws.stream {
 					lock.Lock()
-					ws.streamViolations = append(ws.streamViolations, violations...)
 					for _, v := range violations {
 						bytes, _ := json.Marshal(v)
 						if _, e := f.WriteString(string(bytes) + "\n"); e != nil {

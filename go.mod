@@ -4,9 +4,9 @@ go 1.25.0
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/pb33f/harhar v0.0.0-20250707194835-e48f2c16e9c3
+	github.com/pb33f/harific v0.0.5
 	github.com/pb33f/libopenapi v0.34.3
-	github.com/pb33f/libopenapi-validator v0.13.2
+	github.com/pb33f/libopenapi-validator v0.13.3
 	github.com/pb33f/ranch v0.8.0
 	github.com/pterm/pterm v0.12.83
 )

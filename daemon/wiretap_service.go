@@ -4,6 +4,7 @@
 package daemon
 
 import (
+	"crypto/tls"
 	"net/http"
 	"time"
 
@@ -43,9 +44,8 @@ type WiretapService struct {
 	fs                 http.Handler
 	documentValidators []documentValidator
 	stream             bool
-	streamChan         chan []*shared.WiretapValidationError
-	streamViolations   []*shared.WiretapValidationError
-	reportFile         string
+	streamChan   chan []*shared.WiretapValidationError
+	reportFile   string
 	StaticMockDir      string
 }
 
@@ -54,10 +54,10 @@ func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapCon
 	controlsStore := storeManager.CreateStore(controls.ControlServiceChan)
 	transactionStore := storeManager.CreateStore(WiretapServiceChan)
 
-	tr := &http.Transport{
-		MaxIdleConns:    20,
-		IdleConnTimeout: 30 * time.Second,
-	}
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.MaxIdleConns = 20
+	tr.IdleConnTimeout = 30 * time.Second
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	wts := &WiretapService{
 		stream:           config.StreamReport,

@@ -74,3 +74,40 @@ func BuildResponse(r *model.Request, response *http.Response) *HttpTransaction {
 		},
 	}
 }
+
+// BuildResponseFromBytes builds a response transaction using pre-read body bytes,
+// avoiding an additional io.ReadAll on the response body.
+func BuildResponseFromBytes(r *model.Request, response *http.Response, body []byte) *HttpTransaction {
+	code := 500
+	headers := make(map[string]any)
+	cookies := make(map[string]*HttpCookie)
+
+	if response != nil {
+		code = response.StatusCode
+		for k, v := range response.Header {
+			headers[k] = v[0]
+		}
+
+		for _, c := range response.Cookies() {
+			cookies[c.Name] = &HttpCookie{
+				Value:    c.Value,
+				Path:     c.Path,
+				Domain:   c.Domain,
+				Expires:  c.RawExpires,
+				MaxAge:   c.MaxAge,
+				Secure:   c.Secure,
+				HttpOnly: c.HttpOnly,
+			}
+		}
+	}
+	return &HttpTransaction{
+		Id: r.Id.String(),
+		Response: &HttpResponse{
+			Timestamp:  time.Now().UnixMilli(),
+			Headers:    headers,
+			StatusCode: code,
+			Body:       string(body),
+			Cookies:    cookies,
+		},
+	}
+}

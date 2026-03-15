@@ -7,7 +7,7 @@ package har
 
 import (
 	"github.com/google/uuid"
-	"github.com/pb33f/harhar"
+	harModel "github.com/pb33f/harific/motor/model"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
@@ -54,10 +54,10 @@ func (hs *HARService) startTheHAR(request *model.Request) {
 	if hs.harStore != nil {
 		har := hs.harStore.GetValue(shared.HARKey)
 		if har != nil {
-			harFile := har.(*harhar.HAR)
+			harFile := har.(*harModel.HAR)
 			if harFile != nil {
 				for _, entry := range harFile.Log.Entries {
-					httpRequest, err := harhar.ConvertRequestIntoHttpRequest(entry.Request)
+					httpRequest, err := harModel.ConvertRequestIntoHttpRequest(entry.Request)
 					if err != nil {
 						hs.logger.Error("error converting request", "error", err.Error())
 						continue
@@ -69,7 +69,7 @@ func (hs *HARService) startTheHAR(request *model.Request) {
 
 					time.Sleep(10 * time.Millisecond)
 
-					httpResponse := harhar.ConvertResponseIntoHttpResponse(entry.Response)
+					httpResponse := harModel.ConvertResponseIntoHttpResponse(entry.Response)
 					hs.wiretapService.ValidateResponse(request, httpResponse)
 				}
 			}

@@ -4,6 +4,7 @@
 package daemon
 
 import (
+	"bytes"
 	"crypto/tls"
 	_ "embed"
 	"fmt"
@@ -24,6 +25,8 @@ import (
 
 //go:embed templates/socket-include.html
 var staticTemplate string
+
+var parsedStaticTemplate = template.Must(template.New("index").Parse(staticTemplate))
 
 type staticTemplateModel struct {
 	OriginalContent string
@@ -62,7 +65,6 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 				tmpFile, _ := os.CreateTemp("", "index.html")
 				defer os.Remove(tmpFile.Name())
 
-				tmpl, _ := template.New("index").Parse(staticTemplate)
 				indexBytes, _ := os.ReadFile(fp)
 
 				// prep a model
@@ -72,7 +74,7 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 				}
 
 				// execute the new template
-				_ = tmpl.Execute(tmpFile, m)
+				_ = parsedStaticTemplate.Execute(tmpFile, m)
 
 				ws.config.Logger.Info("[wiretap] static file request", "url", request.HttpRequest.URL.String(), "code", 200)
 
@@ -104,6 +106,11 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 
 	dropHeaders, injectHeaders, auth := ws.getHeadersAndAuth(config, request)
 
+	// read body once — reused across both clones and transaction building
+	bodyBytes, _ := io.ReadAll(request.HttpRequest.Body)
+	request.HttpRequest.Body.Close()
+	request.HttpRequest.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	newReq := CloneExistingRequest(CloneRequest{
 		Request:       request.HttpRequest,
 		Protocol:      config.RedirectProtocol,
@@ -112,7 +119,7 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		DropHeaders:   dropHeaders,
 		InjectHeaders: injectHeaders,
 		Auth:          auth,
-		Variables:     config.CompiledVariables,
+		BodyBytes:     bodyBytes,
 	})
 
 	apiRequest := CloneExistingRequest(CloneRequest{
@@ -124,7 +131,7 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		DropHeaders:   dropHeaders,
 		InjectHeaders: injectHeaders,
 		Auth:          auth,
-		Variables:     config.CompiledVariables,
+		BodyBytes:     bodyBytes,
 	})
 
 	if newReq == nil || apiRequest == nil {
@@ -137,24 +144,40 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 
 	ws.config.Logger.Info("[wiretap] handling API request", "url", request.HttpRequest.URL.String())
 
+	// cache hard error check — called multiple times per request
+	isHardError := configModel.IsHardErrorsSet(apiRequest.URL.Path, config)
+
+	// pre-build transaction config with resolved headers/auth to avoid re-resolving in BuildHttpTransaction
+	txnConfig := HttpTransactionConfig{
+		OriginalRequest:   request.HttpRequest,
+		NewRequest:        newReq,
+		ID:                request.Id,
+		TransactionConfig: config,
+		DropHeaders:       dropHeaders,
+		InjectHeaders:     injectHeaders,
+		Auth:              auth,
+		BasePath:          config.RedirectBasePath,
+		BodyBytes:         bodyBytes,
+	}
+
 	// short-circuit if we're using mock mode, there is no API call to make.
 	if ws.config.MockMode || configModel.IncludePathOnMockMode(apiRequest.URL.Path, ws.config) {
 		ws.config.Logger.Info("MockMode enabled; skipping validation")
-		ws.handleMockRequest(request, config, newReq)
+		ws.handleMockRequest(request, config, newReq, txnConfig)
 		return
 	} else if configModel.IgnoreValidationOnPath(apiRequest.URL.Path, ws.config) && !configModel.PathValidationAllowListed(apiRequest.URL.Path, ws.config) {
 		ws.config.Logger.Info(
 			fmt.Sprintf("Request on validation ignored path: %s ; skipping validation", apiRequest.URL.Path))
-	} else if configModel.IsHardErrorsSet(apiRequest.URL.Path, ws.config) { // check if we're going to fail hard on validation errors. (default is to skip this)
+	} else if isHardError {
 		// validate the request synchronously
-		requestErrors = ws.ValidateRequest(request, newReq)
+		requestErrors = ws.ValidateRequest(request, newReq, txnConfig)
 	} else {
 		// validate the request asynchronously
-		go ws.ValidateRequest(request, newReq)
+		go ws.ValidateRequest(request, newReq, txnConfig)
 	}
 
 	// call the API being requested.
-	returnedResponse, returnedError = ws.callAPI(apiRequest)
+	returnedResponse, returnedError = ws.callAPI(apiRequest, config)
 
 	if returnedResponse == nil && returnedError != nil {
 		config.Logger.Info("[wiretap] request failed", "url", apiRequest.URL.String(), "code", 500,
@@ -164,17 +187,25 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		wtError := shared.GenerateError("Unable to call API", 500, returnedError.Error(), "", returnedResponse)
 		_, _ = request.HttpResponseWriter.Write(shared.MarshalError(wtError))
 		return
+	}
 
+	// read response body once — reused for validation, response writing, and broadcasting
+	respBody, _ := io.ReadAll(returnedResponse.Body)
+	returnedResponse.Body.Close()
+	// restore body for validator (which may read it again)
+	returnedResponse.Body = io.NopCloser(bytes.NewBuffer(respBody))
+
+	if isHardError {
+		// validate response
+		responseErrors = ws.ValidateResponse(request, returnedResponse, respBody)
 	} else {
-
-		// check if we're going to fail hard on validation errors. (default is to skip this)
-		if configModel.IsHardErrorsSet(apiRequest.URL.Path, ws.config) {
-			// validate response
-			responseErrors = ws.ValidateResponse(request, CloneExistingResponse(returnedResponse))
-		} else {
-			// validate response async
-			go ws.ValidateResponse(request, CloneExistingResponse(returnedResponse))
+		// validate response async — pass a cloned response so async reads don't race
+		clonedResp := &http.Response{
+			StatusCode: returnedResponse.StatusCode,
+			Header:     returnedResponse.Header,
+			Body:       io.NopCloser(bytes.NewBuffer(respBody)),
 		}
+		go ws.ValidateResponse(request, clonedResp, respBody)
 	}
 
 	// check if this path has a delay set.
@@ -187,7 +218,6 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		}
 	}
 
-	body, _ := io.ReadAll(returnedResponse.Body)
 	headers := ExtractHeaders(returnedResponse)
 
 	// wiretap needs to work from anywhere, so allow everything.
@@ -203,9 +233,9 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 			responseHeaders := request.HttpResponseWriter.Header()
 
 			if responseHeaders.Get(k) == "" {
-				responseHeaders.Set(k, fmt.Sprint(j))
+				responseHeaders.Set(k, j)
 			} else {
-				responseHeaders.Add(k, fmt.Sprint(j))
+				responseHeaders.Add(k, j)
 			}
 		}
 	}
@@ -216,16 +246,16 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	returnCode := config.HardErrorReturnCode
 
 	switch {
-	case configModel.IsHardErrorsSet(apiRequest.URL.Path, ws.config) && len(requestErrors) > 0 && len(responseErrors) <= 0:
+	case isHardError && len(requestErrors) > 0 && len(responseErrors) <= 0:
 		request.HttpResponseWriter.WriteHeader(requestCode)
-	case configModel.IsHardErrorsSet(apiRequest.URL.Path, ws.config) && len(requestErrors) <= 0 && len(responseErrors) > 0:
+	case isHardError && len(requestErrors) <= 0 && len(responseErrors) > 0:
 		request.HttpResponseWriter.WriteHeader(returnCode)
-	case configModel.IsHardErrorsSet(apiRequest.URL.Path, ws.config) && len(requestErrors) > 0 && len(responseErrors) > 0:
+	case isHardError && len(requestErrors) > 0 && len(responseErrors) > 0:
 		request.HttpResponseWriter.WriteHeader(returnCode)
 	default:
 		request.HttpResponseWriter.WriteHeader(returnedResponse.StatusCode)
 	}
-	_, _ = request.HttpResponseWriter.Write(body)
+	_, _ = request.HttpResponseWriter.Write(respBody)
 }
 
 var gorillaDropHeaders = []string{
@@ -303,7 +333,6 @@ func (ws *WiretapService) handleWebsocketRequest(request *model.Request) {
 		DropHeaders:   dropHeaders,
 		InjectHeaders: injectHeaders,
 		Auth:          auth,
-		Variables:     config.CompiledVariables,
 	})
 
 	// Open a new websocket connection with the server
@@ -438,14 +467,25 @@ func logWebsocketClose(config *shared.WiretapConfiguration, closeCode int, isUne
 	}
 }
 
+func mergeInjectHeaders(base, override map[string]string) map[string]string {
+	merged := make(map[string]string, len(base)+len(override))
+	for k, v := range base {
+		merged[k] = v
+	}
+	for k, v := range override {
+		merged[k] = v
+	}
+	return merged
+}
+
 func (ws *WiretapService) getHeadersAndAuth(config *shared.WiretapConfiguration, request *model.Request) ([]string, map[string]string, string) {
 	var dropHeaders []string
 	var injectHeaders map[string]string
 
-	// add global headers with injection.
+	// copy global headers to avoid mutating shared config state
 	if config.Headers != nil {
-		dropHeaders = config.Headers.DropHeaders
-		injectHeaders = config.Headers.InjectHeaders
+		dropHeaders = append([]string(nil), config.Headers.DropHeaders...)
+		injectHeaders = mergeInjectHeaders(nil, config.Headers.InjectHeaders)
 	}
 
 	// now add path specific headers.
@@ -465,11 +505,18 @@ func (ws *WiretapService) getHeadersAndAuth(config *shared.WiretapConfiguration,
 		auth = matchedPath.Auth
 		if matchedPath.Headers != nil {
 			dropHeaders = append(dropHeaders, matchedPath.Headers.DropHeaders...)
-			newInjectHeaders := matchedPath.Headers.InjectHeaders
-			for key := range injectHeaders {
-				newInjectHeaders[key] = injectHeaders[key]
-			}
-			injectHeaders = newInjectHeaders
+			injectHeaders = mergeInjectHeaders(matchedPath.Headers.InjectHeaders, injectHeaders)
+		}
+	}
+
+	// apply variable substitution so callers receive already-substituted values
+	// (matches what CloneExistingRequest sends upstream)
+	if len(config.CompiledVariables) > 0 {
+		for k, v := range injectHeaders {
+			injectHeaders[k] = ReplaceWithVariables(config.CompiledVariables, v)
+		}
+		if auth != "" {
+			auth = ReplaceWithVariables(config.CompiledVariables, auth)
 		}
 	}
 

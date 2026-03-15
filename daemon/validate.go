@@ -36,7 +36,8 @@ func (ws *WiretapService) getValidatorForRequest(request *model.Request) *docume
 
 func (ws *WiretapService) ValidateResponse(
 	request *model.Request,
-	returnedResponse *http.Response) []*shared.WiretapValidationError {
+	returnedResponse *http.Response,
+	preReadBody ...[]byte) []*shared.WiretapValidationError {
 
 	var validationErrors []*shared.WiretapValidationError
 
@@ -54,7 +55,12 @@ func (ws *WiretapService) ValidateResponse(
 		}
 	}
 
-	transaction := BuildResponse(request, returnedResponse)
+	var transaction *HttpTransaction
+	if len(preReadBody) > 0 {
+		transaction = BuildResponseFromBytes(request, returnedResponse, preReadBody[0])
+	} else {
+		transaction = BuildResponse(request, returnedResponse)
+	}
 	if len(cleanedErrors) > 0 {
 		transaction.ResponseValidation = cleanedErrors
 	}
@@ -62,16 +68,17 @@ func (ws *WiretapService) ValidateResponse(
 
 	if len(cleanedErrors) > 0 {
 		ws.streamChan <- cleanedErrors
-		ws.broadcastResponseValidationErrors(request, returnedResponse, cleanedErrors)
+		ws.broadcastResponseValidationErrors(request, transaction, cleanedErrors)
 	} else {
-		ws.broadcastResponse(request, returnedResponse)
+		ws.broadcastResponse(request, transaction)
 	}
 	return validationErrors
 }
 
 func (ws *WiretapService) ValidateRequest(
 	modelRequest *model.Request,
-	httpRequest *http.Request) []*shared.WiretapValidationError {
+	httpRequest *http.Request,
+	txnConfig ...HttpTransactionConfig) []*shared.WiretapValidationError {
 
 	var validationErrors, cleanedErrors []*shared.WiretapValidationError
 
@@ -81,22 +88,25 @@ func (ws *WiretapService) ValidateRequest(
 		validationErrors = shared.ConvertValidationErrors(docValidator.documentName, newValidationErrors)
 	}
 
-	for _, validationError := range validationErrors {
-		cleanedErrors = append(cleanedErrors, validationError)
-	}
+	cleanedErrors = validationErrors
 	// record results
-	buildTransConfig := HttpTransactionConfig{
-		OriginalRequest:   modelRequest.HttpRequest,
-		NewRequest:        httpRequest,
-		ID:                modelRequest.Id,
-		TransactionConfig: ws.config,
+	var buildTransConfig HttpTransactionConfig
+	if len(txnConfig) > 0 {
+		buildTransConfig = txnConfig[0]
+	} else {
+		buildTransConfig = HttpTransactionConfig{
+			OriginalRequest:   modelRequest.HttpRequest,
+			NewRequest:        httpRequest,
+			ID:                modelRequest.Id,
+			TransactionConfig: ws.config,
+		}
 	}
 
 	transaction := BuildHttpTransaction(buildTransConfig)
 	if len(cleanedErrors) > 0 {
 		transaction.RequestValidation = cleanedErrors
 	}
-	ws.transactionStore.Put(modelRequest.Id.String(), modelRequest, nil)
+	ws.transactionStore.Put(modelRequest.Id.String(), transaction, nil)
 
 	// broadcast what we found.
 	if len(cleanedErrors) > 0 {

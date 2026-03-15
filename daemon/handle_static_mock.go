@@ -14,7 +14,7 @@ import (
 
 func (ws *WiretapService) handleStaticMockResponse(request *model.Request, response *http.Response) {
 	// validate response async
-	go ws.broadcastResponse(request, response)
+	go ws.broadcastResponse(request, BuildResponse(request, response))
 
 	for k, v := range response.Header {
 		for _, j := range v {
