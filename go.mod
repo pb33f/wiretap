@@ -5,9 +5,9 @@ go 1.25.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/pb33f/harific v0.0.5
-	github.com/pb33f/libopenapi v0.34.3
+	github.com/pb33f/libopenapi v0.34.4
 	github.com/pb33f/libopenapi-validator v0.13.3
-	github.com/pb33f/ranch v0.8.0
+	github.com/pb33f/ranch v0.8.1
 	github.com/pterm/pterm v0.12.83
 )
 
@@ -17,7 +17,7 @@ require (
 	atomicgo.dev/schedule v0.1.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/basgys/goxml2json v1.1.1-0.20231018121955-e66ee54ceaad // indirect
-	github.com/buger/jsonparser v1.1.1 // indirect
+	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/containerd/console v1.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -45,8 +45,8 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/pb33f/jsonpath v0.8.1 // indirect
-	github.com/pb33f/ordered-map/v2 v2.3.0 // indirect
+	github.com/pb33f/jsonpath v0.8.2 // indirect
+	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sagikazarmark/locafero v0.6.0 // indirect
