@@ -1,14 +1,20 @@
+version: 2
 project_name: wiretap
 before:
   hooks:
     - make build-ui
     - go mod tidy
 builds:
-  - env:
+  - id: default
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
       - windows
+  - id: darwin
+    env:
+      - CGO_ENABLED=0
+    goos:
       - darwin
 checksum:
   name_template: 'checksums.txt'
@@ -28,7 +34,23 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
-brews:
+
+notarize:
+  macos:
+    - enabled: '{{ isEnvSet "MACOS_SIGN_P12" }}'
+      ids:
+        - darwin
+      sign:
+        certificate: "{{.Env.MACOS_SIGN_P12}}"
+        password: "{{.Env.MACOS_SIGN_PASSWORD}}"
+      notarize:
+        issuer_id: "{{.Env.MACOS_NOTARY_ISSUER_ID}}"
+        key_id: "{{.Env.MACOS_NOTARY_KEY_ID}}"
+        key: "{{.Env.MACOS_NOTARY_KEY}}"
+        wait: true
+        timeout: 20m
+
+homebrew_casks:
   - repository:
       owner: pb33f
       name: homebrew-taps
@@ -40,45 +62,17 @@ brews:
     homepage: "https://pb33f.io/wiretap"
     description: "The worlds coolest OpenAPI compliance dev HTTP proxy"
 
-    install: |
-      bin.install "wiretap"
-
 snapshot:
   version_template: "{{ .Tag }}"
 
 upx:
-  -
-    # Whether to enable it or not.
-    enabled: true
-
-
-    # Filter by GOOS.
-    #
-    # Since: v1.19
-    goos: [ linux , darwin ]
-
-    # Filter by GOARCH.
-    #
-    # Since: v1.19
-    goarch: [ arm, amd64 ]
-
-    # Filter by GOARM.
-    #
-    # Since: v1.19
-    goarm: [ 8 ]
-
-    # Filter by GOAMD64.
-    #
-    # Since: v1.19
-    goamd64: [ v1 ]
-
-    # Compress argument.
-    # Valid options are from '1' (faster) to '9' (better), and 'best'.
+  - enabled: true
+    ids:
+      - default
+    goos: [linux]
+    goarch: [arm, amd64]
+    goarm: [8]
+    goamd64: [v1]
     compress: best
-
-    # Whether to try LZMA (slower).
     lzma: true
-
-    # Whether to try all methods and filters (slow).
     brute: true
-    
