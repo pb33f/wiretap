@@ -163,7 +163,7 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	// short-circuit if we're using mock mode, there is no API call to make.
 	if ws.config.MockMode || configModel.IncludePathOnMockMode(apiRequest.URL.Path, ws.config) {
 		ws.config.Logger.Info("MockMode enabled; skipping validation")
-		ws.handleMockRequest(request, config, newReq, txnConfig)
+		ws.handleMockRequest(request, config, newReq, isHardError, txnConfig)
 		return
 	} else if configModel.IgnoreValidationOnPath(apiRequest.URL.Path, ws.config) && !configModel.PathValidationAllowListed(apiRequest.URL.Path, ws.config) {
 		ws.config.Logger.Info(
@@ -242,20 +242,45 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 	config.Logger.Info("[wiretap] request completed", "url", request.HttpRequest.URL.String(), "code", returnedResponse.StatusCode)
 
 	// if there are validation errors, set an error code
-	requestCode := config.HardErrorCode
-	returnCode := config.HardErrorReturnCode
+	statusCode := pickHardErrorStatus(isHardError, requestErrors, responseErrors, config, returnedResponse.StatusCode)
 
-	switch {
-	case isHardError && len(requestErrors) > 0 && len(responseErrors) <= 0:
-		request.HttpResponseWriter.WriteHeader(requestCode)
-	case isHardError && len(requestErrors) <= 0 && len(responseErrors) > 0:
-		request.HttpResponseWriter.WriteHeader(returnCode)
-	case isHardError && len(requestErrors) > 0 && len(responseErrors) > 0:
-		request.HttpResponseWriter.WriteHeader(returnCode)
-	default:
-		request.HttpResponseWriter.WriteHeader(returnedResponse.StatusCode)
+	if isHardError && shouldReturnValidationProblem(config, requestErrors, responseErrors) {
+		writeValidationProblemResponse(
+			request.HttpResponseWriter,
+			statusCode,
+			request.HttpRequest.URL.Path,
+			requestErrors,
+			responseErrors,
+		)
+		return
 	}
+
+	request.HttpResponseWriter.WriteHeader(statusCode)
 	_, _ = request.HttpResponseWriter.Write(respBody)
+}
+
+// pickHardErrorStatus returns the HTTP status to write back to the client,
+// honouring hard-error overrides when validation failed and falling through
+// to the upstream status otherwise.
+func pickHardErrorStatus(
+	isHardError bool,
+	requestErrors, responseErrors []*shared.WiretapValidationError,
+	config *shared.WiretapConfiguration,
+	upstreamStatus int,
+) int {
+	if !isHardError {
+		return upstreamStatus
+	}
+	hasReq := len(requestErrors) > 0
+	hasResp := len(responseErrors) > 0
+	switch {
+	case hasReq && !hasResp:
+		return config.HardErrorCode
+	case hasResp:
+		return config.HardErrorReturnCode
+	default:
+		return upstreamStatus
+	}
 }
 
 var gorillaDropHeaders = []string{

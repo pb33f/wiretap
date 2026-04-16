@@ -67,12 +67,26 @@ func (ws *WiretapService) ValidateResponse(
 	ws.transactionStore.Put(request.Id.String(), transaction, nil)
 
 	if len(cleanedErrors) > 0 {
-		ws.streamChan <- cleanedErrors
+		sendToStreamChan(ws, cleanedErrors)
 		ws.broadcastResponseValidationErrors(request, transaction, cleanedErrors)
 	} else {
 		ws.broadcastResponse(request, transaction)
 	}
 	return validationErrors
+}
+
+// sendToStreamChan delivers validation errors to the stream listener without
+// blocking the caller. If the buffered channel is full (listener stalled or
+// never started) the send is dropped. Report streaming is best-effort; the
+// synchronous hard-error path must never deadlock on a consumer.
+func sendToStreamChan(ws *WiretapService, errs []*shared.WiretapValidationError) {
+	select {
+	case ws.streamChan <- errs:
+	default:
+		if ws.config != nil && ws.config.Logger != nil {
+			ws.config.Logger.Debug("[wiretap] stream channel full; dropping validation errors from stream report")
+		}
+	}
 }
 
 func (ws *WiretapService) ValidateRequest(
@@ -110,7 +124,7 @@ func (ws *WiretapService) ValidateRequest(
 
 	// broadcast what we found.
 	if len(cleanedErrors) > 0 {
-		ws.streamChan <- cleanedErrors
+		sendToStreamChan(ws, cleanedErrors)
 		ws.broadcastRequestValidationErrors(modelRequest, cleanedErrors, transaction)
 	} else {
 		ws.broadcastRequest(modelRequest, transaction)

@@ -62,7 +62,10 @@ func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapCon
 	wts := &WiretapService{
 		stream:           config.StreamReport,
 		reportFile:       config.ReportFile,
-		streamChan:       make(chan []*shared.WiretapValidationError),
+		// Buffered so short stalls in the stream listener don't block the proxy's
+		// hard-error sync path. The non-blocking sends at validate.go drop excess
+		// once the buffer fills — report streaming is best-effort, proxying is not.
+		streamChan:       make(chan []*shared.WiretapValidationError, 256),
 		transport:        tr,
 		controlsStore:    controlsStore,
 		transactionStore: transactionStore,

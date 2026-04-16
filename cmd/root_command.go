@@ -92,6 +92,7 @@ var (
 			hardError, _ = cmd.Flags().GetBool("hard-validation")
 			hardErrorCode, _ = cmd.Flags().GetInt("hard-validation-code")
 			hardErrorReturnCode, _ = cmd.Flags().GetInt("hard-validation-return-code")
+			hardErrorReturnProblem, _ := cmd.Flags().GetBool("hard-error-return-problem")
 			streamReport, _ := cmd.Flags().GetBool("stream-report")
 			strictRedirectLocation, _ := cmd.Flags().GetBool("strict-redirect-location")
 			strictMode, _ := cmd.Flags().GetBool("strict-mode")
@@ -386,6 +387,9 @@ var (
 			}
 			if (config.HardErrors || len(config.HardErrorsList) > 0) && config.HardErrorReturnCode <= 0 {
 				config.HardErrorReturnCode = hardErrorReturnCode
+			}
+			if !config.HardErrorReturnProblem && hardErrorReturnProblem {
+				config.HardErrorReturnProblem = true
 			}
 
 			// certs
@@ -763,6 +767,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().BoolP("hard-validation", "e", false, "Return a HTTP error for non-compliant request/response")
 	rootCmd.Flags().IntP("hard-validation-code", "q", 400, "Set a custom http error code for non-compliant requests when using the hard-error flag")
 	rootCmd.Flags().IntP("hard-validation-return-code", "y", 502, "Set a custom http error code for non-compliant responses when using the hard-error flag")
+	rootCmd.Flags().Bool("hard-error-return-problem", false, "When hard-validation triggers, return an RFC 9457 application/problem+json body describing the validation failures (default is false)")
 	rootCmd.Flags().StringP("static-mock-dir", "", "", "Directory containing static mock definitions. All requests matching these definitions will return mocked responses.")
 	rootCmd.Flags().BoolP("mock-mode", "x", false, "Run in mock mode, responses are mocked and no traffic is sent to the target API (requires OpenAPI spec)")
 	rootCmd.Flags().BoolP("enable-all-mock-response-fields", "o", true, "Enable usage of all property examples in mock responses. When set to false, only required field examples will be used.")

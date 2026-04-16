@@ -17,7 +17,12 @@ import (
 )
 
 func (ws *WiretapService) handleMockRequest(
-	request *model.Request, config *shared.WiretapConfiguration, newReq *http.Request, txnConfig ...HttpTransactionConfig) {
+	request *model.Request,
+	config *shared.WiretapConfiguration,
+	newReq *http.Request,
+	isHardError bool,
+	txnConfig ...HttpTransactionConfig,
+) {
 	// dip out early if we're in mock mode.
 	delay := configModel.FindPathDelay(request.HttpRequest.URL.Path, config)
 	if delay > 0 {
@@ -26,6 +31,51 @@ func (ws *WiretapService) handleMockRequest(
 		if config.GlobalAPIDelay > 0 {
 			time.Sleep(time.Duration(config.GlobalAPIDelay) * time.Millisecond) // simulate a slow response, all paths.
 		}
+	}
+
+	var requestErrors []*shared.WiretapValidationError
+	if isHardError {
+		requestErrors = ws.ValidateRequest(request, newReq, txnConfig...)
+	} else {
+		// validate http request.
+		ws.ValidateRequest(request, newReq, txnConfig...)
+	}
+
+	// sleep for a few ms, this prevents responses from being sent out of order.
+	time.Sleep(5 * time.Millisecond)
+
+	// wiretap needs to work from anywhere, so allow everything.
+	headers := make(map[string][]string)
+	shared.SetCORSHeaders(headers)
+	headers["Content-Type"] = []string{"application/json"}
+
+	// write headers
+	for k, v := range headers {
+		for _, j := range v {
+			request.HttpResponseWriter.Header().Set(k, fmt.Sprint(j))
+		}
+	}
+
+	if isHardError && shouldReturnValidationProblem(config, requestErrors, nil) {
+		statusCode := pickHardErrorStatus(true, requestErrors, nil, config, http.StatusOK)
+		problem := shared.BuildValidationProblem(statusCode, request.HttpRequest.URL.Path, requestErrors, nil)
+		body := shared.MarshalValidationProblem(problem)
+
+		writeValidationProblemResponse(
+			request.HttpResponseWriter,
+			statusCode,
+			request.HttpRequest.URL.Path,
+			requestErrors,
+			nil,
+		)
+
+		resp := &http.Response{
+			StatusCode: statusCode,
+			Header:     request.HttpResponseWriter.Header().Clone(),
+			Body:       io.NopCloser(bytes.NewBuffer(body)),
+		}
+		go ws.broadcastResponse(request, BuildResponse(request, resp))
+		return
 	}
 
 	var mock []byte
@@ -40,17 +90,6 @@ func (ws *WiretapService) handleMockRequest(
 		mockErr = fmt.Errorf("mock engine has not been intialized; configure an OpenAPI specification to use this option")
 	}
 
-	// validate http request.
-	ws.ValidateRequest(request, newReq, txnConfig...)
-
-	// sleep for a few ms, this prevents responses from being sent out of order.
-	time.Sleep(5 * time.Millisecond)
-
-	// wiretap needs to work from anywhere, so allow everything.
-	headers := make(map[string][]string)
-	shared.SetCORSHeaders(headers)
-	headers["Content-Type"] = []string{"application/json"}
-
 	buff := bytes.NewBuffer(mock)
 
 	// create a simulated response to send up to the monitor UI.
@@ -63,8 +102,7 @@ func (ws *WiretapService) handleMockRequest(
 	// write headers
 	for k, v := range headers {
 		for _, j := range v {
-			request.HttpResponseWriter.Header().Set(k, fmt.Sprint(j))
-			header.Add(k, fmt.Sprint(v))
+			header.Add(k, fmt.Sprint(j))
 		}
 	}
 
