@@ -18,13 +18,18 @@ type HttpValidator interface {
 }
 
 func NewHttpValidator(doc *v3.Document) HttpValidator {
-	return validator.NewValidatorFromV3Model(doc)
+	return validator.NewValidatorFromV3Model(doc,
+		config.WithXmlBodyValidation(),
+		config.WithURLEncodedBodyValidation())
 }
 
 // NewStrictHttpValidator creates a validator with strict mode enabled.
 // Strict mode detects undeclared properties, parameters, headers, and cookies.
 func NewStrictHttpValidator(doc *v3.Document) HttpValidator {
-	return validator.NewValidatorFromV3Model(doc, config.WithStrictMode())
+	return validator.NewValidatorFromV3Model(doc,
+		config.WithStrictMode(),
+		config.WithXmlBodyValidation(),
+		config.WithURLEncodedBodyValidation())
 }
 
 // NewHttpValidatorWithConfig creates a validator based on configuration.

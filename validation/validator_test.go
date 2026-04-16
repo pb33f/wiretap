@@ -419,3 +419,96 @@ func TestGiftshop_GetProducts_UndeclaredQueryParam_Strict(t *testing.T) {
 		t.Logf("  - %s", err.Message)
 	}
 }
+
+// Regression test for pb33f/wiretap#171 — XML request bodies must be validated
+// against the declared schema. Previously these were silently passed.
+func TestNewHttpValidator_XMLRequestBody_InvalidAgainstSchema(t *testing.T) {
+	spec := []byte(`openapi: 3.1.0
+info:
+  title: XML Test
+  version: 1.0.0
+paths:
+  /test:
+    post:
+      operationId: post-something
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: hello
+              properties:
+                foo:
+                  type: integer
+                bar:
+                  type: integer
+              required: [foo, bar]
+      responses:
+        '200':
+          description: OK
+`)
+
+	d, err := libopenapi.NewDocument(spec)
+	assert.NoError(t, err)
+	compiled, errs := d.BuildV3Model()
+	assert.Empty(t, errs)
+
+	validator := NewHttpValidator(&compiled.Model)
+
+	// From the issue: foo should be integer (got string), bar is missing.
+	body := bytes.NewReader([]byte(`<hello><foo>hello</foo></hello>`))
+	req, _ := http.NewRequest("POST", "http://localhost/test", body)
+	req.Header.Set("Content-Type", "application/xml")
+
+	valid, validationErrors := validator.ValidateHttpRequest(req)
+	assert.False(t, valid, "XML body violating schema must not be reported as compliant")
+	assert.NotEmpty(t, validationErrors)
+}
+
+// Regression test for pb33f/wiretap#171 — a well-formed XML body matching the
+// declared schema should pass validation.
+func TestNewHttpValidator_XMLRequestBody_ValidAgainstSchema(t *testing.T) {
+	spec := []byte(`openapi: 3.1.0
+info:
+  title: XML Test
+  version: 1.0.0
+paths:
+  /test:
+    post:
+      operationId: post-something
+      requestBody:
+        required: true
+        content:
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: hello
+              properties:
+                foo:
+                  type: integer
+                bar:
+                  type: integer
+              required: [foo, bar]
+      responses:
+        '200':
+          description: OK
+`)
+
+	d, err := libopenapi.NewDocument(spec)
+	assert.NoError(t, err)
+	compiled, errs := d.BuildV3Model()
+	assert.Empty(t, errs)
+
+	validator := NewHttpValidator(&compiled.Model)
+
+	body := bytes.NewReader([]byte(`<hello><foo>1</foo><bar>2</bar></hello>`))
+	req, _ := http.NewRequest("POST", "http://localhost/test", body)
+	req.Header.Set("Content-Type", "application/xml")
+
+	valid, validationErrors := validator.ValidateHttpRequest(req)
+	assert.True(t, valid, "valid XML body should pass: %v", validationErrors)
+	assert.Empty(t, validationErrors)
+}
