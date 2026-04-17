@@ -88,6 +88,7 @@ var (
 			debug, _ := cmd.Flags().GetBool("debug")
 			staticMockDir, _ = cmd.Flags().GetString("static-mock-dir")
 			mockMode, _ = cmd.Flags().GetBool("mock-mode")
+			mockBypassValidation, _ := cmd.Flags().GetBool("mock-bypass-validation")
 			useAllMockResponseFields, _ = cmd.Flags().GetBool("enable-all-mock-response-fields")
 			hardError, _ = cmd.Flags().GetBool("hard-validation")
 			hardErrorCode, _ = cmd.Flags().GetInt("hard-validation-code")
@@ -217,6 +218,11 @@ var (
 						config.MockMode = true
 					}
 				}
+				if mockBypassValidation {
+					if !config.MockBypassValidation {
+						config.MockBypassValidation = true
+					}
+				}
 				if useAllMockResponseFields {
 					if !config.UseAllMockResponseFields {
 						config.UseAllMockResponseFields = true
@@ -266,6 +272,9 @@ var (
 				}
 				if mockMode {
 					config.MockMode = true
+				}
+				if mockBypassValidation {
+					config.MockBypassValidation = true
 				}
 				if useAllMockResponseFields {
 					config.UseAllMockResponseFields = true
@@ -770,6 +779,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().Bool("hard-error-return-problem", false, "When hard-validation triggers, return an RFC 9457 application/problem+json body describing the validation failures (default is false)")
 	rootCmd.Flags().StringP("static-mock-dir", "", "", "Directory containing static mock definitions. All requests matching these definitions will return mocked responses.")
 	rootCmd.Flags().BoolP("mock-mode", "x", false, "Run in mock mode, responses are mocked and no traffic is sent to the target API (requires OpenAPI spec)")
+	rootCmd.Flags().Bool("mock-bypass-validation", false, "In mock mode, bypass request validation so Preferred / wiretap-status-code examples are returned even for malformed requests (default is false)")
 	rootCmd.Flags().BoolP("enable-all-mock-response-fields", "o", true, "Enable usage of all property examples in mock responses. When set to false, only required field examples will be used.")
 	rootCmd.Flags().StringP("config", "c", "", "Location of wiretap configuration file to use (default is .wiretap in current directory)")
 	rootCmd.Flags().StringP("base", "b", "", "Set a base path to resolve relative file references from, or a overriding base URL to resolve remote references from")

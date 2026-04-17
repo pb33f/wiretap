@@ -23,12 +23,13 @@ import (
 )
 
 type ResponseMockEngine struct {
-	doc            *v3.Document
-	validator      validation.HttpValidator
-	mockEngine     *renderer.MockGenerator
-	pretty         bool
-	validationOpts *config.ValidationOptions
-	hardValidation bool // when true, reject requests with validation errors
+	doc              *v3.Document
+	validator        validation.HttpValidator
+	mockEngine       *renderer.MockGenerator
+	pretty           bool
+	validationOpts   *config.ValidationOptions
+	hardValidation   bool // when true, reject requests with validation errors
+	bypassValidation bool // when true, skip the hardValidation short-circuit so Preferred examples still fire
 }
 
 func NewMockEngine(document *v3.Document, pretty, useAllPropertyExamples bool) *ResponseMockEngine {
@@ -77,7 +78,9 @@ func NewStrictMockEngine(document *v3.Document, pretty, useAllPropertyExamples b
 // When strictMode is true, undeclared request elements are validated strictly.
 // When hardValidation is true, requests with validation errors are rejected with 422.
 // When hardValidation is false, validation errors are reported but mocks are still served.
-func NewMockEngineWithConfig(document *v3.Document, pretty, useAllPropertyExamples, strictMode, hardValidation bool) *ResponseMockEngine {
+// When bypassValidation is true, the hardValidation short-circuit is skipped so the
+// client still receives the Preferred / wiretap-status-code example for malformed requests.
+func NewMockEngineWithConfig(document *v3.Document, pretty, useAllPropertyExamples, strictMode, hardValidation, bypassValidation bool) *ResponseMockEngine {
 	var engine *ResponseMockEngine
 	if strictMode {
 		engine = NewStrictMockEngine(document, pretty, useAllPropertyExamples)
@@ -85,7 +88,18 @@ func NewMockEngineWithConfig(document *v3.Document, pretty, useAllPropertyExampl
 		engine = NewMockEngine(document, pretty, useAllPropertyExamples)
 	}
 	engine.hardValidation = hardValidation
+	engine.bypassValidation = bypassValidation
 	return engine
+}
+
+// shouldBypassValidation returns true when MockBypassValidation is set on the
+// engine or the request carries "wiretap-bypass-validation: true". Only
+// consulted to guard the hard-validation short-circuit in runWorkflow.
+func (rme *ResponseMockEngine) shouldBypassValidation(r *http.Request) bool {
+	if rme.bypassValidation {
+		return true
+	}
+	return strings.EqualFold(r.Header.Get("wiretap-bypass-validation"), "true")
 }
 
 func (rme *ResponseMockEngine) GenerateResponse(request *http.Request) ([]byte, int, error) {
@@ -333,7 +347,7 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 	// When hardValidation is false, validation errors are reported separately via the daemon,
 	// but the mock is still served to allow development/testing workflows.
 	_, validationErrors := rme.validator.ValidateHttpRequest(request)
-	if rme.hardValidation && len(validationErrors) > 0 {
+	if rme.hardValidation && len(validationErrors) > 0 && !rme.shouldBypassValidation(request) {
 		mt, _ := rme.findBestMediaTypeMatch(operation, request, []string{"422", "400"})
 		if mt == nil {
 			// no default, no valid response, inform use with a 500

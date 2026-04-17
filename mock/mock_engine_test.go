@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/pb33f/libopenapi"
@@ -1575,3 +1576,196 @@ func TestNewMockEngine_AllowsUndeclaredProperty(t *testing.T) {
 	assert.Equal(t, 201, statusCode)
 	assert.NoError(t, err)
 }
+
+// Issue #109 — bypass mock-mode request validation so clients driving wiretap
+// from fixtures that deliberately send malformed payloads still receive the
+// example they asked for via Preferred / wiretap-status-code.
+
+const bypassValidationSpec = `openapi: 3.1.0
+info:
+  title: Bypass test
+  version: 1.0.0
+paths:
+  /things:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, count]
+              properties:
+                name: {type: string}
+                count: {type: integer}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: {type: string}
+              examples:
+                created:
+                  value: {id: "ok-123"}
+        '422':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: {type: string}
+              examples:
+                badInput:
+                  value: {error: "bad input demo"}
+`
+
+func bypassTestEngine(t *testing.T, hardValidation, bypassValidation bool) *ResponseMockEngine {
+	t.Helper()
+	d, err := libopenapi.NewDocument([]byte(bypassValidationSpec))
+	require.NoError(t, err)
+	doc, errs := d.BuildV3Model()
+	require.Empty(t, errs)
+	return NewMockEngineWithConfig(&doc.Model, false, true, false, hardValidation, bypassValidation)
+}
+
+func invalidPost(t *testing.T) *http.Request {
+	t.Helper()
+	// missing both required fields + wrong type on `count`
+	req, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/things",
+		bytes.NewBufferString(`{"count": "nope"}`))
+	req.Header.Set(helpers.ContentTypeHeader, "application/json")
+	return req
+}
+
+// Regression guard — the default path must keep returning the 422 validation
+// error body when hard-validation is on and nothing signals a bypass.
+func TestMockBypass_HardValidation_NoBypass_ReturnsValidationError(t *testing.T) {
+	me := bypassTestEngine(t, true, false)
+	req := invalidPost(t)
+
+	b, status, err := me.GenerateResponse(req)
+	assert.Error(t, err)
+	assert.Equal(t, 422, status)
+
+	var decoded map[string]any
+	require.NoError(t, json.Unmarshal(b, &decoded))
+	assert.Equal(t, "Invalid request (422)", decoded["title"])
+}
+
+// Either the per-request header or the engine-level flag engages the bypass,
+// and the Preferred example at the wiretap-status-code is returned instead of
+// the validation-error body.
+func TestMockBypass_ReturnsPreferredExample(t *testing.T) {
+	tests := []struct {
+		name         string
+		engineBypass bool
+		headerBypass bool
+	}{
+		{"per-request header", false, true},
+		{"global engine flag", true, false},
+		{"both signals set", true, true},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			me := bypassTestEngine(t, true, tc.engineBypass)
+			req := invalidPost(t)
+			req.Header.Set(helpers.Preferred, "badInput")
+			req.Header.Set("wiretap-status-code", "422")
+			if tc.headerBypass {
+				req.Header.Set("wiretap-bypass-validation", "true")
+			}
+
+			b, status, err := me.GenerateResponse(req)
+			assert.NoError(t, err)
+			assert.Equal(t, 422, status)
+
+			var decoded map[string]any
+			require.NoError(t, json.Unmarshal(b, &decoded))
+			assert.Equal(t, "bad input demo", decoded["error"])
+		})
+	}
+}
+
+// Header parsing is case-insensitive so CI tooling isn't required to normalise.
+func TestMockBypass_HeaderCaseInsensitive(t *testing.T) {
+	for _, v := range []string{"true", "True", "TRUE", "tRuE"} {
+		v := v
+		t.Run(v, func(t *testing.T) {
+			me := bypassTestEngine(t, true, false)
+			req := invalidPost(t)
+			req.Header.Set(helpers.Preferred, "badInput")
+			req.Header.Set("wiretap-status-code", "422")
+			req.Header.Set("wiretap-bypass-validation", v)
+
+			_, status, err := me.GenerateResponse(req)
+			assert.NoError(t, err)
+			assert.Equal(t, 422, status, "header value %q should engage bypass", v)
+		})
+	}
+}
+
+// Any value other than "true" (in any case) leaves the gate intact.
+func TestMockBypass_HeaderOtherValuesDoNotBypass(t *testing.T) {
+	for _, v := range []string{"false", "no", "0", "", "yes"} {
+		v := v
+		t.Run("value="+v, func(t *testing.T) {
+			me := bypassTestEngine(t, true, false)
+			req := invalidPost(t)
+			if v != "" {
+				req.Header.Set("wiretap-bypass-validation", v)
+			}
+
+			_, status, err := me.GenerateResponse(req)
+			assert.Error(t, err)
+			assert.Equal(t, 422, status, "header value %q must not engage bypass", v)
+		})
+	}
+}
+
+// Bypass without Preferred falls through to the lowest-success-code example
+// rather than the validation-error body.
+func TestMockBypass_WithoutPreferredFallsThroughToSuccess(t *testing.T) {
+	me := bypassTestEngine(t, true, true)
+	req := invalidPost(t)
+
+	b, status, err := me.GenerateResponse(req)
+	assert.NoError(t, err)
+	assert.Equal(t, 201, status)
+
+	var decoded map[string]any
+	require.NoError(t, json.Unmarshal(b, &decoded))
+	assert.Equal(t, "ok-123", decoded["id"])
+}
+
+// No regression on valid requests — the bypass header is a no-op.
+func TestMockBypass_HeaderOnValidRequest_IsNoOp(t *testing.T) {
+	me := bypassTestEngine(t, true, false)
+	validBody := bytes.NewBufferString(`{"name":"widget","count":3}`)
+	req, _ := http.NewRequest(http.MethodPost, "https://api.pb33f.io/things", validBody)
+	req.Header.Set(helpers.ContentTypeHeader, "application/json")
+	req.Header.Set("wiretap-bypass-validation", "true")
+
+	_, status, err := me.GenerateResponse(req)
+	assert.NoError(t, err)
+	assert.Equal(t, 201, status)
+}
+
+// The non-hard-validation path already serves examples regardless of request
+// validity. Bypass must not change that — it's a no-op on this branch.
+func TestMockBypass_NonHardValidation_IsNoOp(t *testing.T) {
+	for _, bypass := range []bool{false, true} {
+		bypass := bypass
+		t.Run("bypass="+strconv.FormatBool(bypass), func(t *testing.T) {
+			me := bypassTestEngine(t, false, bypass)
+			req := invalidPost(t)
+
+			_, status, err := me.GenerateResponse(req)
+			assert.NoError(t, err)
+			assert.Equal(t, 201, status, "non-hard-validation path must serve the example; bypass=%v", bypass)
+		})
+	}
+}
+

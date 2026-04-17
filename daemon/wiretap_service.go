@@ -86,7 +86,8 @@ func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapCon
 				config.MockModePretty,
 				config.UseAllMockResponseFields,
 				config.StrictMode,
-				config.HardErrors),
+				config.HardErrors,
+				config.MockBypassValidation),
 		})
 	}
 

@@ -62,6 +62,7 @@ type WiretapConfiguration struct {
 	StaticMockDir               string                                      `json:"staticMockDir,omitempty" yaml:"staticMockDir,omitempty"`
 	UseAllMockResponseFields    bool                                        `json:"useAllMockResponseFields,omitempty" yaml:"useAllMockResponseFields,omitempty"`
 	MockModePretty              bool                                        `json:"mockModePretty,omitempty" yaml:"mockModePretty,omitempty"`
+	MockBypassValidation        bool                                        `json:"mockBypassValidation,omitempty" yaml:"mockBypassValidation,omitempty"`
 	Base                        string                                      `json:"base,omitempty" yaml:"base,omitempty"`
 	HAR                         string                                      `json:"har,omitempty" yaml:"har,omitempty"`
 	HARValidate                 bool                                        `json:"harValidate,omitempty" yaml:"harValidate,omitempty"`
