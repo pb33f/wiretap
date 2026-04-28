@@ -30,8 +30,8 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, docs []shared
 	controlsStore := storeManager.CreateStoreWithType(controls.ControlServiceChan, reflect.TypeOf(wiretapConfig))
 	controlsStore.Put(shared.ConfigKey, wiretapConfig, nil)
 
-	harStore := storeManager.CreateStoreWithType(har.HARServiceChan, reflect.TypeOf(wiretapConfig.HARFile))
-	harStore.Put(shared.HARKey, wiretapConfig.HARFile, nil)
+	harStore := storeManager.CreateStoreWithType(har.HARServiceChan, reflect.TypeOf(""))
+	harStore.Put(shared.HARKey, wiretapConfig.HAR, nil)
 
 	// create a new ranch config.
 	ranchConfig, _ := server.CreateServerConfig()
@@ -107,7 +107,7 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, docs []shared
 
 	// register HAR Service
 	if err = platformServer.RegisterService(
-		har.NewHARService(wtService, wiretapConfig.Logger), har.HARServiceChan); err != nil {
+		har.NewHARService(wtService, wiretapConfig.Logger, wiretapConfig.HARReplayDelay), har.HARServiceChan); err != nil {
 		panic(err)
 	}
 

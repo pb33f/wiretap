@@ -17,7 +17,6 @@ import (
 	"go.yaml.in/yaml/v4"
 
 	"github.com/gobwas/glob"
-	harModel "github.com/pb33f/harific/motor/model"
 )
 
 type ApiDocument struct {
@@ -67,6 +66,7 @@ type WiretapConfiguration struct {
 	HAR                         string                                      `json:"har,omitempty" yaml:"har,omitempty"`
 	HARValidate                 bool                                        `json:"harValidate,omitempty" yaml:"harValidate,omitempty"`
 	HARPathAllowList            []string                                    `json:"harPathAllowList,omitempty" yaml:"harPathAllowList,omitempty"`
+	HARReplayDelay              int                                         `json:"harReplayDelay,omitempty" yaml:"harReplayDelay,omitempty"`
 	StreamReport                bool                                        `json:"streamReport,omitempty" yaml:"streamReport,omitempty"`
 	ReportFile                  string                                      `json:"reportFilename,omitempty" yaml:"reportFilename,omitempty"`
 	IgnoreRedirects             []string                                    `json:"ignoreRedirects,omitempty" yaml:"ignoreRedirects,omitempty"`
@@ -77,7 +77,6 @@ type WiretapConfiguration struct {
 	StrictRedirectLocation      bool                                        `json:"strictRedirectLocation,omitempty" yaml:"strictRedirectLocation,omitempty"`
 	StrictMode                  bool                                        `json:"strictMode,omitempty" yaml:"strictMode,omitempty"`
 	IgnorePathRewrite           []*IgnoreRewriteConfig                      `json:"ignorePathRewrite,omitempty" yaml:"ignorePathRewrite,omitempty"`
-	HARFile                     *harModel.HAR                                 `json:"-" yaml:"-"`
 	CompiledMockModeList        []glob.Glob                                 `json:"-" yaml:"-"`
 	CompiledPathDelays          map[string]*CompiledPathDelay               `json:"-" yaml:"-"`
 	CompiledVariables           map[string]*CompiledVariable                `json:"-" yaml:"-"`

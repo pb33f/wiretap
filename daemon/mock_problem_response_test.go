@@ -18,6 +18,7 @@ import (
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
+	"github.com/pb33f/wiretap/daemon/problems"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,7 +49,7 @@ func newMockModeWiretapService(t *testing.T, config *shared.WiretapConfiguration
 		DocumentName: "giftshop-openapi.yaml",
 		Document:     doc,
 	}}, config)
-	ws.broadcastChan = bus.GetBus().GetChannelManager().CreateChannel(WiretapBroadcastChan)
+	ws.setBroadcastChannel(bus.GetBus().GetChannelManager().CreateChannel(WiretapBroadcastChan))
 	ws.controlsStore.Put(shared.ConfigKey, config, nil)
 	return ws
 }
@@ -89,7 +90,7 @@ func TestHandleHttpRequest_MockModeHardErrorReturnProblem(t *testing.T) {
 	ws.handleHttpRequest(request)
 
 	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Equal(t, problemJSONContentType, rec.Header().Get("Content-Type"))
+	assert.Equal(t, problems.JSONContentType, rec.Header().Get("Content-Type"))
 	assert.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
 
 	var decoded map[string]any

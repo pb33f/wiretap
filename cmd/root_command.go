@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 
-	harModel "github.com/pb33f/harific/motor/model"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pb33f/wiretap/har"
@@ -84,6 +83,7 @@ var (
 			harFlag, _ := cmd.Flags().GetString("har")
 			harValidate, _ := cmd.Flags().GetBool("har-validate")
 			harWhiteList, _ := cmd.Flags().GetStringArray("har-allow")
+			harReplayDelay, _ := cmd.Flags().GetInt("har-replay-delay")
 
 			debug, _ := cmd.Flags().GetBool("debug")
 			staticMockDir, _ = cmd.Flags().GetString("static-mock-dir")
@@ -260,6 +260,9 @@ var (
 				if len(harWhiteList) > 0 {
 					config.HARPathAllowList = harWhiteList
 				}
+				if harReplayDelay > 0 {
+					config.HARReplayDelay = harReplayDelay
+				}
 
 			} else {
 
@@ -295,6 +298,7 @@ var (
 				config.HAR = harFlag
 				config.HARValidate = harValidate
 				config.HARPathAllowList = harWhiteList
+				config.HARReplayDelay = harReplayDelay
 			}
 
 			// If no primary specification has been provided, then we'll default to the first specification in the list
@@ -414,13 +418,14 @@ var (
 			}
 
 			// paths
-			if config.PathConfigurations != nil && config.PathConfigurations.Len() > 0 || len(config.StaticPaths) > 0 || len(config.HARPathAllowList) > 0 || len(config.IgnorePathRewrite) > 0 {
+			hasPathConfigurations := config.PathConfigurations != nil && config.PathConfigurations.Len() > 0
+			if hasPathConfigurations || len(config.StaticPaths) > 0 || len(config.HARPathAllowList) > 0 || len(config.IgnorePathRewrite) > 0 {
 				config.CompilePaths()
 				if len(config.IgnorePathRewrite) > 0 {
 					printLoadedIgnorePathRewrite(config.IgnorePathRewrite)
 				}
 
-				if config.PathConfigurations.Len() > 0 {
+				if hasPathConfigurations {
 					printLoadedPathConfigurations(config.PathConfigurations)
 				}
 			}
@@ -534,34 +539,20 @@ var (
 				pterm.Println()
 			}
 
-			var harBytes []byte
-			var harFile *harModel.HAR
-
 			// check if we're using a HAR file
 			if config.HAR != "" {
 				pterm.Println()
 				pterm.Printf("📦 Loading HAR file: %s\n", pterm.LightMagenta(config.HAR))
-				// can we read the har file?
-				_, err := os.Stat(config.HAR)
+				info, err := os.Stat(config.HAR)
 				if err != nil {
 					pterm.Error.Printf("Cannot read HAR file: %s (%s)\n", config.HAR, err.Error())
 					return nil
 				}
-
-				var fErr error
-				harBytes, fErr = os.ReadFile(config.HAR)
-				if fErr != nil {
-					pterm.Error.Printf("Cannot read HAR file: %s (%s)\n", config.HAR, fErr.Error())
-					return nil
-				}
-
-				harFile, fErr = har.BuildHAR(harBytes)
-				if fErr != nil {
-					pterm.Error.Printf("Cannot parse HAR file: %s (%s)\n", config.HAR, fErr.Error())
+				if info.IsDir() {
+					pterm.Error.Printf("Cannot read HAR file: %s is a directory\n", config.HAR)
 					return nil
 				}
 				pterm.Println()
-				config.HARFile = harFile
 			}
 			// let's create a logger first.
 			logLevel := pterm.LogLevelWarn
@@ -616,11 +607,6 @@ var (
 			handler := pterm.NewSlogHandler(ptermLog)
 			config.Logger = slog.New(handler)
 
-			// if we have a HAR file, we need to load it into the config
-			if harFile != nil {
-				config.HARFile = harFile
-			}
-
 			// load the openapi spec
 			var primaryDoc libopenapi.Document
 			docs := make([]shared.ApiDocument, 0)
@@ -671,19 +657,10 @@ var (
 				}
 			} else {
 
-				if harFile != nil && config.HARValidate {
-
-					count := 0
-					for _, entry := range harFile.Log.Entries {
-						if entry.Request.Method != "" {
-							count++
-						}
-						if entry.Response.StatusCode > 0 {
-							count++
-						}
-					}
-
-					validationErrors := har.ValidateHAR(harFile, docModels, &config)
+				if config.HAR != "" && config.HARValidate {
+					result := har.ValidateHARWithResult(config.HAR, docModels, &config)
+					count := result.MessageCount
+					validationErrors := result.Errors
 					if len(validationErrors) > 0 {
 						pterm.Println()
 						pterm.Error.Printf("HAR file failed validation against OpenAPI specification(s): %s\n", config.GetContractList())
@@ -787,6 +764,7 @@ func Execute(version, commit, date string, fs embed.FS) {
 	rootCmd.Flags().StringP("har", "z", "", "Load a HAR file instead of sniffing traffic")
 	rootCmd.Flags().BoolP("har-validate", "g", false, "Load a HAR file instead of sniffing traffic, and validate against the OpenAPI specification (requires -s)")
 	rootCmd.Flags().StringArrayP("har-allow", "j", nil, "Add a path to the HAR allow list, can use arg multiple times")
+	rootCmd.Flags().Int("har-replay-delay", 0, "Delay in milliseconds between HAR replayed request and response events")
 	rootCmd.Flags().StringP("report-filename", "f", "wiretap-report.jsonl", "Filename for any headless report generation output")
 	rootCmd.Flags().BoolP("stream-report", "a", false, "Stream violations to report JSON file as they occur (headless mode)")
 	rootCmd.Flags().BoolP("strict-redirect-location", "r", false, "Rewrite the redirect `Location` header on redirect responses to wiretap's API Gateway Host")

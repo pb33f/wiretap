@@ -1,7 +1,7 @@
 // Copyright 2026 Princess B33f Heavy Industries / Dave Shanley
 // SPDX-License-Identifier: AGPL
 
-package daemon
+package problems
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 	"github.com/pb33f/wiretap/shared"
 )
 
-const problemJSONContentType = "application/problem+json"
+const JSONContentType = "application/problem+json"
 
 var validationProblemHeadersToDrop = []string{
 	"Accept-Ranges",
@@ -27,7 +27,7 @@ var validationProblemHeadersToDrop = []string{
 	"Transfer-Encoding",
 }
 
-func shouldReturnValidationProblem(
+func ShouldReturnValidationProblem(
 	config *shared.WiretapConfiguration,
 	requestErrors, responseErrors []*shared.WiretapValidationError,
 ) bool {
@@ -36,29 +36,50 @@ func shouldReturnValidationProblem(
 		(len(requestErrors) > 0 || len(responseErrors) > 0)
 }
 
-func stripValidationProblemHeaders(headers http.Header) {
+func PickHardErrorStatus(
+	isHardError bool,
+	requestErrors, responseErrors []*shared.WiretapValidationError,
+	config *shared.WiretapConfiguration,
+	upstreamStatus int,
+) int {
+	if !isHardError {
+		return upstreamStatus
+	}
+	hasReq := len(requestErrors) > 0
+	hasResp := len(responseErrors) > 0
+	switch {
+	case hasReq && !hasResp:
+		return config.HardErrorCode
+	case hasResp:
+		return config.HardErrorReturnCode
+	default:
+		return upstreamStatus
+	}
+}
+
+func StripValidationProblemHeaders(headers http.Header) {
 	for _, header := range validationProblemHeadersToDrop {
 		headers.Del(header)
 	}
 	headers.Set("Cache-Control", "no-store")
 }
 
-// writeValidationProblemResponse substitutes the HTTP response body with an
+// WriteValidationProblemResponse substitutes the HTTP response body with an
 // RFC 9457 problem document. It strips stale upstream representation headers,
 // prevents caching of the substituted body, overwrites Content-Type with
 // application/problem+json, writes the status code, then writes the marshalled
 // problem document.
 //
 // Caller must have already set any headers that should remain (e.g. CORS).
-func writeValidationProblemResponse(
+func WriteValidationProblemResponse(
 	w http.ResponseWriter,
 	status int,
 	instance string,
 	requestErrors, responseErrors []*shared.WiretapValidationError,
 ) {
 	headers := w.Header()
-	stripValidationProblemHeaders(headers)
-	headers.Set("Content-Type", problemJSONContentType)
+	StripValidationProblemHeaders(headers)
+	headers.Set("Content-Type", JSONContentType)
 
 	problem := shared.BuildValidationProblem(status, instance, requestErrors, responseErrors)
 	body := shared.MarshalValidationProblem(problem)
