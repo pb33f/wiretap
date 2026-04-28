@@ -4,22 +4,16 @@
 package daemon
 
 import (
-	"bytes"
-	"crypto/tls"
 	_ "embed"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"text/template"
-	"time"
-
-	"github.com/gorilla/websocket"
 
 	"github.com/pb33f/ranch/model"
-	configModel "github.com/pb33f/wiretap/config"
+	"github.com/pb33f/wiretap/daemon/mockproxy"
+	"github.com/pb33f/wiretap/daemon/proxy"
 	"github.com/pb33f/wiretap/shared"
 )
 
@@ -92,458 +86,58 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 			}
 		}
 	}
-	var returnedResponse *http.Response
-	var returnedError error
-
-	configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
-	config := configStore.(*shared.WiretapConfiguration)
-
-	if config.Headers == nil || len(config.Headers.DropHeaders) == 0 {
-		config.Headers = &shared.WiretapHeaderConfig{
-			DropHeaders: []string{},
-		}
-	}
-
-	dropHeaders, injectHeaders, auth := ws.getHeadersAndAuth(config, request)
-
-	// read body once — reused across both clones and transaction building
-	bodyBytes, _ := io.ReadAll(request.HttpRequest.Body)
-	request.HttpRequest.Body.Close()
-	request.HttpRequest.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-	newReq := CloneExistingRequest(CloneRequest{
-		Request:       request.HttpRequest,
-		Protocol:      config.RedirectProtocol,
-		Host:          config.RedirectHost,
-		Port:          config.RedirectPort,
-		DropHeaders:   dropHeaders,
-		InjectHeaders: injectHeaders,
-		Auth:          auth,
-		BodyBytes:     bodyBytes,
-	})
-
-	apiRequest := CloneExistingRequest(CloneRequest{
-		Request:       request.HttpRequest,
-		Protocol:      config.RedirectProtocol,
-		Host:          config.RedirectHost,
-		BasePath:      config.RedirectBasePath,
-		Port:          config.RedirectPort,
-		DropHeaders:   dropHeaders,
-		InjectHeaders: injectHeaders,
-		Auth:          auth,
-		BodyBytes:     bodyBytes,
-	})
-
-	if newReq == nil || apiRequest == nil {
-		ws.config.Logger.Error("[wiretap] unable to clone API request, failed", "url", request.HttpRequest.URL.String())
+	prep := ws.prepareRequest(request)
+	if prep == nil {
 		return
 	}
-
-	var requestErrors []*shared.WiretapValidationError
-	var responseErrors []*shared.WiretapValidationError
 
 	ws.config.Logger.Info("[wiretap] handling API request", "url", request.HttpRequest.URL.String())
 
-	// cache hard error check — called multiple times per request
-	isHardError := configModel.IsHardErrorsSet(apiRequest.URL.Path, config)
-
-	// pre-build transaction config with resolved headers/auth to avoid re-resolving in BuildHttpTransaction
-	txnConfig := HttpTransactionConfig{
-		OriginalRequest:   request.HttpRequest,
-		NewRequest:        newReq,
-		ID:                request.Id,
-		TransactionConfig: config,
-		DropHeaders:       dropHeaders,
-		InjectHeaders:     injectHeaders,
-		Auth:              auth,
-		BasePath:          config.RedirectBasePath,
-		BodyBytes:         bodyBytes,
-	}
-
 	// short-circuit if we're using mock mode, there is no API call to make.
-	if ws.config.MockMode || configModel.IncludePathOnMockMode(apiRequest.URL.Path, ws.config) {
+	if prep.UseMock {
 		ws.config.Logger.Info("MockMode enabled; skipping validation")
-		ws.handleMockRequest(request, config, newReq, isHardError, txnConfig)
-		return
-	} else if configModel.IgnoreValidationOnPath(apiRequest.URL.Path, ws.config) && !configModel.PathValidationAllowListed(apiRequest.URL.Path, ws.config) {
-		ws.config.Logger.Info(
-			fmt.Sprintf("Request on validation ignored path: %s ; skipping validation", apiRequest.URL.Path))
-	} else if isHardError {
-		// validate the request synchronously
-		requestErrors = ws.ValidateRequest(request, newReq, txnConfig)
-	} else {
-		// validate the request asynchronously
-		go ws.ValidateRequest(request, newReq, txnConfig)
-	}
-
-	// call the API being requested.
-	returnedResponse, returnedError = ws.callAPI(apiRequest, config)
-
-	if returnedResponse == nil && returnedError != nil {
-		config.Logger.Info("[wiretap] request failed", "url", apiRequest.URL.String(), "code", 500,
-			"error", returnedError.Error())
-		go ws.broadcastResponseError(request, CloneExistingResponse(returnedResponse), returnedError)
-		request.HttpResponseWriter.WriteHeader(500)
-		wtError := shared.GenerateError("Unable to call API", 500, returnedError.Error(), "", returnedResponse)
-		_, _ = request.HttpResponseWriter.Write(shared.MarshalError(wtError))
-		return
-	}
-
-	// read response body once — reused for validation, response writing, and broadcasting
-	respBody, _ := io.ReadAll(returnedResponse.Body)
-	returnedResponse.Body.Close()
-	// restore body for validator (which may read it again)
-	returnedResponse.Body = io.NopCloser(bytes.NewBuffer(respBody))
-
-	if isHardError {
-		// validate response
-		responseErrors = ws.ValidateResponse(request, returnedResponse, respBody)
-	} else {
-		// validate response async — pass a cloned response so async reads don't race
-		clonedResp := &http.Response{
-			StatusCode: returnedResponse.StatusCode,
-			Header:     returnedResponse.Header,
-			Body:       io.NopCloser(bytes.NewBuffer(respBody)),
+		if ws.mock == nil {
+			ws.mock = mockproxy.NewHandler()
 		}
-		go ws.ValidateResponse(request, clonedResp, respBody)
-	}
-
-	// check if this path has a delay set.
-	delay := configModel.FindPathDelay(request.HttpRequest.URL.Path, config)
-	if delay > 0 {
-		time.Sleep(time.Duration(delay) * time.Millisecond) // simulate a slow response, configured for path.
-	} else {
-		if config.GlobalAPIDelay > 0 {
-			time.Sleep(time.Duration(config.GlobalAPIDelay) * time.Millisecond) // simulate a slow response.
-		}
-	}
-
-	headers := ExtractHeaders(returnedResponse)
-
-	// wiretap needs to work from anywhere, so allow everything.
-	shared.SetCORSHeaders(headers)
-
-	if config.StrictRedirectLocation && is3xxStatusCode(returnedResponse.StatusCode) {
-		setStrictLocationHeader(config, headers)
-	}
-
-	// write headers
-	for k, v := range headers {
-		for _, j := range v {
-			responseHeaders := request.HttpResponseWriter.Header()
-
-			if responseHeaders.Get(k) == "" {
-				responseHeaders.Set(k, j)
-			} else {
-				responseHeaders.Add(k, j)
-			}
-		}
-	}
-	config.Logger.Info("[wiretap] request completed", "url", request.HttpRequest.URL.String(), "code", returnedResponse.StatusCode)
-
-	// if there are validation errors, set an error code
-	statusCode := pickHardErrorStatus(isHardError, requestErrors, responseErrors, config, returnedResponse.StatusCode)
-
-	if isHardError && shouldReturnValidationProblem(config, requestErrors, responseErrors) {
-		writeValidationProblemResponse(
-			request.HttpResponseWriter,
-			statusCode,
-			request.HttpRequest.URL.Path,
-			requestErrors,
-			responseErrors,
-		)
+		ws.mock.Handle(request, &mockproxy.PreparedRequest{
+			Config:      prep.Config,
+			NewReq:      prep.NewReq,
+			IsHardError: prep.IsHardError,
+			ValidateRequest: func() []*shared.WiretapValidationError {
+				return ws.ValidateRequest(request, prep.NewReq, prep.TxnConfig)
+			},
+			GenerateMock: func(httpReq *http.Request) ([]byte, int, error) {
+				docValidator := ws.getValidatorForRequest(request)
+				if docValidator != nil {
+					return docValidator.MockEngine.GenerateResponse(httpReq)
+				}
+				return nil, http.StatusInternalServerError,
+					fmt.Errorf("mock engine has not been intialized; configure an OpenAPI specification to use this option")
+			},
+			BroadcastResponse: func(response *http.Response) {
+				ws.broadcastResponse(request, BuildResponse(request, response))
+			},
+		})
 		return
 	}
 
-	request.HttpResponseWriter.WriteHeader(statusCode)
-	_, _ = request.HttpResponseWriter.Write(respBody)
-}
-
-// pickHardErrorStatus returns the HTTP status to write back to the client,
-// honouring hard-error overrides when validation failed and falling through
-// to the upstream status otherwise.
-func pickHardErrorStatus(
-	isHardError bool,
-	requestErrors, responseErrors []*shared.WiretapValidationError,
-	config *shared.WiretapConfiguration,
-	upstreamStatus int,
-) int {
-	if !isHardError {
-		return upstreamStatus
+	if ws.proxy == nil {
+		ws.proxy = proxy.NewHandler(ws.transport)
 	}
-	hasReq := len(requestErrors) > 0
-	hasResp := len(responseErrors) > 0
-	switch {
-	case hasReq && !hasResp:
-		return config.HardErrorCode
-	case hasResp:
-		return config.HardErrorReturnCode
-	default:
-		return upstreamStatus
-	}
-}
-
-var gorillaDropHeaders = []string{
-	// Gorilla fills in the following headers, and complains if they are already present
-	"Upgrade",
-	"Connection",
-	"Sec-Websocket-Key",
-	"Sec-Websocket-Version",
-	"Sec-Websocket-Protocol",
-	"Sec-Websocket-Extensions",
-}
-
-func (ws *WiretapService) handleWebsocketRequest(request *model.Request) {
-
-	configStore, _ := ws.controlsStore.Get(shared.ConfigKey)
-	config := configStore.(*shared.WiretapConfiguration)
-
-	// Get the Websocket Configuration
-	websocketUrl := request.HttpRequest.URL.String()
-	websocketConfig, ok := config.WebsocketConfigs[websocketUrl]
-	if !ok {
-		ws.config.Logger.Error(fmt.Sprintf("Unable to find websocket config for URL: %s", websocketUrl))
-	}
-
-	// There's nothing to do if we're in mock mode
-	if config.MockMode {
-		return
-	}
-
-	upgrader := websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
-
-	// Upgrade the connection from the client to open a websocket connection
-	clientConn, err := upgrader.Upgrade(request.HttpResponseWriter, request.HttpRequest, nil)
-	if err != nil {
-		ws.config.Logger.Error("Unable to upgrade websocket connection")
-		return
-	}
-	defer func(clientConn *websocket.Conn) {
-		_ = clientConn.Close()
-	}(clientConn)
-
-	if config.Headers == nil || len(config.Headers.DropHeaders) == 0 {
-		config.Headers = &shared.WiretapHeaderConfig{
-			DropHeaders: []string{},
-		}
-	}
-
-	// Get the updated headers and auth
-	dropHeaders, injectHeaders, auth := ws.getHeadersAndAuth(config, request)
-
-	dropHeaders = append(dropHeaders, gorillaDropHeaders...)
-	dropHeaders = append(dropHeaders, websocketConfig.DropHeaders...)
-
-	// Determine the correct websocket protocol based on redirect protocol
-	var protocol string
-	if config.RedirectProtocol == "https" {
-		protocol = "wss"
-	} else if config.RedirectProtocol == "http" {
-		protocol = "ws"
-	} else if config.RedirectProtocol != "wss" && config.RedirectProtocol != "ws" {
-		config.Logger.Error(fmt.Sprintf("Unsupported Redirect Protocol: %s", config.RedirectProtocol))
-		return
-	}
-
-	// Create a new request, which fills in the URL and other information
-	newRequest := CloneExistingRequest(CloneRequest{
-		Request:       request.HttpRequest,
-		Protocol:      protocol,
-		Host:          config.RedirectHost,
-		BasePath:      config.RedirectBasePath,
-		Port:          config.RedirectPort,
-		DropHeaders:   dropHeaders,
-		InjectHeaders: injectHeaders,
-		Auth:          auth,
+	ws.proxy.Handle(request, &proxy.PreparedRequest{
+		Config:      prep.Config,
+		NewReq:      prep.NewReq,
+		APIRequest:  prep.APIRequest,
+		BodyBytes:   prep.BodyBytes,
+		IsHardError: prep.IsHardError,
+		ValidateRequest: func() []*shared.WiretapValidationError {
+			return ws.ValidateRequest(request, prep.NewReq, prep.TxnConfig)
+		},
+		ValidateResponse: func(response *http.Response, body []byte) []*shared.WiretapValidationError {
+			return ws.ValidateResponse(request, response, body)
+		},
+		BroadcastResponseError: func(response *http.Response, err error) {
+			ws.broadcastResponseError(request, CloneExistingResponse(response), err)
+		},
 	})
-
-	// Open a new websocket connection with the server
-	dialer := *websocket.DefaultDialer
-	dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: !*websocketConfig.VerifyCert}
-	serverConn, _, err := dialer.Dial(newRequest.URL.String(), newRequest.Header)
-	if err != nil {
-		ws.config.Logger.Error(fmt.Sprintf("Unable to connect to remote server; websocket connection failed: %s", err))
-		return
-	}
-	defer func(serverConn *websocket.Conn) {
-		_ = serverConn.Close()
-	}(serverConn)
-
-	// Create sentinel channels
-	clientSentinel := make(chan struct{})
-	serverSentinel := make(chan struct{})
-
-	// Go-Routine for communication between Client -> Server
-	go func() {
-		defer close(clientSentinel)
-
-		for {
-			messageType, message, err := clientConn.ReadMessage()
-			if err != nil {
-				closeCode, isUnexpected := getCloseCode(err)
-				logWebsocketClose(config, closeCode, isUnexpected)
-				_ = clientConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-				return
-			}
-
-			err = serverConn.WriteMessage(messageType, message)
-			if err != nil {
-				closeCode, isUnexpected := getCloseCode(err)
-				logWebsocketClose(config, closeCode, isUnexpected)
-				return
-			}
-		}
-	}()
-
-	// Go-Routine for communication between Server -> Client
-	go func() {
-		defer close(serverSentinel)
-
-		for {
-			messageType, message, err := serverConn.ReadMessage()
-			if err != nil {
-				closeCode, isUnexpected := getCloseCode(err)
-				logWebsocketClose(config, closeCode, isUnexpected)
-				_ = clientConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-				return
-			}
-
-			err = clientConn.WriteMessage(messageType, message)
-			if err != nil {
-				closeCode, isUnexpected := getCloseCode(err)
-				logWebsocketClose(config, closeCode, isUnexpected)
-				return
-			}
-		}
-	}()
-
-	// Loop until at least one of our sentinel channels have been closed
-	for {
-		select {
-		case <-clientSentinel:
-			return
-		case <-serverSentinel:
-			return
-		}
-	}
-}
-
-// setStrictLocationHeader rewrites any `Location` headers to wiretap's ApiGatewayHost. Some web servers specify
-// the full URL when redirecting the browser, so we need to ensure that the browser isn't redirected away from the
-// wiretap Host. We achieve this by rewriting the `Location` header host and port to wiretap's host and port on all
-// redirect responses.
-func setStrictLocationHeader(config *shared.WiretapConfiguration, headers map[string][]string) {
-	if locations, ok := headers["Location"]; ok {
-		newLocations := make([]string, 0)
-
-		apiGatewayHost := config.GetApiGatewayHost()
-
-		for _, location := range locations {
-			parsedLocation, parseErr := url.Parse(location)
-
-			// Unable to parse the location url, let's just re-add the location to ensure that there is at least one
-			// redirect target
-			if parseErr != nil {
-				config.Logger.Warn(fmt.Sprintf("Unable to parse `Location` header URL: %s", location))
-				newLocations = append(newLocations, location)
-			} else if parsedLocation.Host != "" && parsedLocation.Host != apiGatewayHost { // Check if the target location's host differs from wiretap's host
-				parsedLocation.Host = apiGatewayHost
-
-				newLocation := parsedLocation.String()
-				config.Logger.Info(fmt.Sprintf("Rewrote `Location` header from %s to %s", location, newLocation))
-
-				newLocations = append(newLocations, newLocation)
-			} else { // Otherwise, we need to re-add the old location
-				newLocations = append(newLocations, location)
-			}
-
-		}
-		headers["Location"] = newLocations
-	}
-
-}
-
-func getCloseCode(err error) (int, bool) {
-	unexpectedClose := websocket.IsUnexpectedCloseError(err,
-		websocket.CloseNormalClosure,
-		websocket.CloseGoingAway,
-		websocket.CloseNoStatusReceived,
-		websocket.CloseAbnormalClosure,
-	)
-
-	if ce, ok := err.(*websocket.CloseError); ok {
-		return ce.Code, unexpectedClose
-	}
-	return -1, unexpectedClose
-}
-
-func is3xxStatusCode(statusCode int) bool {
-	return 300 <= statusCode && statusCode < 400
-}
-
-func logWebsocketClose(config *shared.WiretapConfiguration, closeCode int, isUnexpected bool) {
-	if isUnexpected {
-		config.Logger.Warn(fmt.Sprintf("Websocket closed unexepectedly with code: %d", closeCode))
-	} else {
-		config.Logger.Info(fmt.Sprintf("Websocket closed expectedly with code: %d", closeCode))
-	}
-}
-
-func mergeInjectHeaders(base, override map[string]string) map[string]string {
-	merged := make(map[string]string, len(base)+len(override))
-	for k, v := range base {
-		merged[k] = v
-	}
-	for k, v := range override {
-		merged[k] = v
-	}
-	return merged
-}
-
-func (ws *WiretapService) getHeadersAndAuth(config *shared.WiretapConfiguration, request *model.Request) ([]string, map[string]string, string) {
-	var dropHeaders []string
-	var injectHeaders map[string]string
-
-	// copy global headers to avoid mutating shared config state
-	if config.Headers != nil {
-		dropHeaders = append([]string(nil), config.Headers.DropHeaders...)
-		injectHeaders = mergeInjectHeaders(nil, config.Headers.InjectHeaders)
-	}
-
-	// now add path specific headers.
-	matchedPaths := configModel.FindPaths(request.HttpRequest.URL.Path, config)
-	auth := ""
-	if len(matchedPaths) > 0 {
-		var matchedPath *shared.WiretapPathConfig
-
-		// First check if we have a path matching our RewriteId
-		matchedPath = configModel.FindPathWithRewriteId(matchedPaths, request.HttpRequest)
-
-		// Get the first matched value in the list, if we don't have a rewriteId that fits
-		if matchedPath == nil {
-			matchedPath = matchedPaths[0]
-		}
-
-		auth = matchedPath.Auth
-		if matchedPath.Headers != nil {
-			dropHeaders = append(dropHeaders, matchedPath.Headers.DropHeaders...)
-			injectHeaders = mergeInjectHeaders(matchedPath.Headers.InjectHeaders, injectHeaders)
-		}
-	}
-
-	// apply variable substitution so callers receive already-substituted values
-	// (matches what CloneExistingRequest sends upstream)
-	if len(config.CompiledVariables) > 0 {
-		for k, v := range injectHeaders {
-			injectHeaders[k] = ReplaceWithVariables(config.CompiledVariables, v)
-		}
-		if auth != "" {
-			auth = ReplaceWithVariables(config.CompiledVariables, auth)
-		}
-	}
-
-	return dropHeaders, injectHeaders, auth
 }

@@ -1,8 +1,7 @@
-// Copyright 2023-2024 Princess Beef Heavy Industries, LLC / Dave Shanley
-// https://pb33f.io
+// Copyright 2026 Princess B33f Heavy Industries / Dave Shanley
 // SPDX-License-Identifier: AGPL
 
-package daemon
+package mockproxy
 
 import (
 	"fmt"
@@ -12,9 +11,14 @@ import (
 	"github.com/pb33f/ranch/model"
 )
 
-func (ws *WiretapService) handleStaticMockResponse(request *model.Request, response *http.Response) {
-	// validate response async
-	go ws.broadcastResponse(request, BuildResponse(request, response))
+type StaticResponseBroadcaster func(*http.Response)
+
+func (h *Handler) HandleStaticResponse(
+	request *model.Request,
+	response *http.Response,
+	broadcast StaticResponseBroadcaster,
+) {
+	go broadcast(response)
 
 	for k, v := range response.Header {
 		for _, j := range v {
@@ -22,7 +26,7 @@ func (ws *WiretapService) handleStaticMockResponse(request *model.Request, respo
 		}
 	}
 
-	responseCodeToReturn := 200
+	responseCodeToReturn := http.StatusOK
 	if response.StatusCode != 0 {
 		responseCodeToReturn = response.StatusCode
 	}
@@ -37,8 +41,8 @@ func (ws *WiretapService) handleStaticMockResponse(request *model.Request, respo
 		panic(err)
 	}
 
-	_, errs := request.HttpResponseWriter.Write(byteArrayBody)
-	if errs != nil {
-		panic(errs)
+	_, err = request.HttpResponseWriter.Write(byteArrayBody)
+	if err != nil {
+		panic(err)
 	}
 }

@@ -1,12 +1,13 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
 // SPDX-License-Identifier: AGPL
 
-package daemon
+package transaction
 
 import (
-	"github.com/pb33f/wiretap/shared"
 	"net/textproto"
 	"time"
+
+	"github.com/pb33f/wiretap/shared"
 )
 
 type HttpCookie struct {

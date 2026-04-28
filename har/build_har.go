@@ -4,23 +4,45 @@
 package har
 
 import (
+	"context"
 	"fmt"
-	jsoniter "github.com/json-iterator/go"
-	harModel "github.com/pb33f/harific/motor/model"
+
+	"github.com/pb33f/harific/motor"
 )
 
-func BuildHAR(har []byte) (*harModel.HAR, error) {
-	if har == nil {
-		return nil, fmt.Errorf("HAR bytes are empty")
+func NewHARStreamer(path string, opts motor.StreamerOptions) (motor.HARStreamer, error) {
+	if path == "" {
+		return nil, fmt.Errorf("HAR path is empty")
 	}
 
-	var json = jsoniter.ConfigCompatibleWithStandardLibrary
-	var harFile harModel.HAR
+	return motor.NewHARStreamer(path, opts)
+}
 
-	err := json.Unmarshal(har, &harFile)
-
+func CountHARMessages(path string) (int, error) {
+	streamer, err := NewHARStreamer(path, motor.DefaultStreamerOptions())
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	return &harFile, nil
+	defer streamer.Close()
+
+	ctx := context.Background()
+	if err = streamer.Initialize(ctx); err != nil {
+		return 0, err
+	}
+
+	index := streamer.GetIndex()
+	if index == nil {
+		return 0, nil
+	}
+
+	count := 0
+	for _, entry := range index.Entries {
+		if entry.Method != "" {
+			count++
+		}
+		if entry.StatusCode > 0 {
+			count++
+		}
+	}
+	return count, nil
 }

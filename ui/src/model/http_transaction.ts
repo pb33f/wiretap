@@ -16,7 +16,8 @@ export interface HttpCookie {
 
 export interface SchemaValidationFailure {
     reason?: string;
-    location?: string;
+    keywordLocation?: string;
+    fieldPath?: string;
     referenceSchema?: string;
     referenceObject?: string;
     referenceExample?: string;

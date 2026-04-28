@@ -4,34 +4,18 @@
 package daemon
 
 import (
-	"github.com/pb33f/libopenapi-validator/paths"
 	"github.com/pb33f/ranch/model"
+	daemonvalidator "github.com/pb33f/wiretap/daemon/validator"
 	"github.com/pb33f/wiretap/shared"
+	"github.com/pb33f/wiretap/transaction"
 	"net/http"
 )
 
-func (ws *WiretapService) getValidatorForRequest(request *model.Request) *documentValidator {
-
-	if len(ws.documentValidators) == 1 {
-		return &ws.documentValidators[0]
-	} else {
-
-		for _, docValidator := range ws.documentValidators {
-			// Find the first path match between all provided specifications
-			pathItem, _, _ := paths.FindPath(request.HttpRequest, docValidator.docModel, nil)
-
-			if pathItem != nil {
-				return &docValidator
-			}
-		}
-
-		// If we haven't found a path, let's pick the first validator to validate against. This should just produce a path not found error.
-		if len(ws.documentValidators) > 0 {
-			return &ws.documentValidators[0]
-		}
+func (ws *WiretapService) getValidatorForRequest(request *model.Request) *daemonvalidator.DocumentValidator {
+	if ws.validator == nil {
+		return nil
 	}
-
-	return nil
+	return ws.validator.GetValidatorForRequest(request)
 }
 
 func (ws *WiretapService) ValidateResponse(
@@ -39,38 +23,27 @@ func (ws *WiretapService) ValidateResponse(
 	returnedResponse *http.Response,
 	preReadBody ...[]byte) []*shared.WiretapValidationError {
 
-	var validationErrors []*shared.WiretapValidationError
-
-	docValidator := ws.getValidatorForRequest(request)
-	if docValidator != nil {
-		_, newValidationErrors := docValidator.validator.ValidateHttpResponse(request.HttpRequest, returnedResponse)
-		validationErrors = shared.ConvertValidationErrors(docValidator.documentName, newValidationErrors)
+	var validationErrors, cleanedErrors []*shared.WiretapValidationError
+	if ws.validator != nil {
+		validationErrors, cleanedErrors = ws.validator.ValidateResponse(request, returnedResponse)
 	}
 
-	// wipe out any path not found errors, they are not relevant to the response.
-	var cleanedErrors []*shared.WiretapValidationError
-	for x := range validationErrors {
-		if !validationErrors[x].IsPathMissingError() {
-			cleanedErrors = append(cleanedErrors, validationErrors[x])
-		}
-	}
-
-	var transaction *HttpTransaction
+	var txn *transaction.HttpTransaction
 	if len(preReadBody) > 0 {
-		transaction = BuildResponseFromBytes(request, returnedResponse, preReadBody[0])
+		txn = BuildResponseFromBytes(request, returnedResponse, preReadBody[0])
 	} else {
-		transaction = BuildResponse(request, returnedResponse)
+		txn = BuildResponse(request, returnedResponse)
 	}
 	if len(cleanedErrors) > 0 {
-		transaction.ResponseValidation = cleanedErrors
+		txn.ResponseValidation = cleanedErrors
 	}
-	ws.transactionStore.Put(request.Id.String(), transaction, nil)
+	ws.transactionStore.Put(request.Id.String(), txn, nil)
 
 	if len(cleanedErrors) > 0 {
 		sendToStreamChan(ws, cleanedErrors)
-		ws.broadcastResponseValidationErrors(request, transaction, cleanedErrors)
+		ws.broadcastResponseValidationErrors(request, txn, cleanedErrors)
 	} else {
-		ws.broadcastResponse(request, transaction)
+		ws.broadcastResponse(request, txn)
 	}
 	return validationErrors
 }
@@ -94,15 +67,11 @@ func (ws *WiretapService) ValidateRequest(
 	httpRequest *http.Request,
 	txnConfig ...HttpTransactionConfig) []*shared.WiretapValidationError {
 
-	var validationErrors, cleanedErrors []*shared.WiretapValidationError
-
-	docValidator := ws.getValidatorForRequest(modelRequest)
-	if docValidator != nil {
-		_, newValidationErrors := docValidator.validator.ValidateHttpRequest(httpRequest)
-		validationErrors = shared.ConvertValidationErrors(docValidator.documentName, newValidationErrors)
+	var cleanedErrors []*shared.WiretapValidationError
+	if ws.validator != nil {
+		cleanedErrors = ws.validator.ValidateRequest(modelRequest, httpRequest)
 	}
 
-	cleanedErrors = validationErrors
 	// record results
 	var buildTransConfig HttpTransactionConfig
 	if len(txnConfig) > 0 {
@@ -116,18 +85,18 @@ func (ws *WiretapService) ValidateRequest(
 		}
 	}
 
-	transaction := BuildHttpTransaction(buildTransConfig)
+	txn := BuildHttpTransaction(buildTransConfig)
 	if len(cleanedErrors) > 0 {
-		transaction.RequestValidation = cleanedErrors
+		txn.RequestValidation = cleanedErrors
 	}
-	ws.transactionStore.Put(modelRequest.Id.String(), transaction, nil)
+	ws.transactionStore.Put(modelRequest.Id.String(), txn, nil)
 
 	// broadcast what we found.
 	if len(cleanedErrors) > 0 {
 		sendToStreamChan(ws, cleanedErrors)
-		ws.broadcastRequestValidationErrors(modelRequest, cleanedErrors, transaction)
+		ws.broadcastRequestValidationErrors(modelRequest, cleanedErrors, txn)
 	} else {
-		ws.broadcastRequest(modelRequest, transaction)
+		ws.broadcastRequest(modelRequest, txn)
 	}
 	return cleanedErrors
 }

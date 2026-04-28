@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pb33f/libopenapi"
-	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/wiretap/controls"
+	"github.com/pb33f/wiretap/daemon/broadcast"
+	"github.com/pb33f/wiretap/daemon/mockproxy"
+	"github.com/pb33f/wiretap/daemon/proxy"
+	daemonvalidator "github.com/pb33f/wiretap/daemon/validator"
 	"github.com/pb33f/wiretap/mock"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/validation"
@@ -26,27 +28,23 @@ const (
 	IncomingHttpRequest     = "incoming-http-request"
 )
 
-type documentValidator struct {
-	documentName string
-	document     libopenapi.Document
-	docModel     *v3.Document
-	validator    validation.HttpValidator
-	mockEngine   *mock.ResponseMockEngine
-}
 type WiretapService struct {
-	transport          *http.Transport
-	serviceCore        service.FabricServiceCore
-	broadcastChan      *bus.Channel
-	bus                bus.EventBus
-	controlsStore      bus.BusStore
-	transactionStore   bus.BusStore
-	config             *shared.WiretapConfiguration
-	fs                 http.Handler
-	documentValidators []documentValidator
-	stream             bool
-	streamChan   chan []*shared.WiretapValidationError
-	reportFile   string
-	StaticMockDir      string
+	transport        *http.Transport
+	serviceCore      service.FabricServiceCore
+	broadcastChan    *bus.Channel
+	bus              bus.EventBus
+	controlsStore    bus.BusStore
+	transactionStore bus.BusStore
+	config           *shared.WiretapConfiguration
+	fs               http.Handler
+	broadcaster      *broadcast.LazyBroadcaster
+	validator        *daemonvalidator.Validator
+	proxy            *proxy.Handler
+	mock             *mockproxy.Handler
+	stream           bool
+	streamChan       chan []*shared.WiretapValidationError
+	reportFile       string
+	StaticMockDir    string
 }
 
 func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapConfiguration) *WiretapService {
@@ -60,8 +58,8 @@ func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapCon
 	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	wts := &WiretapService{
-		stream:           config.StreamReport,
-		reportFile:       config.ReportFile,
+		stream:     config.StreamReport,
+		reportFile: config.ReportFile,
 		// Buffered so short stalls in the stream listener don't block the proxy's
 		// hard-error sync path. The non-blocking sends at validate.go drop excess
 		// once the buffer fills — report streaming is best-effort, proxying is not.
@@ -69,19 +67,23 @@ func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapCon
 		transport:        tr,
 		controlsStore:    controlsStore,
 		transactionStore: transactionStore,
+		broadcaster:      broadcast.NewLazyBroadcaster(),
+		proxy:            proxy.NewHandler(tr),
+		mock:             mockproxy.NewHandler(),
 		StaticMockDir:    config.StaticMockDir,
 	}
 
+	documentValidators := make([]daemonvalidator.DocumentValidator, 0, len(documents))
 	for _, document := range documents {
 		m, _ := document.Document.BuildV3Model()
 		docModel := &m.Model
 
-		wts.documentValidators = append(wts.documentValidators, documentValidator{
-			documentName: document.DocumentName,
-			document:     document.Document,
-			docModel:     docModel,
-			validator:    validation.NewHttpValidatorWithConfig(docModel, config.StrictMode),
-			mockEngine: mock.NewMockEngineWithConfig(
+		documentValidators = append(documentValidators, daemonvalidator.DocumentValidator{
+			DocumentName: document.DocumentName,
+			Document:     document.Document,
+			DocModel:     docModel,
+			Validator:    validation.NewHttpValidatorWithConfig(docModel, config.StrictMode),
+			MockEngine: mock.NewMockEngineWithConfig(
 				docModel,
 				config.MockModePretty,
 				config.UseAllMockResponseFields,
@@ -90,6 +92,7 @@ func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapCon
 				config.MockBypassValidation),
 		})
 	}
+	wts.validator = daemonvalidator.New(documentValidators)
 
 	// hard-wire the config, change this later if needed.
 	wts.config = config
@@ -115,7 +118,12 @@ func (ws *WiretapService) HandleHttpRequest(request *model.Request) {
 }
 
 func (ws *WiretapService) HandleStaticMockResponse(request *model.Request, response *http.Response) {
-	ws.handleStaticMockResponse(request, response)
+	if ws.mock == nil {
+		ws.mock = mockproxy.NewHandler()
+	}
+	ws.mock.HandleStaticResponse(request, response, func(resp *http.Response) {
+		ws.broadcastResponse(request, BuildResponse(request, resp))
+	})
 }
 
 func (ws *WiretapService) HandleWebsocketRequest(request *model.Request) {

@@ -4,14 +4,15 @@
 package har
 
 import (
+	"context"
+	"net/url"
+	"strings"
+
+	"github.com/pb33f/harific/motor"
 	harModel "github.com/pb33f/harific/motor/model"
-	"github.com/pb33f/libopenapi"
-	"github.com/pb33f/libopenapi-validator/paths"
-	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/validation"
 	"github.com/pterm/pterm"
-	"strings"
 )
 
 type Transaction struct {
@@ -19,93 +20,138 @@ type Transaction struct {
 	Response *harModel.Response
 }
 
-type harValidator struct {
-	documentName string
-	docModel     *libopenapi.DocumentModel[v3.Document]
-	validator    validation.HttpValidator
+type ValidationResult struct {
+	Errors       []*shared.WiretapValidationError
+	MessageCount int
 }
 
-func ValidateHAR(har *harModel.HAR, apiDocumentModels []shared.ApiDocumentModel, configFile *shared.WiretapConfiguration) []*shared.WiretapValidationError {
+func ValidateHAR(path string, apiDocumentModels []shared.ApiDocumentModel, configFile *shared.WiretapConfiguration) []*shared.WiretapValidationError {
+	return ValidateHARWithResult(path, apiDocumentModels, configFile).Errors
+}
+
+func ValidateHARWithResult(path string, apiDocumentModels []shared.ApiDocumentModel, configFile *shared.WiretapConfiguration) ValidationResult {
 
 	var validationErrors []*shared.WiretapValidationError
-	validators := make([]harValidator, 0)
+	validators := make([]validation.DocumentValidator, 0, len(apiDocumentModels))
 
 	for _, apiDocumentModel := range apiDocumentModels {
-		validators = append(validators, harValidator{
-			documentName: apiDocumentModel.DocumentName,
-			docModel:     apiDocumentModel.DocumentModel,
-			validator:    validation.NewHttpValidatorWithConfig(&apiDocumentModel.DocumentModel.Model, configFile.StrictMode),
+		validators = append(validators, validation.DocumentValidator{
+			DocumentName: apiDocumentModel.DocumentName,
+			DocModel:     &apiDocumentModel.DocumentModel.Model,
+			Validator:    validation.NewHttpValidatorWithConfig(&apiDocumentModel.DocumentModel.Model, configFile.StrictMode),
 		})
 	}
+	router := validation.NewSpecRouter(validators)
 
-	for _, entry := range har.Log.Entries {
+	streamer, err := NewHARStreamer(path, motor.DefaultStreamerOptions())
+	if err != nil {
+		pterm.Error.Printf("error creating HAR streamer: %s", err.Error())
+		return ValidationResult{}
+	}
+	defer streamer.Close()
 
-		httpRequest, err := harModel.ConvertRequestIntoHttpRequest(entry.Request)
+	ctx := context.Background()
+	if err = streamer.Initialize(ctx); err != nil {
+		pterm.Error.Printf("error initializing HAR streamer: %s", err.Error())
+		return ValidationResult{}
+	}
+
+	index := streamer.GetIndex()
+	if index == nil || index.TotalEntries == 0 {
+		return ValidationResult{Errors: validationErrors}
+	}
+	if len(configFile.HARPathAllowList) == 0 {
+		return ValidationResult{Errors: validationErrors}
+	}
+
+	results, err := streamAllowedHAREntries(ctx, streamer, configFile.HARPathAllowList)
+	if err != nil {
+		pterm.Error.Printf("error streaming HAR file: %s", err.Error())
+		return ValidationResult{}
+	}
+
+	messageCount := 0
+	for result := range results {
+		if result.Error != nil {
+			pterm.Error.Printf("error streaming HAR entry: %s", result.Error.Error())
+			return ValidationResult{Errors: validationErrors, MessageCount: messageCount}
+		}
+		if result.Entry == nil {
+			continue
+		}
+
+		httpRequest, err := harModel.ConvertRequestIntoHttpRequest(result.Entry.Request)
 
 		if err != nil {
 			pterm.Error.Printf("error converting request: %s", err.Error())
-			return nil
+			return ValidationResult{}
 		}
 
-		if configFile.HARPathAllowList != nil {
-			for _, allow := range configFile.HARPathAllowList {
+		path, ok := rewriteHARPath(httpRequest.URL.Path, configFile.HARPathAllowList)
+		if !ok {
+			pterm.Debug.Printf("[HAR] skipping request: %s\n", httpRequest.URL.Path)
+			continue
+		}
+		httpRequest.URL.Path = path
 
-				if strings.HasPrefix(httpRequest.URL.Path, allow) {
+		if result.Entry.Request.Method != "" {
+			messageCount++
+		}
+		if result.Entry.Response.StatusCode > 0 {
+			messageCount++
+		}
 
-					path := strings.Replace(httpRequest.URL.Path, allow, "", 1)
-					httpRequest.URL.Path = path
+		docValidator := router.Resolve(httpRequest)
+		if docValidator == nil {
+			pterm.Error.Printf("no validators available; a valid specification must be provided in order to perform HAR validation")
+			return ValidationResult{}
+		}
 
-					var httpValidator validation.HttpValidator
-					var validatorSpec string
+		validRequest, requestValidationErrors := docValidator.Validator.ValidateHttpRequest(httpRequest)
+		if !validRequest {
+			validationErrors = append(validationErrors, shared.ConvertValidationErrors(docValidator.DocumentName, requestValidationErrors)...)
+		} else {
+			configFile.Logger.Debug("[HAR] valid request", "path", httpRequest.URL.Path)
+		}
 
-					if len(validators) == 1 {
-						httpValidator = validators[0].validator
-						validatorSpec = validators[0].documentName
-					} else {
-						pathFound := false
-						for _, hValidator := range validators {
-							// Find the first path match between all provided specifications
-							pathItem, _, _ := paths.FindPath(httpRequest, &hValidator.docModel.Model, nil)
-
-							if pathItem != nil {
-								httpValidator = hValidator.validator
-								validatorSpec = hValidator.documentName
-								pathFound = true
-								break
-							}
-						}
-
-						// If we haven't found a path, let's pick the first validator to validate against
-						if !pathFound && len(validators) > 0 {
-							httpValidator = validators[0].validator
-							validatorSpec = validators[0].documentName
-						} else {
-							pterm.Error.Printf("no validators available; a valid specification must be provided in order to perform HAR validation")
-							return nil
-						}
-					}
-
-					validRequest, requestValidationErrors := httpValidator.ValidateHttpRequest(httpRequest)
-					if !validRequest {
-						validationErrors = append(validationErrors, shared.ConvertValidationErrors(validatorSpec, requestValidationErrors)...)
-					} else {
-						configFile.Logger.Debug("[HAR] valid request", "path", httpRequest.URL.Path)
-					}
-
-					httpResponse := harModel.ConvertResponseIntoHttpResponse(entry.Response)
-					validResponse, responseValidationErrors := httpValidator.ValidateHttpResponse(httpRequest, httpResponse)
-					if !validResponse {
-						validationErrors = append(validationErrors, shared.ConvertValidationErrors(validatorSpec, responseValidationErrors)...)
-					} else {
-						configFile.Logger.Debug("[HAR] valid response", "path", httpRequest.URL.Path)
-					}
-					break
-				}
-				pterm.Debug.Printf("[HAR] skipping request: %s\n", httpRequest.URL.Path)
-			}
+		httpResponse := harModel.ConvertResponseIntoHttpResponse(result.Entry.Response)
+		validResponse, responseValidationErrors := docValidator.Validator.ValidateHttpResponse(httpRequest, httpResponse)
+		if !validResponse {
+			validationErrors = append(validationErrors, shared.ConvertValidationErrors(docValidator.DocumentName, responseValidationErrors)...)
+		} else {
+			configFile.Logger.Debug("[HAR] valid response", "path", httpRequest.URL.Path)
 		}
 	}
 
-	return validationErrors
+	return ValidationResult{Errors: validationErrors, MessageCount: messageCount}
+}
 
+func streamAllowedHAREntries(
+	ctx context.Context,
+	streamer motor.HARStreamer,
+	allowList []string,
+) (<-chan motor.StreamResult, error) {
+	return streamer.StreamFiltered(ctx, func(metadata *motor.EntryMetadata) bool {
+		if metadata == nil {
+			return false
+		}
+		path := metadata.URL
+		if parsed, err := url.Parse(metadata.URL); err == nil && parsed.Path != "" {
+			path = parsed.Path
+		}
+		_, ok := rewriteHARPath(path, allowList)
+		return ok
+	})
+}
+
+func rewriteHARPath(path string, allowList []string) (string, bool) {
+	if allowList == nil {
+		return path, true
+	}
+	for _, allow := range allowList {
+		if strings.HasPrefix(path, allow) {
+			return strings.Replace(path, allow, "", 1), true
+		}
+	}
+	return path, false
 }

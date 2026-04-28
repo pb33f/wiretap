@@ -4,9 +4,10 @@ go 1.25.0
 
 require (
 	github.com/google/uuid v1.6.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/pb33f/harific v0.0.5
 	github.com/pb33f/libopenapi v0.36.1
-	github.com/pb33f/libopenapi-validator v0.13.3
+	github.com/pb33f/libopenapi-validator v0.13.7
 	github.com/pb33f/ranch v0.8.1
 	github.com/pterm/pterm v0.12.83
 )
@@ -18,14 +19,15 @@ require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/basgys/goxml2json v1.1.1-0.20231018121955-e66ee54ceaad // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/containerd/console v1.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0
-	github.com/go-openapi/jsonpointer v0.22.5 // indirect
-	github.com/go-openapi/swag/jsonname v0.25.5 // indirect
+	github.com/go-openapi/jsonpointer v0.23.1 // indirect
+	github.com/go-openapi/swag/jsonname v0.26.0 // indirect
 	github.com/go-stomp/stomp/v3 v3.1.3 // indirect
 	github.com/gobwas/glob v0.2.3
 	github.com/gookit/color v1.6.0 // indirect

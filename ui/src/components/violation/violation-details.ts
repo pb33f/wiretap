@@ -179,10 +179,13 @@ export class ViolationDetailsComponent extends LitElement {
                         `
                     }
 
+                    const location = i.fieldPath || i.keywordLocation || "";
+                    const schemaLocation = i.keywordLocation ? `Schema: ${i.keywordLocation}` : "";
+
                     return html`
                         <tr>
                             <td>${i.line}</td>
-                            <td>${i.location}</td>
+                            <td title=${schemaLocation}>${location}</td>
                             <td style="width: 75%">${i.reason}</td>
                         </tr>
                         ${schemaDataView}
@@ -214,7 +217,7 @@ export class ViolationDetailsComponent extends LitElement {
                     <thead>
                     <tr>
                         <th>Line</th>
-                        <th>XPath</th>
+                        <th>Location</th>
                         <th>Reason</th>
                     </tr>
                     </thead>

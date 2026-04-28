@@ -6,6 +6,7 @@ package daemon
 import (
 	"bytes"
 	"github.com/pb33f/ranch/model"
+	"github.com/pb33f/wiretap/transaction"
 	"io"
 	"net/http"
 	"time"
@@ -32,10 +33,10 @@ func CloneExistingResponse(r *http.Response) *http.Response {
 	return resp
 }
 
-func BuildResponse(r *model.Request, response *http.Response) *HttpTransaction {
+func BuildResponse(r *model.Request, response *http.Response) *transaction.HttpTransaction {
 	code := 500
 	headers := make(map[string]any)
-	cookies := make(map[string]*HttpCookie)
+	cookies := make(map[string]*transaction.HttpCookie)
 	var respBody []byte
 
 	if response != nil {
@@ -45,7 +46,7 @@ func BuildResponse(r *model.Request, response *http.Response) *HttpTransaction {
 		}
 
 		for _, c := range response.Cookies() {
-			cookies[c.Name] = &HttpCookie{
+			cookies[c.Name] = &transaction.HttpCookie{
 				Value:    c.Value,
 				Path:     c.Path,
 				Domain:   c.Domain,
@@ -63,9 +64,9 @@ func BuildResponse(r *model.Request, response *http.Response) *HttpTransaction {
 			response.Body = io.NopCloser(bytes.NewBuffer(respBody))
 		}
 	}
-	return &HttpTransaction{
+	return &transaction.HttpTransaction{
 		Id: r.Id.String(),
-		Response: &HttpResponse{
+		Response: &transaction.HttpResponse{
 			Timestamp:  time.Now().UnixMilli(),
 			Headers:    headers,
 			StatusCode: code,
@@ -77,10 +78,10 @@ func BuildResponse(r *model.Request, response *http.Response) *HttpTransaction {
 
 // BuildResponseFromBytes builds a response transaction using pre-read body bytes,
 // avoiding an additional io.ReadAll on the response body.
-func BuildResponseFromBytes(r *model.Request, response *http.Response, body []byte) *HttpTransaction {
+func BuildResponseFromBytes(r *model.Request, response *http.Response, body []byte) *transaction.HttpTransaction {
 	code := 500
 	headers := make(map[string]any)
-	cookies := make(map[string]*HttpCookie)
+	cookies := make(map[string]*transaction.HttpCookie)
 
 	if response != nil {
 		code = response.StatusCode
@@ -89,7 +90,7 @@ func BuildResponseFromBytes(r *model.Request, response *http.Response, body []by
 		}
 
 		for _, c := range response.Cookies() {
-			cookies[c.Name] = &HttpCookie{
+			cookies[c.Name] = &transaction.HttpCookie{
 				Value:    c.Value,
 				Path:     c.Path,
 				Domain:   c.Domain,
@@ -100,9 +101,9 @@ func BuildResponseFromBytes(r *model.Request, response *http.Response, body []by
 			}
 		}
 	}
-	return &HttpTransaction{
+	return &transaction.HttpTransaction{
 		Id: r.Id.String(),
-		Response: &HttpResponse{
+		Response: &transaction.HttpResponse{
 			Timestamp:  time.Now().UnixMilli(),
 			Headers:    headers,
 			StatusCode: code,

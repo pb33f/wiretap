@@ -9,6 +9,7 @@ import (
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/wiretap/daemon"
+	"github.com/pb33f/wiretap/transaction"
 )
 
 const (
@@ -24,7 +25,7 @@ type GenerateReport struct {
 }
 
 type ReportResponse struct {
-	Transactions []*daemon.HttpTransaction `json:"transactions,omitempty"`
+	Transactions []*transaction.HttpTransaction `json:"transactions,omitempty"`
 }
 
 func NewReportService() *ReportService {
@@ -54,9 +55,9 @@ func (rs *ReportService) buildReport(request *model.Request, core service.Fabric
 
 		// extract state from store.
 		storeData := rs.transactionStore.AllValues()
-		var transactions []*daemon.HttpTransaction
+		var transactions []*transaction.HttpTransaction
 		for x := range storeData {
-			if i, k := storeData[x].(*daemon.HttpTransaction); k {
+			if i, k := storeData[x].(*transaction.HttpTransaction); k {
 				transactions = append(transactions, i)
 			}
 		}

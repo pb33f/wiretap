@@ -17,7 +17,7 @@ func (ws *WiretapService) Init(core service.FabricServiceCore) error {
 	staticChan := eventBus.GetChannelManager().CreateChannel(WiretapStaticChangeChan)
 	staticChan.SetGalactic(WiretapStaticChangeChan)
 
-	ws.broadcastChan = channel
+	ws.setBroadcastChannel(channel)
 	ws.bus = eventBus
 	core.SetDefaultJSONHeaders()
 	return nil

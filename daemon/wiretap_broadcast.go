@@ -6,54 +6,46 @@ package daemon
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
+	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
+	daemonbroadcast "github.com/pb33f/wiretap/daemon/broadcast"
 	"github.com/pb33f/wiretap/shared"
+	"github.com/pb33f/wiretap/transaction"
 	"net/http"
 )
 
+func (ws *WiretapService) setBroadcastChannel(channel *bus.Channel) {
+	ws.broadcastChan = channel
+	if ws.broadcaster == nil {
+		ws.broadcaster = daemonbroadcast.NewLazyBroadcaster()
+	}
+	ws.broadcaster.Set(daemonbroadcast.NewBroadcaster(channel, WiretapBroadcastChan))
+}
+
+func (ws *WiretapService) activeBroadcaster() daemonbroadcast.Broadcaster {
+	if ws.broadcaster == nil {
+		ws.broadcaster = daemonbroadcast.NewLazyBroadcaster()
+	}
+	if !ws.broadcaster.Ready() && ws.broadcastChan != nil {
+		ws.broadcaster.Set(daemonbroadcast.NewBroadcaster(ws.broadcastChan, WiretapBroadcastChan))
+	}
+	return ws.broadcaster
+}
+
 func (ws *WiretapService) broadcastRequestValidationErrors(request *model.Request,
-	errors []*shared.WiretapValidationError, transaction *HttpTransaction) {
-	id, _ := uuid.NewUUID()
-	ht := transaction
-	ht.RequestValidation = errors
-
-	ws.broadcastChan.Send(&model.Message{
-		Id:            &id,
-		DestinationId: request.Id,
-		Channel:       WiretapBroadcastChan,
-		Destination:   WiretapBroadcastChan,
-		Payload:       ht,
-		Direction:     model.ResponseDir,
-	})
+	errors []*shared.WiretapValidationError, txn *transaction.HttpTransaction) {
+	ws.activeBroadcaster().RequestValidationErrors(request, errors, txn)
 }
 
-func (ws *WiretapService) broadcastRequest(request *model.Request, transaction *HttpTransaction) {
-	id, _ := uuid.NewUUID()
-	ws.broadcastChan.Send(&model.Message{
-		Id:            &id,
-		DestinationId: request.Id,
-		Channel:       WiretapBroadcastChan,
-		Destination:   WiretapBroadcastChan,
-		Payload:       transaction,
-		Direction:     model.ResponseDir,
-	})
+func (ws *WiretapService) broadcastRequest(request *model.Request, txn *transaction.HttpTransaction) {
+	ws.activeBroadcaster().Request(request, txn)
 }
 
-func (ws *WiretapService) broadcastResponse(request *model.Request, transaction *HttpTransaction) {
-	id, _ := uuid.NewUUID()
-	ws.broadcastChan.Send(&model.Message{
-		Id:            &id,
-		DestinationId: request.Id,
-		Channel:       WiretapBroadcastChan,
-		Destination:   WiretapBroadcastChan,
-		Payload:       transaction,
-		Direction:     model.ResponseDir,
-	})
+func (ws *WiretapService) broadcastResponse(request *model.Request, txn *transaction.HttpTransaction) {
+	ws.activeBroadcaster().Response(request, txn)
 }
 
 func (ws *WiretapService) broadcastResponseError(request *model.Request, response *http.Response, err error) {
-	id, _ := uuid.NewUUID()
 	title := "Response Error"
 	code := 500
 	if response != nil {
@@ -70,28 +62,9 @@ func (ws *WiretapService) broadcastResponseError(request *model.Request, respons
 	resp := BuildResponse(request, response)
 	resp.Response.Body = string(respBodyString)
 
-	ws.broadcastChan.Send(&model.Message{
-		Id:            &id,
-		DestinationId: request.Id,
-		Error:         err,
-		Channel:       WiretapBroadcastChan,
-		Destination:   WiretapBroadcastChan,
-		Payload:       resp,
-		Direction:     model.ResponseDir,
-	})
+	ws.activeBroadcaster().ResponseError(request, resp, err)
 }
 
-func (ws *WiretapService) broadcastResponseValidationErrors(request *model.Request, transaction *HttpTransaction, errors []*shared.WiretapValidationError) {
-	id, _ := uuid.NewUUID()
-
-	transaction.ResponseValidation = errors
-
-	ws.broadcastChan.Send(&model.Message{
-		Id:            &id,
-		DestinationId: request.Id,
-		Channel:       WiretapBroadcastChan,
-		Destination:   WiretapBroadcastChan,
-		Payload:       transaction,
-		Direction:     model.ResponseDir,
-	})
+func (ws *WiretapService) broadcastResponseValidationErrors(request *model.Request, txn *transaction.HttpTransaction, errors []*shared.WiretapValidationError) {
+	ws.activeBroadcaster().ResponseValidationErrors(request, txn, errors)
 }

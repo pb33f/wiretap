@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/shared"
+	"github.com/pb33f/wiretap/transaction"
 	"github.com/pterm/pterm"
 )
 
@@ -29,7 +30,7 @@ type HttpTransactionConfig struct {
 	BodyBytes         []byte
 }
 
-func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
+func BuildHttpTransaction(build HttpTransactionConfig) *transaction.HttpTransaction {
 
 	cf := build.TransactionConfig
 
@@ -80,9 +81,9 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 		headers[k] = v[0]
 	}
 
-	cookies := make(map[string]*HttpCookie)
+	cookies := make(map[string]*transaction.HttpCookie)
 	for _, c := range newReq.Cookies() {
-		cookies[c.Name] = &HttpCookie{
+		cookies[c.Name] = &transaction.HttpCookie{
 			Value:    c.Value,
 			Path:     c.Path,
 			Domain:   c.Domain,
@@ -96,7 +97,7 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 	// check if request is a multipart form
 	if ct, ok := headers["Content-Type"].(string); ok {
 		if strings.Contains(ct, "multipart/form-data") {
-			err := newReq.ParseMultipartForm(32 << 2)
+			err := newReq.ParseMultipartForm(32 << 20)
 			if err != nil {
 				pterm.Error.Println(err.Error())
 			}
@@ -104,26 +105,26 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 	}
 
 	if newReq.MultipartForm != nil {
-		var parts []FormPart
+		var parts []transaction.FormPart
 		for i := range newReq.MultipartForm.Value {
-			parts = append(parts, FormPart{
+			parts = append(parts, transaction.FormPart{
 				Name:  i,
 				Value: newReq.MultipartForm.Value[i],
 			})
 		}
 		for k, fHeaders := range newReq.MultipartForm.File {
 
-			var formFiles []*FormFile
+			var formFiles []*transaction.FormFile
 
 			for z := range fHeaders {
-				ff := &FormFile{
+				ff := &transaction.FormFile{
 					Name:    fHeaders[z].Filename,
 					Headers: fHeaders[z].Header,
 				}
 				formFiles = append(formFiles, ff)
 			}
 
-			parts = append(parts, FormPart{
+			parts = append(parts, transaction.FormPart{
 				Name:  k,
 				Files: formFiles,
 			})
@@ -157,9 +158,9 @@ func BuildHttpTransaction(build HttpTransactionConfig) *HttpTransaction {
 		newUrl = &destUrl
 	}
 
-	return &HttpTransaction{
+	return &transaction.HttpTransaction{
 		Id: build.ID.String(),
-		Request: &HttpRequest{
+		Request: &transaction.HttpRequest{
 			URL:             newUrl.String(),
 			Method:          build.NewRequest.Method,
 			Path:            newUrl.Path,
