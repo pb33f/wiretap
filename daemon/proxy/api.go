@@ -6,12 +6,10 @@ package proxy
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	configModel "github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/pterm/pterm"
 )
 
 type wiretapTransport struct {
@@ -41,21 +39,6 @@ func (h *Handler) callAPI(req *http.Request, wiretapConfig ...*shared.WiretapCon
 		return nil, fmt.Errorf("wiretap configuration is required to call upstream API")
 	}
 	cfg := wiretapConfig[0]
-
-	replaced := configModel.RewritePath(req.URL.Path, req, cfg)
-	if replaced.RewrittenPath != req.URL.Path {
-		newURL, _ := url.Parse(replaced.RewrittenPath)
-		if req.URL.RawQuery != "" {
-			newURL.RawQuery = req.URL.RawQuery
-		}
-		if replaced.PathConfiguration != nil && replaced.PathConfiguration.RewriteId != "" {
-			rewriteID := replaced.PathConfiguration.RewriteId
-			pterm.Info.Printf("[wiretap] Re-writing path '%s' to '%s' with identifier '%s'\n", req.URL.String(), newURL.String(), rewriteID)
-		} else {
-			pterm.Info.Printf("[wiretap] Re-writing path '%s' to '%s'\n", req.URL.String(), newURL.String())
-		}
-		req.URL = newURL
-	}
 
 	tr := h.newWiretapTransport()
 	var client *http.Client

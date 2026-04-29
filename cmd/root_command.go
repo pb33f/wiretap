@@ -6,6 +6,7 @@ package cmd
 import (
 	"embed"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
@@ -35,7 +36,8 @@ var (
 
 			PrintBanner()
 
-			configFlag, _ := cmd.Flags().GetString("config")
+			flags := cmd.Flags()
+			configFlag, _ := flags.GetString("config")
 
 			specs := make([]string, 0)
 			var primarySpec string
@@ -68,44 +70,45 @@ var (
 			var mockMode bool
 			var useAllMockResponseFields bool
 
-			certFlag, _ := cmd.Flags().GetString("cert")
+			certFlag, _ := flags.GetString("cert")
 			if certFlag != "" {
 				cert = certFlag
 			}
 
-			keyFlag, _ := cmd.Flags().GetString("key")
+			keyFlag, _ := flags.GetString("key")
 			if keyFlag != "" {
 				certKey = keyFlag
 			}
-			base, _ := cmd.Flags().GetString("base")
-			reportFilename, _ := cmd.Flags().GetString("report-filename")
+			base, _ := flags.GetString("base")
+			reportFilename, _ := flags.GetString("report-filename")
+			reportFilenameChanged := flags.Changed("report-filename")
 
-			harFlag, _ := cmd.Flags().GetString("har")
-			harValidate, _ := cmd.Flags().GetBool("har-validate")
-			harWhiteList, _ := cmd.Flags().GetStringArray("har-allow")
-			harReplayDelay, _ := cmd.Flags().GetInt("har-replay-delay")
+			harFlag, _ := flags.GetString("har")
+			harValidate, _ := flags.GetBool("har-validate")
+			harWhiteList, _ := flags.GetStringArray("har-allow")
+			harReplayDelay, _ := flags.GetInt("har-replay-delay")
 
-			debug, _ := cmd.Flags().GetBool("debug")
-			staticMockDir, _ = cmd.Flags().GetString("static-mock-dir")
-			mockMode, _ = cmd.Flags().GetBool("mock-mode")
-			mockBypassValidation, _ := cmd.Flags().GetBool("mock-bypass-validation")
-			useAllMockResponseFields, _ = cmd.Flags().GetBool("enable-all-mock-response-fields")
-			hardError, _ = cmd.Flags().GetBool("hard-validation")
-			hardErrorCode, _ = cmd.Flags().GetInt("hard-validation-code")
-			hardErrorReturnCode, _ = cmd.Flags().GetInt("hard-validation-return-code")
-			hardErrorReturnProblem, _ := cmd.Flags().GetBool("hard-error-return-problem")
-			streamReport, _ := cmd.Flags().GetBool("stream-report")
-			strictRedirectLocation, _ := cmd.Flags().GetBool("strict-redirect-location")
-			strictMode, _ := cmd.Flags().GetBool("strict-mode")
+			debug, _ := flags.GetBool("debug")
+			staticMockDir, _ = flags.GetString("static-mock-dir")
+			mockMode, _ = flags.GetBool("mock-mode")
+			mockBypassValidation, _ := flags.GetBool("mock-bypass-validation")
+			useAllMockResponseFields, _ = flags.GetBool("enable-all-mock-response-fields")
+			hardError, _ = flags.GetBool("hard-validation")
+			hardErrorCode, _ = flags.GetInt("hard-validation-code")
+			hardErrorReturnCode, _ = flags.GetInt("hard-validation-return-code")
+			hardErrorReturnProblem, _ := flags.GetBool("hard-error-return-problem")
+			streamReport, _ := flags.GetBool("stream-report")
+			strictRedirectLocation, _ := flags.GetBool("strict-redirect-location")
+			strictMode, _ := flags.GetBool("strict-mode")
 
-			portFlag, _ := cmd.Flags().GetString("port")
+			portFlag, _ := flags.GetString("port")
 			if portFlag != "" {
 				port = portFlag
 			} else {
 				port = "9090" // default
 			}
 
-			specFlag, _ := cmd.Flags().GetString("spec")
+			specFlag, _ := flags.GetString("spec")
 			if len(specFlag) != 0 && specFlag != "" {
 				specs = append(specs, specFlag)
 				if primarySpec == "" {
@@ -113,7 +116,7 @@ var (
 				}
 			}
 
-			specsFlag, _ := cmd.Flags().GetStringSlice("specs")
+			specsFlag, _ := flags.GetStringSlice("specs")
 			if len(specsFlag) > 0 && specsFlag[0] != "" {
 				specs = append(specs, specsFlag...)
 				if primarySpec == "" {
@@ -121,40 +124,40 @@ var (
 				}
 			}
 
-			monitorPortFlag, _ := cmd.Flags().GetString("monitor-port")
+			monitorPortFlag, _ := flags.GetString("monitor-port")
 			if monitorPortFlag != "" {
 				monitorPort = monitorPortFlag
 			} else {
 				monitorPort = "9091" // default
 			}
 
-			staticDirFlag, _ := cmd.Flags().GetString("static")
+			staticDirFlag, _ := flags.GetString("static")
 			if staticDirFlag != "" {
 				staticDir = staticDirFlag
 			}
 
-			staticIndex, _ = cmd.Flags().GetString("static-index")
+			staticIndex, _ = flags.GetString("static-index")
 
-			wsHostFlag, _ := cmd.Flags().GetString("ws-host")
+			wsHostFlag, _ := flags.GetString("ws-host")
 			if wsHostFlag != "" {
 				wsHost = wsHostFlag
 			} else {
 				wsHost = "localhost"
 			}
 
-			wsPortFlag, _ := cmd.Flags().GetString("ws-port")
+			wsPortFlag, _ := flags.GetString("ws-port")
 			if wsPortFlag != "" {
 				wsPort = wsPortFlag
 			} else {
 				wsPort = "9092" // default
 			}
 
-			redirectURLFlag, _ := cmd.Flags().GetString("url")
+			redirectURLFlag, _ := flags.GetString("url")
 			if redirectURLFlag != "" {
 				redirectURL = redirectURLFlag
 			}
 
-			globalAPIDelayFlag, _ := cmd.Flags().GetInt("delay")
+			globalAPIDelayFlag, _ := flags.GetInt("delay")
 			if globalAPIDelayFlag > 0 {
 				globalAPIDelay = globalAPIDelayFlag
 			}
@@ -244,7 +247,7 @@ var (
 					}
 				}
 
-				if reportFilename != "" {
+				if reportFilenameChanged {
 					config.ReportFile = reportFilename
 				}
 
@@ -320,16 +323,17 @@ var (
 				pterm.Println()
 			}
 
-			if (mockMode || len(config.MockModeList) > 0) && len(specs) == 0 {
+			wantsMockMode := config.MockMode || mockMode || len(config.MockModeList) > 0
+			if wantsMockMode && len(specs) == 0 {
 				pterm.Println()
 				pterm.Error.Println("Cannot enable mock mode, no OpenAPI specification provided!\n" +
 					"Please provide a path to an OpenAPI specification using the --spec or -s flags.\n" +
 					"Without an OpenAPI specification, wiretap will not be able to generate mock responses")
 				pterm.Println()
-				return nil
+				return fmt.Errorf("cannot enable mock mode: no OpenAPI specification provided")
 			}
 
-			if !mockMode && redirectURL == "" && harFlag == "" {
+			if !config.MockMode && redirectURL == "" && config.HAR == "" && !config.HARValidate {
 				pterm.Println()
 				pterm.Error.Println("No redirect URL provided. " +
 					"Please provide a URL to redirect API traffic to using the --url or -u flags.")
@@ -388,6 +392,10 @@ var (
 			if config.StaticDir == "" {
 				config.StaticDir = staticDir
 			}
+			if config.ReportFile == "" {
+				config.ReportFile = reportFilename
+			}
+			reportFilename = config.ReportFile
 			config.FS = FS
 
 			if config.HardErrors || hardError {
@@ -546,11 +554,11 @@ var (
 				info, err := os.Stat(config.HAR)
 				if err != nil {
 					pterm.Error.Printf("Cannot read HAR file: %s (%s)\n", config.HAR, err.Error())
-					return nil
+					return fmt.Errorf("cannot read HAR file %q: %w", config.HAR, err)
 				}
 				if info.IsDir() {
 					pterm.Error.Printf("Cannot read HAR file: %s is a directory\n", config.HAR)
-					return nil
+					return fmt.Errorf("cannot read HAR file %q: is a directory", config.HAR)
 				}
 				pterm.Println()
 			}
@@ -561,33 +569,34 @@ var (
 			}
 
 			// check if we want to validate the HAR file against the OpenAPI spec.
-			// but only if we're not in mock mode and there is a spec provided
-			if config.HARValidate && !config.MockMode && len(config.Contracts) != 0 {
+			if config.HARValidate {
+				if config.MockMode {
+					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification in mock mode!")
+					pterm.Println()
+					return fmt.Errorf("cannot validate HAR file against OpenAPI specification in mock mode")
+				}
+
+				if len(config.Contracts) == 0 {
+					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification, no specification provided, use '-s'")
+					pterm.Println()
+					return fmt.Errorf("cannot validate HAR file against OpenAPI specification: no specification provided")
+				}
+
+				if config.HAR == "" {
+					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification, no HAR file provided, use '-z' / '--har'")
+					pterm.Println()
+					return fmt.Errorf("cannot validate HAR file against OpenAPI specification: no HAR file provided")
+				}
+
 				pterm.Printf("🔍 Validating HAR file against OpenAPI specification(s): %s\n", pterm.LightMagenta(config.GetContractList()))
 
 				// check if whitelist is empty, if so, fail.
 				if len(config.HARPathAllowList) == 0 {
-					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification, no paths provided to whitelist, use '-j' / '--har-whitelist' to define whitelist paths")
+					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification, no paths provided to allow list, use '-j' / '--har-allow' to define allow-list paths")
 					pterm.Println()
-					return nil
+					return fmt.Errorf("cannot validate HAR file against OpenAPI specification: no HAR allow-list paths provided")
 				}
 				printLoadedHarWhitelist(config.HARPathAllowList)
-
-			} else {
-				// we can't use this mode, print an error and return
-				if config.HARValidate && config.MockMode {
-					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification in mock mode!")
-					pterm.Println()
-					return nil
-				}
-
-				// if there is no spec, print an error
-				if config.HARValidate && len(config.Contracts) == 0 {
-					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification, no specification provided, use '-s'")
-					pterm.Println()
-					return nil
-				}
-
 			}
 
 			ptermLog := &pterm.Logger{
@@ -653,7 +662,7 @@ var (
 					pterm.Println()
 					pterm.Error.Printf("Cannot start wiretap: %s\n", pErr.Error())
 					pterm.Println()
-					return nil
+					return fmt.Errorf("cannot start wiretap: %w", pErr)
 				}
 			} else {
 
@@ -661,6 +670,12 @@ var (
 					result := har.ValidateHARWithResult(config.HAR, docModels, &config)
 					count := result.MessageCount
 					validationErrors := result.Errors
+					if result.Err != nil {
+						pterm.Println()
+						pterm.Error.Printf("HAR file could not be validated: %s\n", result.Err.Error())
+						pterm.Println()
+						return fmt.Errorf("har file could not be validated: %w", result.Err)
+					}
 					if len(validationErrors) > 0 {
 						pterm.Println()
 						pterm.Error.Printf("HAR file failed validation against OpenAPI specification(s): %s\n", config.GetContractList())
@@ -714,7 +729,8 @@ var (
 
 						}
 
-						return nil
+						return fmt.Errorf("har file failed validation: detected %d contract violations against %d requests and responses",
+							len(validationErrors), count)
 					} else {
 						pterm.Println()
 						pterm.Success.Printf("HAR file passed validation against %d requests and responses", count)
@@ -738,41 +754,50 @@ func Execute(version, commit, date string, fs embed.FS) {
 	Date = date
 	FS = fs
 
-	rootCmd.Flags().StringP("url", "u", "", "Set the redirect URL for wiretap to send traffic to")
-	rootCmd.Flags().IntP("delay", "d", 0, "Set a global delay for all API requests")
-	rootCmd.Flags().StringP("port", "p", "", "Set port on which to listen for HTTP traffic (default is 9090)")
-	rootCmd.Flags().StringP("monitor-port", "m", "", "Set port on which to serve the monitor UI (default is 9091)")
-	rootCmd.Flags().StringP("ws-port", "w", "", "Set port on which to serve the monitor UI websocket (default is 9092)")
-	rootCmd.Flags().StringP("ws-host", "v", "localhost", "Set the backend hostname for wiretap, for remotely deployed service")
-	rootCmd.Flags().StringP("spec", "s", "", "List of paths to the OpenAPI specification to use")
-	rootCmd.Flags().StringSliceP("specs", "S", []string{}, "List of paths to the OpenAPI specification to use")
-	rootCmd.Flags().StringP("static", "t", "", "Set the path to a directory of static files to serve")
-	rootCmd.Flags().StringP("static-index", "i", "index.html", "Set the index filename for static file serving (default is index.html)")
-	rootCmd.Flags().StringP("cert", "n", "", "Set the path to the TLS certificate to use for TLS/HTTPS")
-	rootCmd.Flags().StringP("key", "k", "", "Set the path to the TLS certificate key to use for TLS/HTTPS")
-	rootCmd.Flags().BoolP("hard-validation", "e", false, "Return a HTTP error for non-compliant request/response")
-	rootCmd.Flags().IntP("hard-validation-code", "q", 400, "Set a custom http error code for non-compliant requests when using the hard-error flag")
-	rootCmd.Flags().IntP("hard-validation-return-code", "y", 502, "Set a custom http error code for non-compliant responses when using the hard-error flag")
-	rootCmd.Flags().Bool("hard-error-return-problem", false, "When hard-validation triggers, return an RFC 9457 application/problem+json body describing the validation failures (default is false)")
-	rootCmd.Flags().StringP("static-mock-dir", "", "", "Directory containing static mock definitions. All requests matching these definitions will return mocked responses.")
-	rootCmd.Flags().BoolP("mock-mode", "x", false, "Run in mock mode, responses are mocked and no traffic is sent to the target API (requires OpenAPI spec)")
-	rootCmd.Flags().Bool("mock-bypass-validation", false, "In mock mode, bypass request validation so Preferred / wiretap-status-code examples are returned even for malformed requests (default is false)")
-	rootCmd.Flags().BoolP("enable-all-mock-response-fields", "o", true, "Enable usage of all property examples in mock responses. When set to false, only required field examples will be used.")
-	rootCmd.Flags().StringP("config", "c", "", "Location of wiretap configuration file to use (default is .wiretap in current directory)")
-	rootCmd.Flags().StringP("base", "b", "", "Set a base path to resolve relative file references from, or a overriding base URL to resolve remote references from")
-	rootCmd.Flags().BoolP("debug", "l", false, "Enable debug logging")
-	rootCmd.Flags().StringP("har", "z", "", "Load a HAR file instead of sniffing traffic")
-	rootCmd.Flags().BoolP("har-validate", "g", false, "Load a HAR file instead of sniffing traffic, and validate against the OpenAPI specification (requires -s)")
-	rootCmd.Flags().StringArrayP("har-allow", "j", nil, "Add a path to the HAR allow list, can use arg multiple times")
-	rootCmd.Flags().Int("har-replay-delay", 0, "Delay in milliseconds between HAR replayed request and response events")
-	rootCmd.Flags().StringP("report-filename", "f", "wiretap-report.jsonl", "Filename for any headless report generation output")
-	rootCmd.Flags().BoolP("stream-report", "a", false, "Stream violations to report JSON file as they occur (headless mode)")
-	rootCmd.Flags().BoolP("strict-redirect-location", "r", false, "Rewrite the redirect `Location` header on redirect responses to wiretap's API Gateway Host")
-	rootCmd.Flags().Bool("strict-mode", false, "Enable strict validation to detect undeclared properties, parameters, headers, and cookies")
+	registerRootFlags(rootCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func registerRootFlags(cmd *cobra.Command) {
+	flags := cmd.Flags()
+	if flags.Lookup("url") != nil {
+		return
+	}
+
+	flags.StringP("url", "u", "", "Set the redirect URL for wiretap to send traffic to")
+	flags.IntP("delay", "d", 0, "Set a global delay for all API requests")
+	flags.StringP("port", "p", "", "Set port on which to listen for HTTP traffic (default is 9090)")
+	flags.StringP("monitor-port", "m", "", "Set port on which to serve the monitor UI (default is 9091)")
+	flags.StringP("ws-port", "w", "", "Set port on which to serve the monitor UI websocket (default is 9092)")
+	flags.StringP("ws-host", "v", "localhost", "Set the backend hostname for wiretap, for remotely deployed service")
+	flags.StringP("spec", "s", "", "List of paths to the OpenAPI specification to use")
+	flags.StringSliceP("specs", "S", []string{}, "List of paths to the OpenAPI specification to use")
+	flags.StringP("static", "t", "", "Set the path to a directory of static files to serve")
+	flags.StringP("static-index", "i", "index.html", "Set the index filename for static file serving (default is index.html)")
+	flags.StringP("cert", "n", "", "Set the path to the TLS certificate to use for TLS/HTTPS")
+	flags.StringP("key", "k", "", "Set the path to the TLS certificate key to use for TLS/HTTPS")
+	flags.BoolP("hard-validation", "e", false, "Return a HTTP error for non-compliant request/response")
+	flags.IntP("hard-validation-code", "q", 400, "Set a custom http error code for non-compliant requests when using the hard-error flag")
+	flags.IntP("hard-validation-return-code", "y", 502, "Set a custom http error code for non-compliant responses when using the hard-error flag")
+	flags.Bool("hard-error-return-problem", false, "When hard-validation triggers, return an RFC 9457 application/problem+json body describing the validation failures (default is false)")
+	flags.StringP("static-mock-dir", "", "", "Directory containing static mock definitions. All requests matching these definitions will return mocked responses.")
+	flags.BoolP("mock-mode", "x", false, "Run in mock mode, responses are mocked and no traffic is sent to the target API (requires OpenAPI spec)")
+	flags.Bool("mock-bypass-validation", false, "In mock mode, bypass request validation so Preferred / wiretap-status-code examples are returned even for malformed requests (default is false)")
+	flags.BoolP("enable-all-mock-response-fields", "o", true, "Enable usage of all property examples in mock responses. When set to false, only required field examples will be used.")
+	flags.StringP("config", "c", "", "Location of wiretap configuration file to use (default is .wiretap in current directory)")
+	flags.StringP("base", "b", "", "Set a base path to resolve relative file references from, or a overriding base URL to resolve remote references from")
+	flags.BoolP("debug", "l", false, "Enable debug logging")
+	flags.StringP("har", "z", "", "Load a HAR file instead of sniffing traffic")
+	flags.BoolP("har-validate", "g", false, "Load a HAR file instead of sniffing traffic, and validate against the OpenAPI specification (requires -s)")
+	flags.StringArrayP("har-allow", "j", nil, "Add a path to the HAR allow list, can use arg multiple times")
+	flags.Int("har-replay-delay", 0, "Delay in milliseconds between HAR replayed request and response events (default 10ms)")
+	flags.StringP("report-filename", "f", "wiretap-report.jsonl", "Filename for any headless report generation output")
+	flags.BoolP("stream-report", "a", false, "Stream violations to report JSON file as they occur (headless mode)")
+	flags.BoolP("strict-redirect-location", "r", false, "Rewrite the redirect `Location` header on redirect responses to wiretap's API Gateway Host")
+	flags.Bool("strict-mode", false, "Enable strict validation to detect undeclared properties, parameters, headers, and cookies")
 }
 
 func printLoadedIgnorePathRewrite(ignoreRewritePaths []*shared.IgnoreRewriteConfig) {

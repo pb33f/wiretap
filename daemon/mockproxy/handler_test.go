@@ -55,6 +55,34 @@ func TestHandlerWritesMockResponse(t *testing.T) {
 	}
 }
 
+func TestHandlerGeneratesMockFromPreparedRequest(t *testing.T) {
+	id := uuid.New()
+	request := &model.Request{
+		Id:                 &id,
+		HttpRequest:        httptest.NewRequest(http.MethodGet, "http://wiretap.local/external/products", nil),
+		HttpResponseWriter: httptest.NewRecorder(),
+	}
+	prepared := httptest.NewRequest(http.MethodGet, "http://wiretap.local/products", nil)
+
+	var generatedFrom *http.Request
+	NewHandler().Handle(request, &PreparedRequest{
+		Config:      testConfig(),
+		NewReq:      prepared,
+		IsHardError: false,
+		ValidateRequest: func() []*shared.WiretapValidationError {
+			return nil
+		},
+		GenerateMock: func(req *http.Request) ([]byte, int, error) {
+			generatedFrom = req
+			return []byte(`{"ok":true}`), http.StatusOK, nil
+		},
+		BroadcastResponse: func(_ *http.Response) {},
+	})
+
+	assert.Same(t, prepared, generatedFrom)
+	assert.Equal(t, "/products", generatedFrom.URL.Path)
+}
+
 func TestHandlerWritesValidationProblemForHardRequestErrors(t *testing.T) {
 	id := uuid.New()
 	request := &model.Request{

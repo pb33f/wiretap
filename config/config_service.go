@@ -5,9 +5,9 @@ package config
 
 import (
 	"github.com/mitchellh/mapstructure"
-	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
+	"github.com/pb33f/ranch/store"
 	"github.com/pb33f/wiretap/controls"
 	"github.com/pb33f/wiretap/shared"
 )
@@ -18,7 +18,7 @@ const (
 )
 
 type ConfigurationService struct {
-	configStore bus.BusStore
+	configStore store.BusStore
 }
 
 type RequestConfiguration struct {
@@ -28,8 +28,7 @@ type Configuration struct {
 	Configuration *shared.WiretapConfiguration `json:"configuration,omitempty"`
 }
 
-func NewConfigurationService() *ConfigurationService {
-	storeManager := bus.GetBus().GetStoreManager()
+func NewConfigurationService(storeManager store.Manager) *ConfigurationService {
 	controlsStore := storeManager.CreateStore(controls.ControlServiceChan)
 	return &ConfigurationService{
 		configStore: controlsStore,

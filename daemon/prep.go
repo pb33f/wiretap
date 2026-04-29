@@ -7,10 +7,12 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/pb33f/ranch/model"
 	configModel "github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/shared"
+	"github.com/pterm/pterm"
 )
 
 type PreparedRequest struct {
@@ -21,6 +23,7 @@ type PreparedRequest struct {
 	DropHeaders   []string
 	InjectHeaders map[string]string
 	Auth          string
+	ControlPath   string
 	IsHardError   bool
 	UseMock       bool
 	TxnConfig     HttpTransactionConfig
@@ -40,8 +43,11 @@ func (ws *WiretapService) prepareRequest(request *model.Request) *PreparedReques
 
 	// Read body once. The same bytes are reused for display, validation, and
 	// upstream request clones so request preparation owns all body rewind work.
-	bodyBytes, _ := io.ReadAll(request.HttpRequest.Body)
-	_ = request.HttpRequest.Body.Close()
+	var bodyBytes []byte
+	if request.HttpRequest.Body != nil {
+		bodyBytes, _ = io.ReadAll(request.HttpRequest.Body)
+		_ = request.HttpRequest.Body.Close()
+	}
 	request.HttpRequest.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	// newReq intentionally has no RedirectBasePath; validator and display paths
@@ -74,11 +80,15 @@ func (ws *WiretapService) prepareRequest(request *model.Request) *PreparedReques
 		ws.config.Logger.Error("[wiretap] unable to clone API request, failed", "url", request.HttpRequest.URL.String())
 		return nil
 	}
+	controlPath := request.HttpRequest.URL.Path
+	displayURL := prepareRequestURLs(newReq, apiRequest, config)
 
-	isHardError := configModel.IsHardErrorsSet(apiRequest.URL.Path, config)
+	isHardError := configModel.IsHardErrorsSet(controlPath, config)
 	txnConfig := HttpTransactionConfig{
 		OriginalRequest:   request.HttpRequest,
 		NewRequest:        newReq,
+		APIRequest:        apiRequest,
+		DisplayURL:        displayURL,
 		ID:                request.Id,
 		TransactionConfig: config,
 		DropHeaders:       dropHeaders,
@@ -96,8 +106,9 @@ func (ws *WiretapService) prepareRequest(request *model.Request) *PreparedReques
 		DropHeaders:   dropHeaders,
 		InjectHeaders: injectHeaders,
 		Auth:          auth,
+		ControlPath:   controlPath,
 		IsHardError:   isHardError,
-		UseMock:       ws.config.MockMode || configModel.IncludePathOnMockMode(apiRequest.URL.Path, ws.config),
+		UseMock:       config.MockMode || configModel.IncludePathOnMockMode(controlPath, config),
 		TxnConfig:     txnConfig,
 	}
 }
@@ -156,4 +167,58 @@ func (ws *WiretapService) getHeadersAndAuth(config *shared.WiretapConfiguration,
 	}
 
 	return dropHeaders, injectHeaders, auth
+}
+
+func prepareRequestURLs(
+	newReq *http.Request,
+	apiRequest *http.Request,
+	config *shared.WiretapConfiguration,
+) *url.URL {
+	displayURL := prepareURLForRequest(newReq, config)
+	apiURL := prepareURLForRequest(apiRequest, config)
+
+	newReq.URL = cloneURL(displayURL)
+	apiRequest.URL = cloneURL(apiURL)
+	return cloneURL(displayURL)
+}
+
+func prepareURLForRequest(req *http.Request, config *shared.WiretapConfiguration) *url.URL {
+	preparedURL := cloneURL(req.URL)
+
+	replaced := configModel.RewritePath(req.URL.Path, req, config)
+	if replaced == nil || replaced.RewrittenPath == "" || replaced.RewrittenPath == req.URL.Path {
+		return preparedURL
+	}
+
+	rewrittenURL, err := url.Parse(replaced.RewrittenPath)
+	if err != nil {
+		if config.Logger != nil {
+			config.Logger.Error("[wiretap] unable to parse rewritten path", "path", replaced.RewrittenPath, "error", err.Error())
+		}
+		return preparedURL
+	}
+	if req.URL.RawQuery != "" {
+		rewrittenURL.RawQuery = req.URL.RawQuery
+	}
+	if rewrittenURL.Host == "" && req.URL.Host != "" {
+		rewrittenURL.Scheme = req.URL.Scheme
+		rewrittenURL.Host = req.URL.Host
+	}
+
+	if replaced.PathConfiguration != nil && replaced.PathConfiguration.RewriteId != "" {
+		pterm.Info.Printf("[wiretap] Re-writing path '%s' to '%s' with identifier '%s'\n",
+			req.URL.String(), rewrittenURL.String(), replaced.PathConfiguration.RewriteId)
+	} else {
+		pterm.Info.Printf("[wiretap] Re-writing path '%s' to '%s'\n", req.URL.String(), rewrittenURL.String())
+	}
+
+	return cloneURL(rewrittenURL)
+}
+
+func cloneURL(source *url.URL) *url.URL {
+	if source == nil {
+		return nil
+	}
+	cloned := *source
+	return &cloned
 }

@@ -47,14 +47,21 @@ func New(documentValidators []DocumentValidator) *Validator {
 }
 
 func (v *Validator) GetValidatorForRequest(request *model.Request) *DocumentValidator {
+	if request == nil {
+		return nil
+	}
+	return v.GetValidatorForHTTPRequest(request.HttpRequest)
+}
+
+func (v *Validator) GetValidatorForHTTPRequest(httpRequest *http.Request) *DocumentValidator {
 	if v == nil || len(v.documentValidators) == 0 {
 		return nil
 	}
-	if request == nil || request.HttpRequest == nil {
+	if httpRequest == nil {
 		return nil
 	}
 
-	index, routeDoc := v.router.ResolveIndex(request.HttpRequest)
+	index, routeDoc := v.router.ResolveIndex(httpRequest)
 	if routeDoc == nil {
 		return nil
 	}
@@ -71,11 +78,21 @@ func (v *Validator) ValidateResponse(
 	request *model.Request,
 	returnedResponse *http.Response,
 ) ([]*shared.WiretapValidationError, []*shared.WiretapValidationError) {
+	if request == nil {
+		return nil, nil
+	}
+	return v.ValidateResponseForRequest(request.HttpRequest, returnedResponse)
+}
+
+func (v *Validator) ValidateResponseForRequest(
+	httpRequest *http.Request,
+	returnedResponse *http.Response,
+) ([]*shared.WiretapValidationError, []*shared.WiretapValidationError) {
 	var validationErrors []*shared.WiretapValidationError
 
-	docValidator := v.GetValidatorForRequest(request)
+	docValidator := v.GetValidatorForHTTPRequest(httpRequest)
 	if docValidator != nil {
-		_, newValidationErrors := docValidator.Validator.ValidateHttpResponse(request.HttpRequest, returnedResponse)
+		_, newValidationErrors := docValidator.Validator.ValidateHttpResponse(httpRequest, returnedResponse)
 		validationErrors = shared.ConvertValidationErrors(docValidator.DocumentName, newValidationErrors)
 	}
 
@@ -95,7 +112,7 @@ func (v *Validator) ValidateRequest(
 ) []*shared.WiretapValidationError {
 	var validationErrors []*shared.WiretapValidationError
 
-	docValidator := v.GetValidatorForRequest(modelRequest)
+	docValidator := v.GetValidatorForHTTPRequest(httpRequest)
 	if docValidator != nil {
 		_, newValidationErrors := docValidator.Validator.ValidateHttpRequest(httpRequest)
 		validationErrors = shared.ConvertValidationErrors(docValidator.DocumentName, newValidationErrors)

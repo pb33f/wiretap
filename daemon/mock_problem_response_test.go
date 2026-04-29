@@ -18,6 +18,7 @@ import (
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
+	"github.com/pb33f/ranch/store"
 	"github.com/pb33f/wiretap/daemon/problems"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/stretchr/testify/assert"
@@ -45,11 +46,13 @@ func newMockModeWiretapService(t *testing.T, config *shared.WiretapConfiguration
 	doc, err := libopenapi.NewDocument(spec)
 	require.NoError(t, err)
 
+	eventBus := bus.NewEventBus()
+	storeManager := store.NewManager(eventBus)
 	ws := NewWiretapService([]shared.ApiDocument{{
 		DocumentName: "giftshop-openapi.yaml",
 		Document:     doc,
-	}}, config)
-	ws.setBroadcastChannel(bus.GetBus().GetChannelManager().CreateChannel(WiretapBroadcastChan))
+	}}, config, storeManager)
+	ws.setBroadcastChannel(eventBus.GetChannelManager().CreateChannel(WiretapBroadcastChan))
 	ws.controlsStore.Put(shared.ConfigKey, config, nil)
 	return ws
 }

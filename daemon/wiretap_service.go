@@ -11,6 +11,7 @@ import (
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
+	"github.com/pb33f/ranch/store"
 	"github.com/pb33f/wiretap/controls"
 	"github.com/pb33f/wiretap/daemon/broadcast"
 	"github.com/pb33f/wiretap/daemon/mockproxy"
@@ -33,8 +34,8 @@ type WiretapService struct {
 	serviceCore      service.FabricServiceCore
 	broadcastChan    *bus.Channel
 	bus              bus.EventBus
-	controlsStore    bus.BusStore
-	transactionStore bus.BusStore
+	controlsStore    store.BusStore
+	transactionStore store.BusStore
 	config           *shared.WiretapConfiguration
 	fs               http.Handler
 	broadcaster      *broadcast.LazyBroadcaster
@@ -47,8 +48,7 @@ type WiretapService struct {
 	StaticMockDir    string
 }
 
-func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapConfiguration) *WiretapService {
-	storeManager := bus.GetBus().GetStoreManager()
+func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapConfiguration, storeManager store.Manager) *WiretapService {
 	controlsStore := storeManager.CreateStore(controls.ControlServiceChan)
 	transactionStore := storeManager.CreateStore(WiretapServiceChan)
 

@@ -4,6 +4,7 @@
 package broadcast
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -115,15 +116,15 @@ func (b *channelBroadcaster) RequestValidationErrors(
 	txn *transaction.HttpTransaction,
 ) {
 	txn.RequestValidation = errors
-	b.send(request, txn, nil)
+	b.sendTransaction(request, txn)
 }
 
 func (b *channelBroadcaster) Request(request *model.Request, txn *transaction.HttpTransaction) {
-	b.send(request, txn, nil)
+	b.sendTransaction(request, txn)
 }
 
 func (b *channelBroadcaster) Response(request *model.Request, txn *transaction.HttpTransaction) {
-	b.send(request, txn, nil)
+	b.sendTransaction(request, txn)
 }
 
 func (b *channelBroadcaster) ResponseError(request *model.Request, txn *transaction.HttpTransaction, err error) {
@@ -136,7 +137,15 @@ func (b *channelBroadcaster) ResponseValidationErrors(
 	errors []*shared.WiretapValidationError,
 ) {
 	txn.ResponseValidation = errors
-	b.send(request, txn, nil)
+	b.sendTransaction(request, txn)
+}
+
+func (b *channelBroadcaster) sendTransaction(request *model.Request, txn *transaction.HttpTransaction) {
+	payload, err := json.Marshal(txn)
+	if err != nil {
+		panic(fmt.Errorf("unable to marshal wiretap broadcast payload: %w", err))
+	}
+	b.send(request, payload, nil)
 }
 
 func (b *channelBroadcaster) send(request *model.Request, payload any, err error) {

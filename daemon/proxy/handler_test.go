@@ -106,6 +106,97 @@ func TestHandlerWritesValidationProblemForHardResponseErrors(t *testing.T) {
 	assert.Contains(t, rec.Body.String(), "Response validation failed")
 }
 
+func TestHandlerRunsValidationInlineWhenAsyncLimitIsFull(t *testing.T) {
+	id := uuid.New()
+	request := &model.Request{
+		Id: &id,
+		HttpRequest: httptest.NewRequest(
+			http.MethodGet,
+			"http://wiretap.local/products",
+			nil,
+		),
+		HttpResponseWriter: httptest.NewRecorder(),
+	}
+
+	handler := NewHandler()
+	for i := 0; i < cap(handler.validationSem); i++ {
+		handler.validationSem <- struct{}{}
+	}
+	defer func() {
+		for i := 0; i < cap(handler.validationSem); i++ {
+			<-handler.validationSem
+		}
+	}()
+
+	var validatedRequest, validatedResponse int
+	handler.Handle(request, &PreparedRequest{
+		Config:      testConfig(),
+		APIRequest:  httptest.NewRequest(http.MethodGet, "http://upstream.local/products", nil),
+		IsHardError: false,
+		CallAPI: func(_ *http.Request, _ ...*shared.WiretapConfiguration) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(bytes.NewBufferString(`{"ok":true}`)),
+			}, nil
+		},
+		ValidateRequest: func() []*shared.WiretapValidationError {
+			validatedRequest++
+			return nil
+		},
+		ValidateResponse: func(_ *http.Response, _ []byte) []*shared.WiretapValidationError {
+			validatedResponse++
+			return nil
+		},
+		BroadcastResponseError: func(_ *http.Response, _ error) {},
+	})
+
+	assert.Equal(t, 1, validatedRequest)
+	assert.Equal(t, 1, validatedResponse)
+}
+
+func TestHandlerIgnoreValidationUsesOriginalControlPath(t *testing.T) {
+	id := uuid.New()
+	request := &model.Request{
+		Id: &id,
+		HttpRequest: httptest.NewRequest(
+			http.MethodGet,
+			"http://wiretap.local/api/products",
+			nil,
+		),
+		HttpResponseWriter: httptest.NewRecorder(),
+	}
+
+	config := testConfig()
+	config.IgnoreValidation = []string{"/api/**"}
+	config.CompileIgnoreValidations()
+
+	var validatedRequest bool
+	NewHandler().Handle(request, &PreparedRequest{
+		Config:      config,
+		ControlPath: "/api/products",
+		APIRequest:  httptest.NewRequest(http.MethodGet, "http://upstream.local/internal/products", nil),
+		IsHardError: true,
+		CallAPI: func(_ *http.Request, _ ...*shared.WiretapConfiguration) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(bytes.NewBufferString(`{"ok":true}`)),
+			}, nil
+		},
+		ValidateRequest: func() []*shared.WiretapValidationError {
+			validatedRequest = true
+			return nil
+		},
+		ValidateResponse: func(_ *http.Response, _ []byte) []*shared.WiretapValidationError {
+			return nil
+		},
+		BroadcastResponseError: func(_ *http.Response, _ error) {},
+	})
+
+	assert.False(t, validatedRequest)
+}
+
 func testConfig() *shared.WiretapConfiguration {
 	return &shared.WiretapConfiguration{
 		HardErrorCode:       http.StatusBadRequest,

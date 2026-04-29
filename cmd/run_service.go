@@ -4,13 +4,16 @@
 package cmd
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
 
 	"github.com/pb33f/libopenapi"
-	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/plank/pkg/server"
+	ranchService "github.com/pb33f/ranch/service"
+	"github.com/pb33f/ranch/transport/fabric"
 	"github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/controls"
 	"github.com/pb33f/wiretap/daemon"
@@ -22,21 +25,16 @@ import (
 )
 
 func runWiretapService(wiretapConfig *shared.WiretapConfiguration, docs []shared.ApiDocument, primaryDoc libopenapi.Document) (server.PlatformServer, error) {
-
-	var err error
-
-	// create a store and put the wiretapConfig in it.
-	storeManager := bus.GetBus().GetStoreManager()
-	controlsStore := storeManager.CreateStoreWithType(controls.ControlServiceChan, reflect.TypeOf(wiretapConfig))
-	controlsStore.Put(shared.ConfigKey, wiretapConfig, nil)
-
-	harStore := storeManager.CreateStoreWithType(har.HARServiceChan, reflect.TypeOf(""))
-	harStore.Put(shared.HARKey, wiretapConfig.HAR, nil)
-
 	// create a new ranch config.
-	ranchConfig, _ := server.CreateServerConfig()
-	ranchConfig.Port, _ = strconv.Atoi(wiretapConfig.WebSocketPort)
-	ranchConfig.FabricConfig.EndpointConfig.Heartbeat = 0
+	ranchConfig, err := server.CreateServerConfig()
+	if err != nil {
+		return nil, fmt.Errorf("create ranch server config: %w", err)
+	}
+	ranchPort, err := strconv.Atoi(wiretapConfig.WebSocketPort)
+	if err != nil {
+		return nil, fmt.Errorf("parse websocket port %q: %w", wiretapConfig.WebSocketPort, err)
+	}
+	ranchConfig.Port = ranchPort
 	ranchConfig.Logger = wiretapConfig.Logger
 
 	// running TLS?
@@ -52,7 +50,7 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, docs []shared
 	// create an application fabric configuration for the ranch server.
 	ranchConfig.FabricConfig = &server.FabricBrokerConfig{
 		FabricEndpoint: "/ranch",
-		EndpointConfig: &bus.EndpointConfig{
+		EndpointConfig: &fabric.EndpointConfig{
 			Heartbeat:             0,
 			UserQueuePrefix:       "/queue",
 			TopicPrefix:           "/topic",
@@ -63,59 +61,62 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, docs []shared
 
 	// create an instance of ranch
 	platformServer := server.NewPlatformServer(ranchConfig)
+	storeManager := platformServer.StoreManager()
+
+	// create stores and seed runtime configuration.
+	controlsStore := storeManager.CreateStoreWithType(controls.ControlServiceChan, reflect.TypeOf(wiretapConfig))
+	controlsStore.Put(shared.ConfigKey, wiretapConfig, nil)
+
+	harStore := storeManager.CreateStoreWithType(har.HARServiceChan, reflect.TypeOf(""))
+	harStore.Put(shared.HARKey, wiretapConfig.HAR, nil)
 
 	// create wiretap service
-	wtService := daemon.NewWiretapService(docs, wiretapConfig)
+	wtService := daemon.NewWiretapService(docs, wiretapConfig, storeManager)
 
 	// register wiretap service
-	if err = platformServer.RegisterService(wtService, daemon.WiretapServiceChan); err != nil {
-		panic(err)
+	if err := registerPlatformService(platformServer, "wiretap", daemon.WiretapServiceChan, wtService); err != nil {
+		return platformServer, err
 	}
 
 	staticMockService := staticMock.NewStaticMockService(wtService, wiretapConfig.Logger)
 	// register Static-Mock Service
-	if err = platformServer.RegisterService(
-		staticMockService, staticMock.StaticMockServiceChan); err != nil {
-		panic(err)
+	if err := registerPlatformService(platformServer, "static mock", staticMock.StaticMockServiceChan, staticMockService); err != nil {
+		return platformServer, err
 	}
-	// Start watcher to look for changes to static mock definitions
-	staticMockService.StartWatcher()
 
 	// register spec service
-	if err = platformServer.RegisterService(
-		specs.NewSpecService(primaryDoc), specs.SpecServiceChan); err != nil {
-		panic(err)
+	if err := registerPlatformService(platformServer, "spec", specs.SpecServiceChan, specs.NewSpecService(primaryDoc)); err != nil {
+		return platformServer, err
 	}
 
 	// register control service
-	if err = platformServer.RegisterService(
-		controls.NewControlsService(), controls.ControlServiceChan); err != nil {
-		panic(err)
+	if err := registerPlatformService(platformServer, "control", controls.ControlServiceChan, controls.NewControlsService(storeManager)); err != nil {
+		return platformServer, err
 	}
 
 	// register report service
-	if err = platformServer.RegisterService(
-		report.NewReportService(), report.ReportServiceChan); err != nil {
-		panic(err)
+	if err := registerPlatformService(platformServer, "report", report.ReportServiceChan, report.NewReportService(storeManager)); err != nil {
+		return platformServer, err
 	}
 
 	// register wiretapConfig service
-	if err = platformServer.RegisterService(
-		config.NewConfigurationService(), config.ConfigurationServiceChan); err != nil {
-		panic(err)
+	if err := registerPlatformService(platformServer, "configuration", config.ConfigurationServiceChan, config.NewConfigurationService(storeManager)); err != nil {
+		return platformServer, err
 	}
 
 	// register HAR Service
-	if err = platformServer.RegisterService(
-		har.NewHARService(wtService, wiretapConfig.Logger, wiretapConfig.HARReplayDelay), har.HARServiceChan); err != nil {
-		panic(err)
+	if err := registerPlatformService(platformServer, "HAR", har.HARServiceChan, har.NewHARService(wtService, wiretapConfig.Logger, wiretapConfig.HARReplayDelay, storeManager)); err != nil {
+		return platformServer, err
 	}
+
+	// Start watcher to look for changes to static mock definitions.
+	staticMockService.StartWatcher()
 
 	// create a new chan and listen for interrupt signals
 	sysChan := make(chan os.Signal, 1)
 
 	// hook in booted message
-	bootedMessage(wiretapConfig)
+	bootedMessage(wiretapConfig, platformServer.Bus())
 
 	// boot the http handler
 	hht := HandleHttpTraffic{
@@ -130,10 +131,24 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, docs []shared
 
 	// if static dir is configured, monitor static content
 	if wiretapConfig.StaticDir != "" {
-		daemon.MonitorStatic(wiretapConfig)
+		daemon.MonitorStatic(wiretapConfig, platformServer.Bus())
 	}
 
 	// boot wiretap
-	platformServer.StartServer(sysChan)
+	if err := platformServer.StartServer(context.Background(), sysChan); err != nil {
+		return platformServer, err
+	}
 	return platformServer, nil
+}
+
+func registerPlatformService(
+	platformServer server.PlatformServer,
+	name string,
+	channel string,
+	svc ranchService.FabricService,
+) error {
+	if err := platformServer.RegisterService(svc, channel); err != nil {
+		return fmt.Errorf("register %s service: %w", name, err)
+	}
+	return nil
 }

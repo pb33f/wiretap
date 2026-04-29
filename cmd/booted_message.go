@@ -11,10 +11,10 @@ import (
 	"github.com/pterm/pterm"
 )
 
-func bootedMessage(wiretapConfig *shared.WiretapConfiguration) {
+func bootedMessage(wiretapConfig *shared.WiretapConfiguration, eventBus bus.EventBus) {
 	// print a nice message to the user when ranch is online.
 	go func() {
-		handler, _ := bus.GetBus().ListenStream(server.RANCH_SERVER_ONLINE_CHANNEL)
+		handler, _ := eventBus.ListenStream(server.RANCH_SERVER_ONLINE_CHANNEL)
 		seen := false
 		handler.Handle(func(message *model.Message) {
 			if !seen {

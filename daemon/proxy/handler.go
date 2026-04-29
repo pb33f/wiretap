@@ -27,6 +27,7 @@ type PreparedRequest struct {
 	NewReq                 *http.Request
 	APIRequest             *http.Request
 	BodyBytes              []byte
+	ControlPath            string
 	IsHardError            bool
 	CallAPI                APICaller
 	ValidateRequest        RequestValidator
@@ -35,30 +36,39 @@ type PreparedRequest struct {
 }
 
 type Handler struct {
-	transport http.RoundTripper
+	transport     http.RoundTripper
+	validationSem chan struct{}
 }
+
+const defaultValidationConcurrency = 8
 
 func NewHandler(transport ...http.RoundTripper) *Handler {
 	tr := http.DefaultTransport
 	if len(transport) > 0 && transport[0] != nil {
 		tr = transport[0]
 	}
-	return &Handler{transport: tr}
+	return &Handler{
+		transport:     tr,
+		validationSem: make(chan struct{}, defaultValidationConcurrency),
+	}
 }
 
 func (h *Handler) Handle(request *model.Request, prep *PreparedRequest) {
 	config := prep.Config
 	var requestErrors []*shared.WiretapValidationError
 	var responseErrors []*shared.WiretapValidationError
+	controlPath := prepControlPath(prep)
 
-	if configModel.IgnoreValidationOnPath(prep.APIRequest.URL.Path, config) &&
-		!configModel.PathValidationAllowListed(prep.APIRequest.URL.Path, config) {
+	if configModel.IgnoreValidationOnPath(controlPath, config) &&
+		!configModel.PathValidationAllowListed(controlPath, config) {
 		config.Logger.Info(
-			fmt.Sprintf("Request on validation ignored path: %s ; skipping validation", prep.APIRequest.URL.Path))
+			fmt.Sprintf("Request on validation ignored path: %s ; skipping validation", controlPath))
 	} else if prep.IsHardError {
 		requestErrors = prep.ValidateRequest()
 	} else {
-		go prep.ValidateRequest()
+		h.runValidationBounded(func() {
+			prep.ValidateRequest()
+		})
 	}
 
 	callAPI := prep.CallAPI
@@ -91,7 +101,9 @@ func (h *Handler) Handle(request *model.Request, prep *PreparedRequest) {
 			Header:     returnedResponse.Header.Clone(),
 			Body:       io.NopCloser(bytes.NewBuffer(respBody)),
 		}
-		go prep.ValidateResponse(clonedResp, respBody)
+		h.runValidationBounded(func() {
+			prep.ValidateResponse(clonedResp, respBody)
+		})
 	}
 
 	delay := configModel.FindPathDelay(request.HttpRequest.URL.Path, config)
@@ -135,6 +147,31 @@ func (h *Handler) Handle(request *model.Request, prep *PreparedRequest) {
 
 	request.HttpResponseWriter.WriteHeader(statusCode)
 	_, _ = request.HttpResponseWriter.Write(respBody)
+}
+
+func prepControlPath(prep *PreparedRequest) string {
+	if prep.ControlPath != "" {
+		return prep.ControlPath
+	}
+	if prep.APIRequest != nil && prep.APIRequest.URL != nil {
+		return prep.APIRequest.URL.Path
+	}
+	return ""
+}
+
+func (h *Handler) runValidationBounded(work func()) {
+	if work == nil {
+		return
+	}
+	select {
+	case h.validationSem <- struct{}{}:
+		go func() {
+			defer func() { <-h.validationSem }()
+			work()
+		}()
+	default:
+		work()
+	}
 }
 
 func extractHeaders(resp *http.Response) map[string][]string {

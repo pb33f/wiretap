@@ -5,9 +5,9 @@ package report
 
 import (
 	"github.com/mitchellh/mapstructure"
-	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
+	"github.com/pb33f/ranch/store"
 	"github.com/pb33f/wiretap/daemon"
 	"github.com/pb33f/wiretap/transaction"
 )
@@ -18,7 +18,7 @@ const (
 )
 
 type ReportService struct {
-	transactionStore bus.BusStore
+	transactionStore store.BusStore
 }
 
 type GenerateReport struct {
@@ -28,8 +28,7 @@ type ReportResponse struct {
 	Transactions []*transaction.HttpTransaction `json:"transactions,omitempty"`
 }
 
-func NewReportService() *ReportService {
-	storeManager := bus.GetBus().GetStoreManager()
+func NewReportService(storeManager store.Manager) *ReportService {
 	transactionStore := storeManager.GetStore(daemon.WiretapServiceChan)
 	return &ReportService{
 		transactionStore: transactionStore,

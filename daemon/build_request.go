@@ -4,6 +4,7 @@
 package daemon
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -21,6 +22,8 @@ import (
 type HttpTransactionConfig struct {
 	OriginalRequest   *http.Request
 	NewRequest        *http.Request
+	APIRequest        *http.Request
+	DisplayURL        *url.URL
 	ID                *uuid.UUID
 	TransactionConfig *shared.WiretapConfiguration
 	DropHeaders       []string
@@ -37,7 +40,6 @@ func BuildHttpTransaction(build HttpTransactionConfig) *transaction.HttpTransact
 	dropHeaders := build.DropHeaders
 	injectHeaders := build.InjectHeaders
 	auth := build.Auth
-	basePath := build.BasePath
 
 	// If pre-resolved headers were not provided, resolve them now (backward compat).
 	// Uses copy-on-write to avoid mutating shared config state.
@@ -62,24 +64,18 @@ func BuildHttpTransaction(build HttpTransactionConfig) *transaction.HttpTransact
 		}
 	}
 
-	newReq := CloneExistingRequest(CloneRequest{
-		Request:       build.NewRequest,
-		Protocol:      cf.RedirectProtocol,
-		Host:          cf.RedirectHost,
-		BasePath:      basePath,
-		Port:          cf.RedirectPort,
-		DropHeaders:   dropHeaders,
-		Auth:          auth,
-		InjectHeaders: injectHeaders,
-		BodyBytes:     build.BodyBytes,
-	})
+	newReq := build.NewRequest
+	bodyBytes := build.BodyBytes
+	if bodyBytes == nil && newReq != nil && newReq.Body != nil {
+		bodyBytes, _ = io.ReadAll(newReq.Body)
+	}
+	if bodyBytes != nil && newReq != nil {
+		newReq.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	}
 
 	var requestBody []byte
 
-	headers := make(map[string]any)
-	for k, v := range newReq.Header {
-		headers[k] = v[0]
-	}
+	headers := buildTransactionHeaders(prepareHeaders(newReq.Header, dropHeaders, injectHeaders, auth, cf.CompiledVariables))
 
 	cookies := make(map[string]*transaction.HttpCookie)
 	for _, c := range newReq.Cookies() {
@@ -130,32 +126,32 @@ func BuildHttpTransaction(build HttpTransactionConfig) *transaction.HttpTransact
 			})
 		}
 		requestBody, _ = json.Marshal(parts)
-	} else {
+	} else if newReq.Body != nil {
 		requestBody, _ = io.ReadAll(newReq.Body)
 	}
+	if bodyBytes != nil && newReq != nil {
+		newReq.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	}
 
-	replaced := config.RewritePath(build.NewRequest.URL.Path, newReq, cf)
-	var newUrl = build.NewRequest.URL
-	if replaced.RewrittenPath != "" {
-		var e error
-		newUrl, e = url.Parse(replaced.RewrittenPath)
-		if e != nil {
-			newUrl = build.NewRequest.URL
-			pterm.Error.Printf("major configuration problem: cannot parse URL: `%s`: %s", replaced.RewrittenPath, e.Error())
-		}
-		if build.NewRequest.URL.RawQuery != "" {
-			newUrl.RawQuery = build.NewRequest.URL.RawQuery
+	newUrl := cloneURL(build.DisplayURL)
+	if newUrl == nil && build.APIRequest != nil {
+		newUrl = cloneURL(build.APIRequest.URL)
+	}
+	if newUrl == nil {
+		rawURL := ReconstructURL(build.NewRequest, cf.RedirectProtocol, cf.RedirectHost, build.BasePath, cf.RedirectPort)
+		var err error
+		newUrl, err = url.Parse(rawURL)
+		if err != nil {
+			newUrl = cloneURL(build.NewRequest.URL)
+			pterm.Error.Printf("major configuration problem: cannot parse URL: `%s`: %s", rawURL, err.Error())
 		}
 	}
 
-	// If newUrl has no host (e.g. no path rewriting configured), fill in the
-	// destination scheme/host from the cloned request so the UI can display
-	// the full destination URL.
-	if newUrl.Host == "" && newReq.URL != nil && newReq.URL.Host != "" {
-		destUrl := *newUrl
-		destUrl.Scheme = newReq.URL.Scheme
-		destUrl.Host = newReq.URL.Host
-		newUrl = &destUrl
+	originalPath := ""
+	if build.OriginalRequest != nil && build.OriginalRequest.URL != nil {
+		originalPath = build.OriginalRequest.URL.Path
+	} else if build.NewRequest != nil && build.NewRequest.URL != nil {
+		originalPath = build.NewRequest.URL.Path
 	}
 
 	return &transaction.HttpTransaction{
@@ -168,13 +164,24 @@ func BuildHttpTransaction(build HttpTransactionConfig) *transaction.HttpTransact
 			Query:           newUrl.RawQuery,
 			DroppedHeaders:  dropHeaders,
 			InjectedHeaders: injectHeaders,
-			OriginalPath:    build.NewRequest.URL.Path,
+			OriginalPath:    originalPath,
 			Cookies:         cookies,
 			Headers:         headers,
 			Body:            string(requestBody),
 			Timestamp:       time.Now().UnixMilli(),
 		},
 	}
+}
+
+func buildTransactionHeaders(source http.Header) map[string]any {
+	headers := make(map[string]any, len(source))
+	for k, v := range source {
+		if len(v) == 0 {
+			continue
+		}
+		headers[k] = v[0]
+	}
+	return headers
 }
 
 func ReconstructURL(r *http.Request, protocol, host, basepath string, port string) string {

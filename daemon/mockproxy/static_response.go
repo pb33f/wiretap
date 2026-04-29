@@ -4,6 +4,7 @@
 package mockproxy
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,7 +19,24 @@ func (h *Handler) HandleStaticResponse(
 	response *http.Response,
 	broadcast StaticResponseBroadcaster,
 ) {
-	go broadcast(response)
+	var byteArrayBody []byte
+	if response.Body != nil {
+		var err error
+		byteArrayBody, err = io.ReadAll(response.Body)
+		if err != nil {
+			panic(err)
+		}
+		_ = response.Body.Close()
+	}
+
+	broadcastResponse := &http.Response{
+		StatusCode: response.StatusCode,
+		Header:     response.Header.Clone(),
+	}
+	if response.Body != nil {
+		broadcastResponse.Body = io.NopCloser(bytes.NewBuffer(byteArrayBody))
+	}
+	go broadcast(broadcastResponse)
 
 	for k, v := range response.Header {
 		for _, j := range v {
@@ -36,12 +54,7 @@ func (h *Handler) HandleStaticResponse(
 		return
 	}
 
-	byteArrayBody, err := io.ReadAll(response.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = request.HttpResponseWriter.Write(byteArrayBody)
+	_, err := request.HttpResponseWriter.Write(byteArrayBody)
 	if err != nil {
 		panic(err)
 	}
