@@ -15,10 +15,9 @@ import (
 	"path/filepath"
 )
 
-func MonitorStatic(wiretapConfig *shared.WiretapConfiguration) {
+func MonitorStatic(wiretapConfig *shared.WiretapConfiguration, eventBus bus.EventBus) {
 
-	b := bus.GetBus()
-	staticChan, _ := b.GetChannelManager().GetChannel(WiretapStaticChangeChan)
+	staticChan, _ := eventBus.GetChannelManager().GetChannel(WiretapStaticChangeChan)
 
 	go func() {
 		var err error

@@ -6,8 +6,10 @@ package daemon
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -74,4 +76,106 @@ func TestBuildHttpTransactionMultipartLargeForm(t *testing.T) {
 	}
 	assert.True(t, sawPayload, "expected large multipart field to be preserved")
 	assert.True(t, sawFile, "expected multipart file metadata to be preserved")
+}
+
+func TestBuildHttpTransactionUsesPreparedDisplayURL(t *testing.T) {
+	bodyBytes := []byte("payload")
+	originalReq, err := http.NewRequest(
+		http.MethodPost,
+		"http://wiretap.local/api/items?debug=true",
+		bytes.NewReader(bodyBytes),
+	)
+	require.NoError(t, err)
+
+	newReq, err := http.NewRequest(
+		http.MethodPost,
+		"http://api.example.com/api/items?debug=true",
+		bytes.NewReader(bodyBytes),
+	)
+	require.NoError(t, err)
+
+	apiReq, err := http.NewRequest(
+		http.MethodPost,
+		"http://wrong.local/should-not-win",
+		bytes.NewReader(bodyBytes),
+	)
+	require.NoError(t, err)
+
+	displayURL, err := url.Parse("http://target.local/already?debug=true")
+	require.NoError(t, err)
+
+	config := &shared.WiretapConfiguration{
+		RedirectProtocol:   "http",
+		RedirectHost:       "fallback.local",
+		PathConfigurations: orderedmap.New[string, *shared.WiretapPathConfig](),
+	}
+	config.PathConfigurations.Set("/api/**", &shared.WiretapPathConfig{
+		Target: "rewritten.local",
+		PathRewrite: map[string]string{
+			"^/api/": "/rewritten/",
+		},
+	})
+	config.CompilePaths()
+
+	id := uuid.New()
+	txn := BuildHttpTransaction(HttpTransactionConfig{
+		OriginalRequest:   originalReq,
+		NewRequest:        newReq,
+		APIRequest:        apiReq,
+		DisplayURL:        displayURL,
+		ID:                &id,
+		TransactionConfig: config,
+		BodyBytes:         bodyBytes,
+	})
+
+	require.NotNil(t, txn)
+	require.NotNil(t, txn.Request)
+	assert.Equal(t, "http://target.local/already?debug=true", txn.Request.URL)
+	assert.Equal(t, "target.local", txn.Request.Host)
+	assert.Equal(t, "/already", txn.Request.Path)
+	assert.Equal(t, "/api/items", txn.Request.OriginalPath)
+	assert.Equal(t, "payload", txn.Request.Body)
+
+	bodyAfterBuild, err := io.ReadAll(newReq.Body)
+	require.NoError(t, err)
+	assert.Equal(t, bodyBytes, bodyAfterBuild)
+}
+
+func TestBuildHttpTransactionAppliesHeaderConfigWithoutClone(t *testing.T) {
+	req, err := http.NewRequest(http.MethodGet, "http://wiretap.local/api/items", nil)
+	require.NoError(t, err)
+	req.Header.Set("X-Drop", "drop-me")
+	req.Header.Set("X-Keep", "keep-me")
+
+	config := &shared.WiretapConfiguration{
+		Headers: &shared.WiretapHeaderConfig{
+			DropHeaders: []string{"X-Drop"},
+			InjectHeaders: map[string]string{
+				"X-Injected": "${token}",
+			},
+		},
+		Variables: map[string]string{
+			"password": "secret",
+			"token":    "abc123",
+		},
+		PathConfigurations: orderedmap.New[string, *shared.WiretapPathConfig](),
+	}
+	config.CompileVariables()
+	config.CompilePaths()
+
+	id := uuid.New()
+	txn := BuildHttpTransaction(HttpTransactionConfig{
+		OriginalRequest:   req,
+		NewRequest:        req,
+		ID:                &id,
+		TransactionConfig: config,
+		Auth:              "user:${password}",
+	})
+
+	require.NotNil(t, txn)
+	require.NotNil(t, txn.Request)
+	assert.NotContains(t, txn.Request.Headers, "X-Drop")
+	assert.Equal(t, "keep-me", txn.Request.Headers["X-Keep"])
+	assert.Equal(t, "abc123", txn.Request.Headers["X-Injected"])
+	assert.Equal(t, "Basic dXNlcjpzZWNyZXQ=", txn.Request.Headers["Authorization"])
 }

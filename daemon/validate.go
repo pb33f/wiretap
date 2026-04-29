@@ -18,14 +18,30 @@ func (ws *WiretapService) getValidatorForRequest(request *model.Request) *daemon
 	return ws.validator.GetValidatorForRequest(request)
 }
 
+func (ws *WiretapService) getValidatorForHTTPRequest(request *http.Request) *daemonvalidator.DocumentValidator {
+	if ws.validator == nil {
+		return nil
+	}
+	return ws.validator.GetValidatorForHTTPRequest(request)
+}
+
 func (ws *WiretapService) ValidateResponse(
 	request *model.Request,
+	returnedResponse *http.Response,
+	preReadBody ...[]byte) []*shared.WiretapValidationError {
+	validationRequest := request.HttpRequest
+	return ws.ValidateResponseForRequest(request, validationRequest, returnedResponse, preReadBody...)
+}
+
+func (ws *WiretapService) ValidateResponseForRequest(
+	request *model.Request,
+	validationRequest *http.Request,
 	returnedResponse *http.Response,
 	preReadBody ...[]byte) []*shared.WiretapValidationError {
 
 	var validationErrors, cleanedErrors []*shared.WiretapValidationError
 	if ws.validator != nil {
-		validationErrors, cleanedErrors = ws.validator.ValidateResponse(request, returnedResponse)
+		validationErrors, cleanedErrors = ws.validator.ValidateResponseForRequest(validationRequest, returnedResponse)
 	}
 
 	var txn *transaction.HttpTransaction

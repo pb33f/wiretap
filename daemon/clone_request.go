@@ -52,30 +52,45 @@ func CloneExistingRequest(request CloneRequest) *http.Request {
 		return nil
 	}
 
-	// build set of lowercased drop header names for O(1) lookup
-	dropSet := make(map[string]struct{}, len(request.DropHeaders))
-	for _, h := range request.DropHeaders {
+	newReq.Header = prepareHeaders(
+		request.Request.Header,
+		request.DropHeaders,
+		request.InjectHeaders,
+		request.Auth,
+		request.Variables,
+	)
+
+	return newReq
+}
+
+func prepareHeaders(
+	source http.Header,
+	dropHeaders []string,
+	injectHeaders map[string]string,
+	auth string,
+	variables map[string]*shared.CompiledVariable,
+) http.Header {
+	dropSet := make(map[string]struct{}, len(dropHeaders))
+	for _, h := range dropHeaders {
 		dropSet[strings.ToLower(h)] = struct{}{}
 	}
 
-	// copy headers, drop those that are specified.
-	for k, v := range request.Request.Header {
-		if _, drop := dropSet[strings.ToLower(k)]; !drop {
-			newReq.Header.Set(k, v[0])
+	headers := make(http.Header, len(source)+len(injectHeaders))
+	for k, v := range source {
+		if _, drop := dropSet[strings.ToLower(k)]; drop || len(v) == 0 {
+			continue
 		}
+		headers.Set(k, v[0])
 	}
 
-	// inject headers
-	for k, v := range request.InjectHeaders {
-		newReq.Header.Set(k, ReplaceWithVariables(request.Variables, v))
+	for k, v := range injectHeaders {
+		headers.Set(k, ReplaceWithVariables(variables, v))
 	}
 
-	// if the auth value is set, we need to base64 encode it and add it to the header.
-	if request.Auth != "" {
-		encoded := base64.StdEncoding.EncodeToString([]byte(ReplaceWithVariables(request.Variables, request.Auth)))
-		// this will overwrite any existing auth header.
-		newReq.Header.Set("Authorization", fmt.Sprintf("Basic %s", encoded))
+	if auth != "" {
+		encoded := base64.StdEncoding.EncodeToString([]byte(ReplaceWithVariables(variables, auth)))
+		headers.Set("Authorization", fmt.Sprintf("Basic %s", encoded))
 	}
 
-	return newReq
+	return headers
 }

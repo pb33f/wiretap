@@ -31,20 +31,34 @@ func TestValidateHARStreamsFromPath(t *testing.T) {
 	assert.Empty(t, errs)
 }
 
-func TestValidateHARMalformedFileReturnsNil(t *testing.T) {
-	harPath := writeTestHAR(t, `{`)
-	docModel := buildHARValidationDoc(t)
-	config := &shared.WiretapConfiguration{
-		HARPathAllowList: []string{"/api"},
-		Logger:           slog.New(slog.NewTextHandler(io.Discard, nil)),
+func TestValidateHARMalformedFileReturnsError(t *testing.T) {
+	cases := map[string]string{
+		"invalid json": `not valid json`,
+		"truncated": `{
+  "log": {
+    "version": "1.2",
+    "entries": [
+`,
 	}
 
-	errs := ValidateHAR(harPath, []shared.ApiDocumentModel{{
-		DocumentName:  "test-spec.yaml",
-		DocumentModel: docModel,
-	}}, config)
+	for name, content := range cases {
+		t.Run(name, func(t *testing.T) {
+			harPath := writeTestHAR(t, content)
+			docModel := buildHARValidationDoc(t)
+			config := &shared.WiretapConfiguration{
+				HARPathAllowList: []string{"/api"},
+				Logger:           slog.New(slog.NewTextHandler(io.Discard, nil)),
+			}
 
-	assert.Nil(t, errs)
+			result := ValidateHARWithResult(harPath, []shared.ApiDocumentModel{{
+				DocumentName:  "test-spec.yaml",
+				DocumentModel: docModel,
+			}}, config)
+
+			require.Error(t, result.Err)
+			assert.Empty(t, result.Errors)
+		})
+	}
 }
 
 func buildHARValidationDoc(t *testing.T) *libopenapi.DocumentModel[v3.Document] {

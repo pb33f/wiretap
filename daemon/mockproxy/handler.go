@@ -86,11 +86,15 @@ func (h *Handler) Handle(request *model.Request, prep *PreparedRequest) {
 		return
 	}
 
-	mock, mockStatus, mockErr := prep.GenerateMock(request.HttpRequest)
+	mockRequest := prep.NewReq
+	if mockRequest == nil {
+		mockRequest = request.HttpRequest
+	}
+	mock, mockStatus, mockErr := prep.GenerateMock(mockRequest)
 	resp := newMockResponse(mockStatus, headers, mock)
 
 	if mockErr != nil && len(mock) == 0 {
-		config.Logger.Error("[wiretap] mock mode request error", "url", prep.NewReq.URL.String(), "code", 404, "error", mockErr.Error())
+		config.Logger.Error("[wiretap] mock mode request error", "url", mockRequest.URL.String(), "code", 404, "error", mockErr.Error())
 		request.HttpResponseWriter.WriteHeader(http.StatusNotFound)
 		wtError := shared.GenerateError("[mock error] unable to generate mock for request", http.StatusNotFound, mockErr.Error(), "", mock)
 		_, _ = request.HttpResponseWriter.Write(shared.MarshalError(wtError))
@@ -100,7 +104,7 @@ func (h *Handler) Handle(request *model.Request, prep *PreparedRequest) {
 	}
 
 	if mockErr != nil && len(mock) > 0 {
-		config.Logger.Warn("[wiretap] mock mode request problem", "url", prep.NewReq.URL.String(), "code", mockStatus, "violation", mockErr.Error())
+		config.Logger.Warn("[wiretap] mock mode request problem", "url", mockRequest.URL.String(), "code", mockStatus, "violation", mockErr.Error())
 		request.HttpResponseWriter.WriteHeader(mockStatus)
 		wtError := shared.GenerateError("unable to serve mocked response", mockStatus, mockErr.Error(), "", nil)
 		_, _ = request.HttpResponseWriter.Write(shared.MarshalError(wtError))

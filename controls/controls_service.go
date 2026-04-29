@@ -5,9 +5,9 @@ package controls
 
 import (
 	"github.com/mitchellh/mapstructure"
-	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
+	"github.com/pb33f/ranch/store"
 	"github.com/pb33f/wiretap/shared"
 )
 
@@ -17,7 +17,7 @@ const (
 )
 
 type ControlService struct {
-	controlsStore bus.BusStore
+	controlsStore store.BusStore
 }
 
 type ChangeGlobalDelayRequest struct {
@@ -28,8 +28,7 @@ type ControlResponse struct {
 	Config *shared.WiretapConfiguration `json:"config,omitempty"`
 }
 
-func NewControlsService() *ControlService {
-	storeManager := bus.GetBus().GetStoreManager()
+func NewControlsService(storeManager store.Manager) *ControlService {
 	controlsStore := storeManager.CreateStore(ControlServiceChan)
 	return &ControlService{
 		controlsStore: controlsStore,

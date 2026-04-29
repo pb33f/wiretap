@@ -30,9 +30,15 @@ func TestHandleStaticResponseWritesResponseAndBroadcasts(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader("static body")),
 	}
 
-	broadcastedC := make(chan *http.Response, 1)
+	type broadcastedResponse struct {
+		status int
+		body   string
+	}
+	broadcastedC := make(chan broadcastedResponse, 1)
 	NewHandler().HandleStaticResponse(request, response, func(resp *http.Response) {
-		broadcastedC <- resp
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		broadcastedC <- broadcastedResponse{status: resp.StatusCode, body: string(body)}
 	})
 
 	rec := request.HttpResponseWriter.(*httptest.ResponseRecorder)
@@ -41,7 +47,8 @@ func TestHandleStaticResponseWritesResponseAndBroadcasts(t *testing.T) {
 	assert.Equal(t, "static body", rec.Body.String())
 	select {
 	case broadcasted := <-broadcastedC:
-		assert.Equal(t, http.StatusCreated, broadcasted.StatusCode)
+		assert.Equal(t, http.StatusCreated, broadcasted.status)
+		assert.Equal(t, "static body", broadcasted.body)
 	case <-time.After(500 * time.Millisecond):
 		require.Fail(t, "expected static response to be broadcast")
 	}

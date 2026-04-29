@@ -12,9 +12,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/pb33f/harific/motor"
 	harModel "github.com/pb33f/harific/motor/model"
-	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
+	"github.com/pb33f/ranch/store"
 	"github.com/pb33f/wiretap/daemon"
 	"github.com/pb33f/wiretap/shared"
 	"log/slog"
@@ -25,8 +25,10 @@ const (
 	StartTheHARRequest = "start-the-har"
 )
 
+const defaultHARReplayDelay = 10 * time.Millisecond
+
 type HARService struct {
-	harStore       bus.BusStore
+	harStore       store.BusStore
 	logger         *slog.Logger
 	wiretapService *daemon.WiretapService
 	replayDelay    time.Duration
@@ -36,13 +38,17 @@ type ControlResponse struct {
 	Config *shared.WiretapConfiguration `json:"config,omitempty"`
 }
 
-func NewHARService(wiretapService *daemon.WiretapService, logger *slog.Logger, replayDelayMillis int) *HARService {
-	harStore := bus.GetBus().GetStoreManager().CreateStore(HARServiceChan)
+func NewHARService(wiretapService *daemon.WiretapService, logger *slog.Logger, replayDelayMillis int, storeManager store.Manager) *HARService {
+	harStore := storeManager.CreateStore(HARServiceChan)
+	replayDelay := defaultHARReplayDelay
+	if replayDelayMillis > 0 {
+		replayDelay = time.Duration(replayDelayMillis) * time.Millisecond
+	}
 	return &HARService{
 		harStore:       harStore,
 		logger:         logger,
 		wiretapService: wiretapService,
-		replayDelay:    time.Duration(replayDelayMillis) * time.Millisecond,
+		replayDelay:    replayDelay,
 	}
 }
 

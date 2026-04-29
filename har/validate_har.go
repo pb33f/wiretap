@@ -5,6 +5,8 @@ package har
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -23,6 +25,7 @@ type Transaction struct {
 type ValidationResult struct {
 	Errors       []*shared.WiretapValidationError
 	MessageCount int
+	Err          error
 }
 
 func ValidateHAR(path string, apiDocumentModels []shared.ApiDocumentModel, configFile *shared.WiretapConfiguration) []*shared.WiretapValidationError {
@@ -46,14 +49,14 @@ func ValidateHARWithResult(path string, apiDocumentModels []shared.ApiDocumentMo
 	streamer, err := NewHARStreamer(path, motor.DefaultStreamerOptions())
 	if err != nil {
 		pterm.Error.Printf("error creating HAR streamer: %s", err.Error())
-		return ValidationResult{}
+		return ValidationResult{Err: fmt.Errorf("create HAR streamer: %w", err)}
 	}
 	defer streamer.Close()
 
 	ctx := context.Background()
 	if err = streamer.Initialize(ctx); err != nil {
 		pterm.Error.Printf("error initializing HAR streamer: %s", err.Error())
-		return ValidationResult{}
+		return ValidationResult{Err: fmt.Errorf("initialize HAR streamer: %w", err)}
 	}
 
 	index := streamer.GetIndex()
@@ -67,14 +70,18 @@ func ValidateHARWithResult(path string, apiDocumentModels []shared.ApiDocumentMo
 	results, err := streamAllowedHAREntries(ctx, streamer, configFile.HARPathAllowList)
 	if err != nil {
 		pterm.Error.Printf("error streaming HAR file: %s", err.Error())
-		return ValidationResult{}
+		return ValidationResult{Err: fmt.Errorf("stream HAR file: %w", err)}
 	}
 
 	messageCount := 0
 	for result := range results {
 		if result.Error != nil {
 			pterm.Error.Printf("error streaming HAR entry: %s", result.Error.Error())
-			return ValidationResult{Errors: validationErrors, MessageCount: messageCount}
+			return ValidationResult{
+				Errors:       validationErrors,
+				MessageCount: messageCount,
+				Err:          fmt.Errorf("stream HAR entry: %w", result.Error),
+			}
 		}
 		if result.Entry == nil {
 			continue
@@ -84,7 +91,7 @@ func ValidateHARWithResult(path string, apiDocumentModels []shared.ApiDocumentMo
 
 		if err != nil {
 			pterm.Error.Printf("error converting request: %s", err.Error())
-			return ValidationResult{}
+			return ValidationResult{Err: fmt.Errorf("convert HAR request: %w", err)}
 		}
 
 		path, ok := rewriteHARPath(httpRequest.URL.Path, configFile.HARPathAllowList)
@@ -104,7 +111,7 @@ func ValidateHARWithResult(path string, apiDocumentModels []shared.ApiDocumentMo
 		docValidator := router.Resolve(httpRequest)
 		if docValidator == nil {
 			pterm.Error.Printf("no validators available; a valid specification must be provided in order to perform HAR validation")
-			return ValidationResult{}
+			return ValidationResult{Err: errors.New("no validators available")}
 		}
 
 		validRequest, requestValidationErrors := docValidator.Validator.ValidateHttpRequest(httpRequest)

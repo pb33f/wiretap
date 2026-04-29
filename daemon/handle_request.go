@@ -107,12 +107,12 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 				return ws.ValidateRequest(request, prep.NewReq, prep.TxnConfig)
 			},
 			GenerateMock: func(httpReq *http.Request) ([]byte, int, error) {
-				docValidator := ws.getValidatorForRequest(request)
+				docValidator := ws.getValidatorForHTTPRequest(httpReq)
 				if docValidator != nil {
 					return docValidator.MockEngine.GenerateResponse(httpReq)
 				}
 				return nil, http.StatusInternalServerError,
-					fmt.Errorf("mock engine has not been intialized; configure an OpenAPI specification to use this option")
+					fmt.Errorf("mock engine has not been initialized; configure an OpenAPI specification to use this option")
 			},
 			BroadcastResponse: func(response *http.Response) {
 				ws.broadcastResponse(request, BuildResponse(request, response))
@@ -129,12 +129,13 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		NewReq:      prep.NewReq,
 		APIRequest:  prep.APIRequest,
 		BodyBytes:   prep.BodyBytes,
+		ControlPath: prep.ControlPath,
 		IsHardError: prep.IsHardError,
 		ValidateRequest: func() []*shared.WiretapValidationError {
 			return ws.ValidateRequest(request, prep.NewReq, prep.TxnConfig)
 		},
 		ValidateResponse: func(response *http.Response, body []byte) []*shared.WiretapValidationError {
-			return ws.ValidateResponse(request, response, body)
+			return ws.ValidateResponseForRequest(request, prep.NewReq, response, body)
 		},
 		BroadcastResponseError: func(response *http.Response, err error) {
 			ws.broadcastResponseError(request, CloneExistingResponse(response), err)
