@@ -131,14 +131,35 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 		BodyBytes:   prep.BodyBytes,
 		ControlPath: prep.ControlPath,
 		IsHardError: prep.IsHardError,
-		ValidateRequest: func() []*shared.WiretapValidationError {
-			return ws.ValidateRequest(request, prep.NewReq, prep.TxnConfig)
-		},
-		ValidateResponse: func(response *http.Response, body []byte) []*shared.WiretapValidationError {
-			return ws.ValidateResponseForRequest(request, prep.NewReq, response, body)
+		Validator: proxyValidator{
+			validateRequest: func() []*shared.WiretapValidationError {
+				return ws.ValidateRequest(request, prep.NewReq, prep.TxnConfig)
+			},
+			validateResponse: func(response *http.Response, body []byte) []*shared.WiretapValidationError {
+				return ws.ValidateResponseForRequest(request, prep.NewReq, response, body)
+			},
 		},
 		BroadcastResponseError: func(response *http.Response, err error) {
 			ws.broadcastResponseError(request, CloneExistingResponse(response), err)
 		},
 	})
+}
+
+type proxyValidator struct {
+	validateRequest  func() []*shared.WiretapValidationError
+	validateResponse func(*http.Response, []byte) []*shared.WiretapValidationError
+}
+
+func (v proxyValidator) ValidateRequest() []*shared.WiretapValidationError {
+	if v.validateRequest == nil {
+		return nil
+	}
+	return v.validateRequest()
+}
+
+func (v proxyValidator) ValidateResponse(response *http.Response, body []byte) []*shared.WiretapValidationError {
+	if v.validateResponse == nil {
+		return nil
+	}
+	return v.validateResponse(response, body)
 }

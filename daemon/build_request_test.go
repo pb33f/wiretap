@@ -6,6 +6,7 @@ package daemon
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -139,6 +140,52 @@ func TestBuildHttpTransactionUsesPreparedDisplayURL(t *testing.T) {
 	bodyAfterBuild, err := io.ReadAll(newReq.Body)
 	require.NoError(t, err)
 	assert.Equal(t, bodyBytes, bodyAfterBuild)
+}
+
+func TestBuildHttpTransactionUsesPreparedBodyBytesForPlainBody(t *testing.T) {
+	bodyBytes := []byte("prepared payload")
+	req, err := http.NewRequest(http.MethodPost, "http://wiretap.local/api/items", nil)
+	require.NoError(t, err)
+	bodyTrap := &bodyReadTrap{}
+	req.Body = bodyTrap
+
+	config := &shared.WiretapConfiguration{
+		RedirectProtocol:   "http",
+		RedirectHost:       "fallback.local",
+		PathConfigurations: orderedmap.New[string, *shared.WiretapPathConfig](),
+	}
+	config.CompilePaths()
+
+	id := uuid.New()
+	txn := BuildHttpTransaction(HttpTransactionConfig{
+		OriginalRequest:   req,
+		NewRequest:        req,
+		ID:                &id,
+		TransactionConfig: config,
+		BodyBytes:         bodyBytes,
+	})
+
+	require.NotNil(t, txn)
+	require.NotNil(t, txn.Request)
+	assert.Equal(t, "prepared payload", txn.Request.Body)
+	assert.False(t, bodyTrap.read, "prepared body bytes should avoid reading the request body")
+
+	bodyAfterBuild, err := io.ReadAll(req.Body)
+	require.NoError(t, err)
+	assert.Equal(t, bodyBytes, bodyAfterBuild)
+}
+
+type bodyReadTrap struct {
+	read bool
+}
+
+func (b *bodyReadTrap) Read(_ []byte) (int, error) {
+	b.read = true
+	return 0, errors.New("unexpected body read")
+}
+
+func (b *bodyReadTrap) Close() error {
+	return nil
 }
 
 func TestBuildHttpTransactionAppliesHeaderConfigWithoutClone(t *testing.T) {

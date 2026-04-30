@@ -4,6 +4,7 @@
 package mockproxy
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -52,4 +53,76 @@ func TestHandleStaticResponseWritesResponseAndBroadcasts(t *testing.T) {
 	case <-time.After(500 * time.Millisecond):
 		require.Fail(t, "expected static response to be broadcast")
 	}
+}
+
+func TestHandleStaticResponseDoesNotPanicOnBodyReadError(t *testing.T) {
+	id := uuid.New()
+	request := &model.Request{
+		Id:                 &id,
+		HttpRequest:        httptest.NewRequest(http.MethodGet, "http://wiretap.local/static", nil),
+		HttpResponseWriter: httptest.NewRecorder(),
+	}
+	response := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       failingReadCloser{},
+	}
+
+	var broadcasted bool
+	assert.NotPanics(t, func() {
+		NewHandler().HandleStaticResponse(request, response, func(_ *http.Response) {
+			broadcasted = true
+		})
+	})
+
+	rec := request.HttpResponseWriter.(*httptest.ResponseRecorder)
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.False(t, broadcasted)
+}
+
+func TestHandleStaticResponseDoesNotPanicOnBodyWriteError(t *testing.T) {
+	id := uuid.New()
+	writer := &failingResponseWriter{header: http.Header{}}
+	request := &model.Request{
+		Id:                 &id,
+		HttpRequest:        httptest.NewRequest(http.MethodGet, "http://wiretap.local/static", nil),
+		HttpResponseWriter: writer,
+	}
+	response := &http.Response{
+		StatusCode: http.StatusAccepted,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader("static body")),
+	}
+
+	assert.NotPanics(t, func() {
+		NewHandler().HandleStaticResponse(request, response, nil)
+	})
+	assert.Equal(t, http.StatusAccepted, writer.code)
+}
+
+type failingReadCloser struct{}
+
+func (failingReadCloser) Read(_ []byte) (int, error) {
+	return 0, errors.New("read failed")
+}
+
+func (failingReadCloser) Close() error {
+	return nil
+}
+
+type failingResponseWriter struct {
+	header http.Header
+	code   int
+}
+
+func (w *failingResponseWriter) Header() http.Header {
+	return w.header
+}
+
+func (w *failingResponseWriter) Write(_ []byte) (int, error) {
+	return 0, errors.New("write failed")
+}
+
+func (w *failingResponseWriter) WriteHeader(statusCode int) {
+	w.code = statusCode
 }

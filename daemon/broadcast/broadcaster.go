@@ -5,7 +5,7 @@ package broadcast
 
 import (
 	"encoding/json"
-	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/google/uuid"
@@ -95,6 +95,7 @@ func (b *LazyBroadcaster) ResponseValidationErrors(
 type channelBroadcaster struct {
 	channel     *bus.Channel
 	channelName string
+	logger      *slog.Logger
 }
 
 func NewBroadcaster(channel *bus.Channel, channelName string) Broadcaster {
@@ -107,6 +108,7 @@ func NewBroadcaster(channel *bus.Channel, channelName string) Broadcaster {
 	return &channelBroadcaster{
 		channel:     channel,
 		channelName: channelName,
+		logger:      slog.Default(),
 	}
 }
 
@@ -143,18 +145,21 @@ func (b *channelBroadcaster) ResponseValidationErrors(
 func (b *channelBroadcaster) sendTransaction(request *model.Request, txn *transaction.HttpTransaction) {
 	payload, err := json.Marshal(txn)
 	if err != nil {
-		panic(fmt.Errorf("unable to marshal wiretap broadcast payload: %w", err))
+		b.warn("dropping wiretap broadcast; unable to marshal payload", "error", err)
+		return
 	}
 	b.send(request, payload, nil)
 }
 
 func (b *channelBroadcaster) send(request *model.Request, payload any, err error) {
 	if request == nil || request.Id == nil {
-		panic("wiretap broadcast request cannot be nil")
+		b.warn("dropping wiretap broadcast; request id is missing")
+		return
 	}
 	id, uuidErr := uuid.NewUUID()
 	if uuidErr != nil {
-		panic(fmt.Errorf("unable to create wiretap broadcast message id: %w", uuidErr))
+		b.warn("dropping wiretap broadcast; unable to create message id", "error", uuidErr)
+		return
 	}
 	b.channel.Send(&model.Message{
 		Id:            &id,
@@ -165,4 +170,11 @@ func (b *channelBroadcaster) send(request *model.Request, payload any, err error
 		Payload:       payload,
 		Direction:     model.ResponseDir,
 	})
+}
+
+func (b *channelBroadcaster) warn(message string, attrs ...any) {
+	if b.logger == nil {
+		return
+	}
+	b.logger.Warn(message, attrs...)
 }
