@@ -92,7 +92,7 @@ func BuildHttpTransaction(build HttpTransactionConfig) *transaction.HttpTransact
 
 	// check if request is a multipart form
 	if ct, ok := headers["Content-Type"].(string); ok {
-		if strings.Contains(ct, "multipart/form-data") {
+		if newReq != nil && strings.Contains(ct, "multipart/form-data") {
 			err := newReq.ParseMultipartForm(32 << 20)
 			if err != nil {
 				pterm.Error.Println(err.Error())
@@ -126,6 +126,8 @@ func BuildHttpTransaction(build HttpTransactionConfig) *transaction.HttpTransact
 			})
 		}
 		requestBody, _ = json.Marshal(parts)
+	} else if bodyBytes != nil {
+		requestBody = bodyBytes
 	} else if newReq.Body != nil {
 		requestBody, _ = io.ReadAll(newReq.Body)
 	}

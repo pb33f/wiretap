@@ -56,3 +56,57 @@ func TestBroadcasterSendsPreMarshaledTransactionPayload(t *testing.T) {
 	assert.Equal(t, channelName, message.Destination)
 	assert.Equal(t, model.ResponseDir, message.Direction)
 }
+
+func TestBroadcasterDropsUnmarshalableTransactionPayload(t *testing.T) {
+	broadcaster, messages := newTestBroadcaster(t)
+	requestID := uuid.New()
+	txn := &transaction.HttpTransaction{
+		Id: "txn-1",
+		Request: &transaction.HttpRequest{
+			Headers: map[string]any{
+				"X-Bad": func() {},
+			},
+		},
+	}
+
+	assert.NotPanics(t, func() {
+		broadcaster.Request(&model.Request{Id: &requestID}, txn)
+	})
+	assertNoBroadcast(t, messages)
+}
+
+func TestBroadcasterDropsMissingRequestID(t *testing.T) {
+	broadcaster, messages := newTestBroadcaster(t)
+	txn := &transaction.HttpTransaction{Id: "txn-1"}
+
+	assert.NotPanics(t, func() {
+		broadcaster.Response(&model.Request{}, txn)
+	})
+	assertNoBroadcast(t, messages)
+}
+
+func newTestBroadcaster(t *testing.T) (Broadcaster, chan *model.Message) {
+	t.Helper()
+
+	eventBus := bus.NewEventBus()
+	channelName := "broadcast-test-" + uuid.NewString()
+	channel := eventBus.GetChannelManager().CreateChannel(channelName)
+	messages := make(chan *model.Message, 1)
+
+	_, err := eventBus.GetChannelManager().SubscribeChannelHandler(channelName, func(message *model.Message) {
+		messages <- message
+	}, true)
+	require.NoError(t, err)
+
+	return NewBroadcaster(channel, channelName), messages
+}
+
+func assertNoBroadcast(t *testing.T, messages chan *model.Message) {
+	t.Helper()
+
+	select {
+	case <-messages:
+		require.Fail(t, "expected no broadcast message")
+	default:
+	}
+}

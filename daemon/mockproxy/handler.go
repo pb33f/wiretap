@@ -122,7 +122,7 @@ func (h *Handler) Handle(request *model.Request, prep *PreparedRequest) {
 
 	_, err := request.HttpResponseWriter.Write(mock)
 	if err != nil {
-		panic(err)
+		config.Logger.Error("[wiretap] mock mode response body write failed", "error", err)
 	}
 }
 

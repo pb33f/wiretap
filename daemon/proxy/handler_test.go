@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -43,13 +44,15 @@ func TestHandlerWritesUpstreamResponse(t *testing.T) {
 				Body:       io.NopCloser(bytes.NewBufferString(`{"ok":true}`)),
 			}, nil
 		},
-		ValidateRequest: func() []*shared.WiretapValidationError {
-			validatedRequest = true
-			return nil
-		},
-		ValidateResponse: func(_ *http.Response, _ []byte) []*shared.WiretapValidationError {
-			validatedResponse = true
-			return nil
+		Validator: testValidator{
+			validateRequest: func() []*shared.WiretapValidationError {
+				validatedRequest = true
+				return nil
+			},
+			validateResponse: func(_ *http.Response, _ []byte) []*shared.WiretapValidationError {
+				validatedResponse = true
+				return nil
+			},
 		},
 		BroadcastResponseError: func(_ *http.Response, _ error) {},
 	})
@@ -88,14 +91,16 @@ func TestHandlerWritesValidationProblemForHardResponseErrors(t *testing.T) {
 				Body:       io.NopCloser(bytes.NewBufferString(`{"ok":true}`)),
 			}, nil
 		},
-		ValidateRequest: func() []*shared.WiretapValidationError {
-			return nil
-		},
-		ValidateResponse: func(_ *http.Response, _ []byte) []*shared.WiretapValidationError {
-			return []*shared.WiretapValidationError{{
-				ValidationError: validationerrors.ValidationError{Message: "bad response"},
-				SpecName:        "spec.yaml",
-			}}
+		Validator: testValidator{
+			validateRequest: func() []*shared.WiretapValidationError {
+				return nil
+			},
+			validateResponse: func(_ *http.Response, _ []byte) []*shared.WiretapValidationError {
+				return []*shared.WiretapValidationError{{
+					ValidationError: validationerrors.ValidationError{Message: "bad response"},
+					SpecName:        "spec.yaml",
+				}}
+			},
 		},
 		BroadcastResponseError: func(_ *http.Response, _ error) {},
 	})
@@ -106,7 +111,7 @@ func TestHandlerWritesValidationProblemForHardResponseErrors(t *testing.T) {
 	assert.Contains(t, rec.Body.String(), "Response validation failed")
 }
 
-func TestHandlerRunsValidationInlineWhenAsyncLimitIsFull(t *testing.T) {
+func TestHandlerDropsSoftValidationWhenAsyncLimitIsFull(t *testing.T) {
 	id := uuid.New()
 	request := &model.Request{
 		Id: &id,
@@ -129,8 +134,12 @@ func TestHandlerRunsValidationInlineWhenAsyncLimitIsFull(t *testing.T) {
 	}()
 
 	var validatedRequest, validatedResponse int
+	var logs bytes.Buffer
+	config := testConfig()
+	config.Logger = slog.New(slog.NewTextHandler(&logs, nil))
+
 	handler.Handle(request, &PreparedRequest{
-		Config:      testConfig(),
+		Config:      config,
 		APIRequest:  httptest.NewRequest(http.MethodGet, "http://upstream.local/products", nil),
 		IsHardError: false,
 		CallAPI: func(_ *http.Request, _ ...*shared.WiretapConfiguration) (*http.Response, error) {
@@ -140,19 +149,25 @@ func TestHandlerRunsValidationInlineWhenAsyncLimitIsFull(t *testing.T) {
 				Body:       io.NopCloser(bytes.NewBufferString(`{"ok":true}`)),
 			}, nil
 		},
-		ValidateRequest: func() []*shared.WiretapValidationError {
-			validatedRequest++
-			return nil
-		},
-		ValidateResponse: func(_ *http.Response, _ []byte) []*shared.WiretapValidationError {
-			validatedResponse++
-			return nil
+		Validator: testValidator{
+			validateRequest: func() []*shared.WiretapValidationError {
+				validatedRequest++
+				return nil
+			},
+			validateResponse: func(_ *http.Response, _ []byte) []*shared.WiretapValidationError {
+				validatedResponse++
+				return nil
+			},
 		},
 		BroadcastResponseError: func(_ *http.Response, _ error) {},
 	})
 
-	assert.Equal(t, 1, validatedRequest)
-	assert.Equal(t, 1, validatedResponse)
+	rec := request.HttpResponseWriter.(*httptest.ResponseRecorder)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, 0, validatedRequest)
+	assert.Equal(t, 0, validatedResponse)
+	assert.True(t, strings.Contains(logs.String(), "phase=request"), logs.String())
+	assert.True(t, strings.Contains(logs.String(), "phase=response"), logs.String())
 }
 
 func TestHandlerIgnoreValidationUsesOriginalControlPath(t *testing.T) {
@@ -184,12 +199,14 @@ func TestHandlerIgnoreValidationUsesOriginalControlPath(t *testing.T) {
 				Body:       io.NopCloser(bytes.NewBufferString(`{"ok":true}`)),
 			}, nil
 		},
-		ValidateRequest: func() []*shared.WiretapValidationError {
-			validatedRequest = true
-			return nil
-		},
-		ValidateResponse: func(_ *http.Response, _ []byte) []*shared.WiretapValidationError {
-			return nil
+		Validator: testValidator{
+			validateRequest: func() []*shared.WiretapValidationError {
+				validatedRequest = true
+				return nil
+			},
+			validateResponse: func(_ *http.Response, _ []byte) []*shared.WiretapValidationError {
+				return nil
+			},
 		},
 		BroadcastResponseError: func(_ *http.Response, _ error) {},
 	})
@@ -203,4 +220,23 @@ func testConfig() *shared.WiretapConfiguration {
 		HardErrorReturnCode: http.StatusBadGateway,
 		Logger:              slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
+}
+
+type testValidator struct {
+	validateRequest  func() []*shared.WiretapValidationError
+	validateResponse func(*http.Response, []byte) []*shared.WiretapValidationError
+}
+
+func (v testValidator) ValidateRequest() []*shared.WiretapValidationError {
+	if v.validateRequest == nil {
+		return nil
+	}
+	return v.validateRequest()
+}
+
+func (v testValidator) ValidateResponse(response *http.Response, body []byte) []*shared.WiretapValidationError {
+	if v.validateResponse == nil {
+		return nil
+	}
+	return v.validateResponse(response, body)
 }

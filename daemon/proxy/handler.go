@@ -18,9 +18,14 @@ import (
 )
 
 type APICaller func(*http.Request, ...*shared.WiretapConfiguration) (*http.Response, error)
-type RequestValidator func() []*shared.WiretapValidationError
-type ResponseValidator func(*http.Response, []byte) []*shared.WiretapValidationError
 type ResponseErrorBroadcaster func(*http.Response, error)
+
+// Validator returns errors for hard validation; soft validation intentionally
+// discards the returned slice after the validator records any side effects.
+type Validator interface {
+	ValidateRequest() []*shared.WiretapValidationError
+	ValidateResponse(*http.Response, []byte) []*shared.WiretapValidationError
+}
 
 type PreparedRequest struct {
 	Config                 *shared.WiretapConfiguration
@@ -30,8 +35,7 @@ type PreparedRequest struct {
 	ControlPath            string
 	IsHardError            bool
 	CallAPI                APICaller
-	ValidateRequest        RequestValidator
-	ValidateResponse       ResponseValidator
+	Validator              Validator
 	BroadcastResponseError ResponseErrorBroadcaster
 }
 
@@ -64,10 +68,10 @@ func (h *Handler) Handle(request *model.Request, prep *PreparedRequest) {
 		config.Logger.Info(
 			fmt.Sprintf("Request on validation ignored path: %s ; skipping validation", controlPath))
 	} else if prep.IsHardError {
-		requestErrors = prep.ValidateRequest()
+		requestErrors = prep.validateRequest()
 	} else {
-		h.runValidationBounded(func() {
-			prep.ValidateRequest()
+		h.runValidationAsync(config, "request", func() {
+			_ = prep.validateRequest()
 		})
 	}
 
@@ -92,7 +96,7 @@ func (h *Handler) Handle(request *model.Request, prep *PreparedRequest) {
 	returnedResponse.Body = io.NopCloser(bytes.NewBuffer(respBody))
 
 	if prep.IsHardError {
-		responseErrors = prep.ValidateResponse(returnedResponse, respBody)
+		responseErrors = prep.validateResponse(returnedResponse, respBody)
 	} else {
 		// Clone headers for async validation; http.Header is a map and the main
 		// goroutine continues to read and rewrite returnedResponse.Header below.
@@ -101,8 +105,8 @@ func (h *Handler) Handle(request *model.Request, prep *PreparedRequest) {
 			Header:     returnedResponse.Header.Clone(),
 			Body:       io.NopCloser(bytes.NewBuffer(respBody)),
 		}
-		h.runValidationBounded(func() {
-			prep.ValidateResponse(clonedResp, respBody)
+		h.runValidationAsync(config, "response", func() {
+			_ = prep.validateResponse(clonedResp, respBody)
 		})
 	}
 
@@ -159,8 +163,26 @@ func prepControlPath(prep *PreparedRequest) string {
 	return ""
 }
 
-func (h *Handler) runValidationBounded(work func()) {
+func (prep *PreparedRequest) validateRequest() []*shared.WiretapValidationError {
+	if prep == nil || prep.Validator == nil {
+		return nil
+	}
+	return prep.Validator.ValidateRequest()
+}
+
+func (prep *PreparedRequest) validateResponse(response *http.Response, body []byte) []*shared.WiretapValidationError {
+	if prep == nil || prep.Validator == nil {
+		return nil
+	}
+	return prep.Validator.ValidateResponse(response, body)
+}
+
+func (h *Handler) runValidationAsync(config *shared.WiretapConfiguration, phase string, work func()) {
 	if work == nil {
+		return
+	}
+	if h.validationSem == nil {
+		work()
 		return
 	}
 	select {
@@ -170,7 +192,13 @@ func (h *Handler) runValidationBounded(work func()) {
 			work()
 		}()
 	default:
-		work()
+		if config != nil && config.Logger != nil {
+			config.Logger.Warn(
+				"[wiretap] dropping soft validation; validation queue full",
+				"phase", phase,
+				"limit", cap(h.validationSem),
+			)
+		}
 	}
 }
 

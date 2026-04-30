@@ -120,6 +120,32 @@ func TestHandlerWritesValidationProblemForHardRequestErrors(t *testing.T) {
 	assert.Contains(t, rec.Body.String(), "Request validation failed")
 }
 
+func TestHandlerDoesNotPanicOnMockBodyWriteError(t *testing.T) {
+	id := uuid.New()
+	writer := &failingResponseWriter{header: http.Header{}}
+	request := &model.Request{
+		Id:                 &id,
+		HttpRequest:        httptest.NewRequest(http.MethodGet, "http://wiretap.local/products", nil),
+		HttpResponseWriter: writer,
+	}
+
+	assert.NotPanics(t, func() {
+		NewHandler().Handle(request, &PreparedRequest{
+			Config:      testConfig(),
+			NewReq:      httptest.NewRequest(http.MethodGet, "http://wiretap.local/products", nil),
+			IsHardError: false,
+			ValidateRequest: func() []*shared.WiretapValidationError {
+				return nil
+			},
+			GenerateMock: func(_ *http.Request) ([]byte, int, error) {
+				return []byte(`{"ok":true}`), http.StatusCreated, nil
+			},
+			BroadcastResponse: func(_ *http.Response) {},
+		})
+	})
+	assert.Equal(t, http.StatusCreated, writer.code)
+}
+
 func testConfig() *shared.WiretapConfiguration {
 	return &shared.WiretapConfiguration{
 		HardErrorCode:       http.StatusBadRequest,
