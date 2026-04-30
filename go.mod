@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/pb33f/harific v0.0.6
-	github.com/pb33f/libopenapi v0.36.2
+	github.com/pb33f/libopenapi v0.36.3
 	github.com/pb33f/libopenapi-validator v0.13.7
 	github.com/pb33f/ranch v0.9.0
 	github.com/pterm/pterm v0.12.83
