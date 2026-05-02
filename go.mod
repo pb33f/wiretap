@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/pb33f/doctor v0.0.60
+	github.com/pb33f/doctor v0.0.61
 	github.com/pb33f/harific v0.0.6
 	github.com/pb33f/libopenapi v0.36.3
 	github.com/pb33f/libopenapi-validator v0.13.7
