@@ -4,11 +4,14 @@
 package daemon
 
 import (
+	"net/http"
+
 	"github.com/pb33f/ranch/model"
 	daemonvalidator "github.com/pb33f/wiretap/daemon/validator"
 	"github.com/pb33f/wiretap/shared"
+	"github.com/pb33f/wiretap/specs"
 	"github.com/pb33f/wiretap/transaction"
-	"net/http"
+	wiretapValidation "github.com/pb33f/wiretap/validation"
 )
 
 func (ws *WiretapService) getValidatorForRequest(request *model.Request) *daemonvalidator.DocumentValidator {
@@ -23,6 +26,20 @@ func (ws *WiretapService) getValidatorForHTTPRequest(request *http.Request) *dae
 		return nil
 	}
 	return ws.validator.GetValidatorForHTTPRequest(request)
+}
+
+func (ws *WiretapService) getValidatorAndRequestForHTTPRequest(request *http.Request) (*daemonvalidator.DocumentValidator, *http.Request) {
+	if ws.validator == nil {
+		return nil, nil
+	}
+	return ws.validator.GetValidatorAndRequestForHTTPRequest(request)
+}
+
+func (ws *WiretapService) getRouteMatchForHTTPRequest(request *http.Request) *daemonvalidator.RouteMatch {
+	if ws.validator == nil {
+		return nil
+	}
+	return ws.validator.GetRouteMatchForHTTPRequest(request)
 }
 
 func (ws *WiretapService) ValidateResponse(
@@ -100,6 +117,7 @@ func (ws *WiretapService) ValidateRequest(
 			TransactionConfig: ws.config,
 		}
 	}
+	buildTransConfig.SpecConflict = ws.specConflictForRequest(httpRequest)
 
 	txn := BuildHttpTransaction(buildTransConfig)
 	if len(cleanedErrors) > 0 {
@@ -115,4 +133,59 @@ func (ws *WiretapService) ValidateRequest(
 		ws.broadcastRequest(modelRequest, txn)
 	}
 	return cleanedErrors
+}
+
+func (ws *WiretapService) specConflictForRequest(request *http.Request) *transaction.SpecConflict {
+	routeMatch := ws.getRouteMatchForHTTPRequest(request)
+	if routeMatch == nil || routeMatch.Document == nil || routeMatch.EffectiveRoutePath == "" {
+		return nil
+	}
+	entries := ws.routeConflicts.Lookup(request.Method, routeMatch.EffectiveRoutePath)
+	if len(entries) == 0 {
+		return nil
+	}
+	if request == nil || request.URL == nil {
+		return nil
+	}
+	requestPath := request.URL.EscapedPath()
+
+	matchedSpec := routeMatch.Document.DocumentName
+	conflictSpecs := make([]string, 0, len(entries))
+	seenSpecs := make(map[string]struct{})
+	var selected *specs.RouteConflict
+	for i := range entries {
+		entry := entries[i]
+		if entry.MatchedSpec != "" && entry.MatchedSpec != matchedSpec {
+			continue
+		}
+		if entry.ConflictRoutePath != "" && !wiretapValidation.RoutePathMatches(entry.ConflictRoutePath, requestPath) {
+			continue
+		}
+		if selected == nil {
+			selected = &entry
+		}
+		if entry.ConflictSpec == "" {
+			continue
+		}
+		if _, ok := seenSpecs[entry.ConflictSpec]; ok {
+			continue
+		}
+		seenSpecs[entry.ConflictSpec] = struct{}{}
+		conflictSpecs = append(conflictSpecs, entry.ConflictSpec)
+	}
+	if selected == nil {
+		return nil
+	}
+	if len(conflictSpecs) == 0 && selected.ConflictSpec != "" {
+		conflictSpecs = append(conflictSpecs, selected.ConflictSpec)
+	}
+
+	return &transaction.SpecConflict{
+		MatchedSpec:   matchedSpec,
+		ConflictSpecs: conflictSpecs,
+		Path:          routeMatch.MatchedPath,
+		RoutePath:     routeMatch.EffectiveRoutePath,
+		Method:        request.Method,
+		Kind:          string(selected.Kind),
+	}
 }

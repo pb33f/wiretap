@@ -188,4 +188,14 @@ export default css`
     color: var(--secondary-color);
     word-break: break-all;
   }
+
+  .spec-conflict-alert {
+    margin: 10px 20px 0 20px;
+  }
+
+  .spec-conflict-kind {
+    color: var(--dark-font-color);
+    font-size: 0.75rem;
+    margin-top: 4px;
+  }
 `

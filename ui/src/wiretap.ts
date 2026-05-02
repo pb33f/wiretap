@@ -283,6 +283,7 @@ export class WiretapComponent extends LitElement {
                 constructedTransaction.httpRequest = Object.assign(new HttpRequest(), wiretapMessage?.httpRequest);
                 constructedTransaction.id = wiretapMessage.id;
                 constructedTransaction.requestValidation = wiretapMessage.requestValidation;
+                constructedTransaction.specConflict = wiretapMessage.specConflict;
 
                 // get global delay
                 const controls = this._controlsStore.get(WiretapControlsKey)
@@ -315,6 +316,9 @@ export class WiretapComponent extends LitElement {
                 }
                 existingTransaction.httpResponse = Object.assign(new HttpResponse(), wiretapMessage?.httpResponse);
                 existingTransaction.responseValidation = wiretapMessage.responseValidation;
+                if (wiretapMessage.specConflict) {
+                    existingTransaction.specConflict = wiretapMessage.specConflict;
+                }
                 this._httpTransactionStore.set(existingTransaction.id, existingTransaction)
 
             } else if (existingTransaction && wiretapMessage.httpRequest) {

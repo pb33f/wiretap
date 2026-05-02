@@ -5,7 +5,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/pterm/pterm"
+	"os"
+)
+
+const (
+	bannerPink  = "\033[1;38;2;248;58;255m"
+	bannerCyan  = "\033[1;38;2;98;196;255m"
+	bannerReset = "\033[0m"
 )
 
 func PrintBanner() {
@@ -20,9 +26,16 @@ func PrintBanner() {
 :!:       :!:  !:!      :!:      :!:  :!:
  ::        :: ::::  :: ::::  :: ::::   ::
  :        :: : ::    : : :    : : :    :`
-	pterm.DefaultBasicText.Println(pterm.LightMagenta(text))
-	pterm.Print(pterm.LightCyan(fmt.Sprintf("wiretap version: %s", Version)))
-	pterm.Println(pterm.LightMagenta(fmt.Sprintf(" | compiled: %s", Date)))
-	pterm.Println(pterm.LightCyan("Designed and built by Princess Beef Heavy Industries: https://pb33f.io/wiretap"))
-	pterm.Println()
+	fmt.Println(bannerColor(bannerPink, text))
+	fmt.Print(bannerColor(bannerCyan, fmt.Sprintf("wiretap version: %s", Version)))
+	fmt.Println(bannerColor(bannerPink, fmt.Sprintf(" | compiled: %s", Date)))
+	fmt.Println(bannerColor(bannerCyan, "Designed and built by Princess Beef Heavy Industries: https://pb33f.io/wiretap"))
+	fmt.Println()
+}
+
+func bannerColor(code, value string) string {
+	if os.Getenv("TERM") == "dumb" || value == "" {
+		return value
+	}
+	return code + value + bannerReset
 }

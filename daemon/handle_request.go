@@ -107,9 +107,9 @@ func (ws *WiretapService) handleHttpRequest(request *model.Request) {
 				return ws.ValidateRequest(request, prep.NewReq, prep.TxnConfig)
 			},
 			GenerateMock: func(httpReq *http.Request) ([]byte, int, error) {
-				docValidator := ws.getValidatorForHTTPRequest(httpReq)
+				docValidator, mockReq := ws.getValidatorAndRequestForHTTPRequest(httpReq)
 				if docValidator != nil {
-					return docValidator.MockEngine.GenerateResponse(httpReq)
+					return docValidator.MockEngine.GenerateResponse(mockReq)
 				}
 				return nil, http.StatusInternalServerError,
 					fmt.Errorf("mock engine has not been initialized; configure an OpenAPI specification to use this option")

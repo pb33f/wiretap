@@ -126,3 +126,127 @@ func TestHandleHttpRequest_MockModeHardErrorKeepsLegacyJSONWhenProblemDisabled(t
 	_, hasPayload := decoded["payload"]
 	assert.False(t, hasPayload)
 }
+
+func TestHandleHttpRequest_MockModeUsesRouteAdjustedRequest(t *testing.T) {
+	spec := []byte(`openapi: 3.1.0
+info:
+  title: scoped mock
+  version: "1.0"
+paths:
+  "/health":
+    servers:
+      - url: https://api.example.com/accounts
+    get:
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+`)
+	doc, err := libopenapi.NewDocument(spec)
+	require.NoError(t, err)
+
+	config := &shared.WiretapConfiguration{
+		MockMode:           true,
+		ReportFile:         t.TempDir() + "/violations.ndjson",
+		Logger:             slog.New(slog.NewTextHandler(io.Discard, nil)),
+		PathConfigurations: orderedmap.New[string, *shared.WiretapPathConfig](),
+	}
+	config.CompilePaths()
+
+	eventBus := bus.NewEventBus()
+	storeManager := store.NewManager(eventBus)
+	ws := NewWiretapService([]shared.ApiDocument{{
+		DocumentName: "scoped.yaml",
+		Document:     doc,
+	}}, config, storeManager)
+	ws.setBroadcastChannel(eventBus.GetChannelManager().CreateChannel(WiretapBroadcastChan))
+	ws.controlsStore.Put(shared.ConfigKey, config, nil)
+
+	id := uuid.New()
+	req := httptest.NewRequest(http.MethodGet, "http://wiretap.local/accounts/health", nil)
+	rec := httptest.NewRecorder()
+	ws.handleHttpRequest(&model.Request{
+		Id:                 &id,
+		HttpRequest:        req,
+		HttpResponseWriter: rec,
+	})
+
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.NotContains(t, rec.Body.String(), "Path / operation not found")
+}
+
+func TestHandleHttpRequest_MockModeRejectsAnotherOperationsServerBase(t *testing.T) {
+	spec := []byte(`openapi: 3.1.0
+info:
+  title: split mock
+  version: "1.0"
+paths:
+  "/health":
+    get:
+      servers:
+        - url: https://api.example.com/get
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: get
+    post:
+      servers:
+        - url: https://api.example.com/post
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: post
+`)
+	doc, err := libopenapi.NewDocument(spec)
+	require.NoError(t, err)
+
+	config := &shared.WiretapConfiguration{
+		MockMode:           true,
+		ReportFile:         t.TempDir() + "/violations.ndjson",
+		Logger:             slog.New(slog.NewTextHandler(io.Discard, nil)),
+		PathConfigurations: orderedmap.New[string, *shared.WiretapPathConfig](),
+	}
+	config.CompilePaths()
+
+	eventBus := bus.NewEventBus()
+	storeManager := store.NewManager(eventBus)
+	ws := NewWiretapService([]shared.ApiDocument{{
+		DocumentName: "split.yaml",
+		Document:     doc,
+	}}, config, storeManager)
+	ws.setBroadcastChannel(eventBus.GetChannelManager().CreateChannel(WiretapBroadcastChan))
+	ws.controlsStore.Put(shared.ConfigKey, config, nil)
+
+	id := uuid.New()
+	req := httptest.NewRequest(http.MethodGet, "http://wiretap.local/post/health", nil)
+	rec := httptest.NewRecorder()
+	ws.handleHttpRequest(&model.Request{
+		Id:                 &id,
+		HttpRequest:        req,
+		HttpResponseWriter: rec,
+	})
+
+	assert.Equal(t, http.StatusNotFound, rec.Code)
+	assert.Contains(t, rec.Body.String(), "unable to serve mocked response")
+}

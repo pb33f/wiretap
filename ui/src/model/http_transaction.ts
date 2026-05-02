@@ -109,6 +109,15 @@ export interface HttpTransactionLink extends HttpTransactionBase {
     queryString?: string;
 }
 
+export interface SpecConflict {
+    matchedSpec?: string;
+    conflictSpecs?: string[];
+    path?: string;
+    routePath?: string;
+    method?: string;
+    kind?: string;
+}
+
 export class HttpTransaction extends HttpTransactionBase {
     delay?: number;
     requestValidation?: ValidationError[];
@@ -116,6 +125,7 @@ export class HttpTransaction extends HttpTransactionBase {
     responseValidation?: ValidationError[];
     containsChainLink?: boolean;
     httpRequest?: HttpRequest;
+    specConflict?: SpecConflict;
 
     constructor(timestamp?: number,
                 delay?: number,
@@ -124,7 +134,8 @@ export class HttpTransaction extends HttpTransactionBase {
                 id?: string,
                 requestValidation?: ValidationError[],
                 responseValidation?: ValidationError[],
-                containsChainLink?: boolean) {
+                containsChainLink?: boolean,
+                specConflict?: SpecConflict) {
         super();
         this.timestamp = timestamp;
         this.delay = delay;
@@ -134,6 +145,7 @@ export class HttpTransaction extends HttpTransactionBase {
         this.requestValidation = requestValidation;
         this.responseValidation = responseValidation;
         this.containsChainLink = containsChainLink
+        this.specConflict = specConflict
     }
 
     matchesMethodFilter(filter: WiretapFilters): Filter | boolean {
@@ -204,5 +216,6 @@ export function BuildLiveTransactionFromState(httpTransaction: HttpTransaction):
         httpTransaction.id,
         httpTransaction.requestValidation,
         httpTransaction.responseValidation,
-        httpTransaction.containsChainLink)
+        httpTransaction.containsChainLink,
+        httpTransaction.specConflict)
 }

@@ -47,11 +47,21 @@ type HttpResponse struct {
 	Time       time.Time              `json:"-"`
 }
 
+type SpecConflict struct {
+	MatchedSpec   string   `json:"matchedSpec"`
+	ConflictSpecs []string `json:"conflictSpecs"`
+	Path          string   `json:"path"`
+	RoutePath     string   `json:"routePath"`
+	Method        string   `json:"method"`
+	Kind          string   `json:"kind"`
+}
+
 type HttpTransaction struct {
 	Request            *HttpRequest                     `json:"httpRequest,omitempty"`
 	RequestValidation  []*shared.WiretapValidationError `json:"requestValidation,omitempty"`
 	Response           *HttpResponse                    `json:"httpResponse,omitempty"`
 	ResponseValidation []*shared.WiretapValidationError `json:"responseValidation,omitempty"`
+	SpecConflict       *SpecConflict                    `json:"specConflict,omitempty"`
 	Id                 string                           `json:"id,omitempty"`
 }
 

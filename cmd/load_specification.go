@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
+	"github.com/pb33f/wiretap/shared"
+	"github.com/pb33f/wiretap/specs"
 	"github.com/pterm/pterm"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -57,11 +60,11 @@ func loadOpenAPISpec(contract, base string) (libopenapi.Document, error) {
 		if strings.HasPrefix(base, "http") {
 			u, _ := url.Parse(base)
 			if u != nil {
-				pterm.Info.Printf("Setting OpenAPI reference base URL to: '%s'\n", u.String())
+				pterm.Debug.Printf("Setting OpenAPI reference base URL to: '%s'\n", u.String())
 				docConfig.BaseURL = u
 			}
 		} else {
-			pterm.Info.Printf("Setting OpenAPI reference base path to: '%s'\n", base)
+			pterm.Debug.Printf("Setting OpenAPI reference base path to: '%s'\n", base)
 			docConfig.BasePath = base
 		}
 	}
@@ -71,4 +74,39 @@ func loadOpenAPISpec(contract, base string) (libopenapi.Document, error) {
 	pterm.DefaultLogger.Level = pterm.LogLevelError
 
 	return libopenapi.NewDocumentWithConfiguration(specBytes, docConfig)
+}
+
+func loadAllSpecs(paths []string, base string) ([]shared.ApiDocument, []specs.LoadError) {
+	docs := make([]shared.ApiDocument, 0, len(paths))
+	var loadErrors []specs.LoadError
+
+	for _, contract := range paths {
+		specBase := base
+		if specBase == "" && !strings.HasPrefix(contract, "http://") && !strings.HasPrefix(contract, "https://") {
+			specBase = filepath.Dir(contract)
+		}
+		doc, err := loadOpenAPISpec(contract, specBase)
+		if err != nil {
+			loadErrors = append(loadErrors, specs.LoadError{Spec: contract, Error: err})
+			continue
+		}
+
+		docModel, docErr := doc.BuildV3Model()
+		if docErr != nil && docModel != nil {
+			pterm.Warning.Printf("OpenAPI Specification loaded, but there was an issue detected...\n")
+			pterm.Warning.Printf("--> %s\n", docErr.Error())
+		}
+		if docErr != nil && docModel == nil {
+			loadErrors = append(loadErrors, specs.LoadError{Spec: contract, Error: docErr})
+			continue
+		}
+
+		docs = append(docs, shared.ApiDocument{
+			DocumentName:  contract,
+			Document:      doc,
+			DocumentModel: docModel,
+		})
+	}
+
+	return docs, loadErrors
 }
