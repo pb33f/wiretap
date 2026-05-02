@@ -182,6 +182,19 @@ export class HttpTransactionViewComponent extends LitElement {
 
             const responseBodyView = new ResponseBodyViewComponent(resp);
             const requestBodyView = new RequestBodyViewComponent(req);
+            const conflict = this._httpTransaction.specConflict;
+            const specConflictAlert: TemplateResult = conflict ? html`
+                <sl-alert variant="warning" open class="spec-conflict-alert">
+                    <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
+                    <strong>Ambiguous OpenAPI route</strong>
+                    <div>
+                        ${conflict.method} ${conflict.routePath || conflict.path} matched ${conflict.matchedSpec}.
+                        ${conflict.conflictSpecs?.length > 0 ? html`
+                            Also covered by ${conflict.conflictSpecs.join(', ')}.
+                        ` : null}
+                    </div>
+                    ${conflict.kind ? html`<div class="spec-conflict-kind">${conflict.kind}</div>` : null}
+                </sl-alert>` : null;
 
             let requestTab: TemplateResult;
             if (req.requestBody == null || req.requestBody.length <= 0) {
@@ -216,6 +229,7 @@ export class HttpTransactionViewComponent extends LitElement {
             }
 
             const tabGroup: TemplateResult = html`
+                ${specConflictAlert}
                 ${req.url ? html`
                 <div class="request-destination">
                     <span class="destination-label">Destination</span>

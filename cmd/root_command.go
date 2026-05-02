@@ -16,6 +16,7 @@ import (
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pb33f/wiretap/har"
 	"github.com/pb33f/wiretap/shared"
+	wiretapSpecs "github.com/pb33f/wiretap/specs"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v4"
@@ -40,6 +41,8 @@ var (
 			configFlag, _ := flags.GetString("config")
 
 			specs := make([]string, 0)
+			specDirs := make([]string, 0)
+			specIgnore := make([]string, 0)
 			var primarySpec string
 			var port string
 			var monitorPort string
@@ -100,6 +103,8 @@ var (
 			streamReport, _ := flags.GetBool("stream-report")
 			strictRedirectLocation, _ := flags.GetBool("strict-redirect-location")
 			strictMode, _ := flags.GetBool("strict-mode")
+			dryRunFlag, _ := flags.GetBool("dry-run")
+			ignoreClashingOperationIDFlag, _ := flags.GetBool("ignore-clashing-operationid")
 
 			portFlag, _ := flags.GetString("port")
 			if portFlag != "" {
@@ -122,6 +127,14 @@ var (
 				if primarySpec == "" {
 					primarySpec = specsFlag[0]
 				}
+			}
+			specDirsFlag, _ := flags.GetStringSlice("spec-dir")
+			if len(specDirsFlag) > 0 && specDirsFlag[0] != "" {
+				specDirs = append(specDirs, specDirsFlag...)
+			}
+			specIgnoreFlag, _ := flags.GetStringSlice("ignore")
+			if len(specIgnoreFlag) > 0 && specIgnoreFlag[0] != "" {
+				specIgnore = append(specIgnore, specIgnoreFlag...)
 			}
 
 			monitorPortFlag, _ := flags.GetString("monitor-port")
@@ -210,6 +223,18 @@ var (
 					if primarySpec == "" {
 						primarySpec = config.Spec
 					}
+				}
+				if len(config.SpecDirs) > 0 {
+					specDirs = append(config.SpecDirs, specDirs...)
+				}
+				if len(config.SpecIgnore) > 0 {
+					specIgnore = append(config.SpecIgnore, specIgnore...)
+				}
+				if dryRunFlag {
+					config.DryRun = true
+				}
+				if ignoreClashingOperationIDFlag {
+					config.IgnoreClashingOperationID = true
 				}
 				if len(staticMockDir) != 0 {
 					if len(config.StaticMockDir) == 0 {
@@ -302,6 +327,26 @@ var (
 				config.HARValidate = harValidate
 				config.HARPathAllowList = harWhiteList
 				config.HARReplayDelay = harReplayDelay
+				config.SpecDirs = specDirs
+				config.SpecIgnore = specIgnore
+				config.DryRun = dryRunFlag
+				config.IgnoreClashingOperationID = ignoreClashingOperationIDFlag
+			}
+
+			config.SpecDirs = specDirs
+			config.SpecIgnore = specIgnore
+			dryRun := config.DryRun || dryRunFlag
+
+			discoveredSpecs, discoveryErr := wiretapSpecs.DiscoverSpecs(specs, specDirs, specIgnore)
+			if discoveryErr != nil {
+				pterm.Error.Printf("Failed to discover OpenAPI specifications: %s\n", discoveryErr.Error())
+				return discoveryErr
+			}
+			specs = discoveredSpecs
+			primarySpec, discoveryErr = resolvePrimarySpec(primarySpec, specs, specIgnore)
+			if discoveryErr != nil {
+				pterm.Error.Printf("Failed to resolve primary OpenAPI specification: %s\n", discoveryErr.Error())
+				return discoveryErr
 			}
 
 			// If no primary specification has been provided, then we'll default to the first specification in the list
@@ -324,7 +369,7 @@ var (
 			}
 
 			wantsMockMode := config.MockMode || mockMode || len(config.MockModeList) > 0
-			if wantsMockMode && len(specs) == 0 {
+			if !dryRun && wantsMockMode && len(specs) == 0 {
 				pterm.Println()
 				pterm.Error.Println("Cannot enable mock mode, no OpenAPI specification provided!\n" +
 					"Please provide a path to an OpenAPI specification using the --spec or -s flags.\n" +
@@ -333,7 +378,7 @@ var (
 				return fmt.Errorf("cannot enable mock mode: no OpenAPI specification provided")
 			}
 
-			if !config.MockMode && redirectURL == "" && config.HAR == "" && !config.HARValidate {
+			if !dryRun && !config.MockMode && redirectURL == "" && config.HAR == "" && !config.HARValidate {
 				pterm.Println()
 				pterm.Error.Println("No redirect URL provided. " +
 					"Please provide a URL to redirect API traffic to using the --url or -u flags.")
@@ -341,7 +386,7 @@ var (
 				return nil
 			}
 
-			if redirectURL != "" {
+			if !dryRun && redirectURL != "" {
 
 				parsedURL, e := url.Parse(redirectURL)
 				if e != nil {
@@ -349,14 +394,14 @@ var (
 					pterm.Error.Printf("URL is not valid. "+
 						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
 					pterm.Println()
-					return nil
+					return fmt.Errorf("invalid redirect URL %q: %w", redirectURL, e)
 				}
 				if parsedURL.Scheme == "" || parsedURL.Host == "" {
 					pterm.Println()
 					pterm.Error.Printf("URL is not valid. "+
 						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
 					pterm.Println()
-					return nil
+					return fmt.Errorf("invalid redirect URL %q: missing scheme or host", redirectURL)
 				}
 				redirectHost = parsedURL.Hostname()
 				redirectPort = parsedURL.Port()
@@ -548,7 +593,7 @@ var (
 			}
 
 			// check if we're using a HAR file
-			if config.HAR != "" {
+			if !dryRun && config.HAR != "" {
 				pterm.Println()
 				pterm.Printf("📦 Loading HAR file: %s\n", pterm.LightMagenta(config.HAR))
 				info, err := os.Stat(config.HAR)
@@ -569,7 +614,7 @@ var (
 			}
 
 			// check if we want to validate the HAR file against the OpenAPI spec.
-			if config.HARValidate {
+			if !dryRun && config.HARValidate {
 				if config.MockMode {
 					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification in mock mode!")
 					pterm.Println()
@@ -616,36 +661,35 @@ var (
 			handler := pterm.NewSlogHandler(ptermLog)
 			config.Logger = slog.New(handler)
 
-			// load the openapi spec
+			// load the openapi specs and analyze conflicts
 			var primaryDoc libopenapi.Document
-			docs := make([]shared.ApiDocument, 0)
-			docModels := make([]shared.ApiDocumentModel, 0)
-			for _, contract := range config.Contracts {
-				doc, err := loadOpenAPISpec(contract, config.Base)
-				if err != nil {
-					return err
-				}
-
-				// build a model
-				docModel, docErr := doc.BuildV3Model()
-				if docErr != nil && docModel != nil {
-					pterm.Warning.Printf("OpenAPI Specification loaded, but there was an issue detected...\n")
-					pterm.Warning.Printf("--> %s\n", docErr.Error())
-				}
-				if docErr != nil && docModel == nil {
-					pterm.Error.Printf("Failed to load / read OpenAPI specification.")
-					return docErr
-				}
-
-				docs = append(docs, shared.ApiDocument{Document: doc, DocumentName: contract})
+			docs, loadErrors := loadAllSpecs(config.Contracts, config.Base)
+			docModels := make([]shared.ApiDocumentModel, 0, len(docs))
+			for _, doc := range docs {
 				docModels = append(docModels, shared.ApiDocumentModel{
-					DocumentName:  contract,
-					DocumentModel: docModel,
+					DocumentName:  doc.DocumentName,
+					DocumentModel: doc.DocumentModel,
 				})
-
-				if contract == config.PrimaryContract {
-					primaryDoc = doc
+				if doc.DocumentName == config.PrimaryContract {
+					primaryDoc = doc.Document
 				}
+			}
+			if primaryDoc == nil && len(docs) > 0 {
+				primaryDoc = docs[0].Document
+			}
+			conflictReport := wiretapSpecs.Analyze(docs, wiretapSpecs.AnalyzeOptions{
+				IgnoreClashingOperationID: config.IgnoreClashingOperationID,
+			})
+			conflictReport.LoadErrors = loadErrors
+			conflictReport.SpecCount += len(loadErrors)
+			wiretapSpecs.RenderConsole(conflictReport, os.Stdout)
+
+			if dryRun {
+				if len(conflictReport.Conflicts)+len(conflictReport.LoadErrors) > 0 {
+					return fmt.Errorf("dry run failed: detected %d conflicts and %d load errors",
+						len(conflictReport.Conflicts), len(conflictReport.LoadErrors))
+				}
+				return nil
 			}
 
 			if len(docs) != 0 {
@@ -653,10 +697,16 @@ var (
 				pterm.Info.Printf("Primary OpenAPI Specification: '%s'\n", config.PrimaryContract)
 			}
 
+			if len(conflictReport.LoadErrors) > 0 {
+				firstErr := conflictReport.LoadErrors[0]
+				return fmt.Errorf("failed to load %d OpenAPI specification(s); first error in %s: %w",
+					len(conflictReport.LoadErrors), firstErr.Spec, firstErr.Error)
+			}
+
 			if !config.HARValidate {
 
 				// ready to boot, let's go!
-				_, pErr := runWiretapService(&config, docs, primaryDoc)
+				_, pErr := runWiretapService(&config, docs, primaryDoc, conflictReport)
 
 				if pErr != nil {
 					pterm.Println()
@@ -761,6 +811,24 @@ func Execute(version, commit, date string, fs embed.FS) {
 	}
 }
 
+func resolvePrimarySpec(primarySpec string, discoveredSpecs []string, ignorePatterns []string) (string, error) {
+	if primarySpec == "" {
+		if len(discoveredSpecs) == 0 {
+			return "", nil
+		}
+		return discoveredSpecs[0], nil
+	}
+
+	resolved, err := wiretapSpecs.DiscoverSpecs([]string{primarySpec}, nil, ignorePatterns)
+	if err != nil {
+		return "", err
+	}
+	if len(resolved) == 0 {
+		return primarySpec, nil
+	}
+	return resolved[0], nil
+}
+
 func registerRootFlags(cmd *cobra.Command) {
 	flags := cmd.Flags()
 	if flags.Lookup("url") != nil {
@@ -775,6 +843,10 @@ func registerRootFlags(cmd *cobra.Command) {
 	flags.StringP("ws-host", "v", "localhost", "Set the backend hostname for wiretap, for remotely deployed service")
 	flags.StringP("spec", "s", "", "List of paths to the OpenAPI specification to use")
 	flags.StringSliceP("specs", "S", []string{}, "List of paths to the OpenAPI specification to use")
+	flags.StringSlice("spec-dir", []string{}, "Directory roots to recursively scan for OpenAPI specifications")
+	flags.StringSlice("ignore", []string{}, "Glob patterns to ignore while discovering OpenAPI specifications")
+	flags.Bool("dry-run", false, "Discover and analyze OpenAPI specifications, print the report, then exit")
+	flags.Bool("ignore-clashing-operationid", false, "Ignore duplicate operationId conflicts during multi-spec analysis")
 	flags.StringP("static", "t", "", "Set the path to a directory of static files to serve")
 	flags.StringP("static-index", "i", "index.html", "Set the index filename for static file serving (default is index.html)")
 	flags.StringP("cert", "n", "", "Set the path to the TLS certificate to use for TLS/HTTPS")

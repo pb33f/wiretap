@@ -31,6 +31,7 @@ type HttpTransactionConfig struct {
 	Auth              string
 	BasePath          string
 	BodyBytes         []byte
+	SpecConflict      *transaction.SpecConflict
 }
 
 func BuildHttpTransaction(build HttpTransactionConfig) *transaction.HttpTransaction {
@@ -157,7 +158,8 @@ func BuildHttpTransaction(build HttpTransactionConfig) *transaction.HttpTransact
 	}
 
 	return &transaction.HttpTransaction{
-		Id: build.ID.String(),
+		Id:           build.ID.String(),
+		SpecConflict: build.SpecConflict,
 		Request: &transaction.HttpRequest{
 			URL:             newUrl.String(),
 			Method:          build.NewRequest.Method,

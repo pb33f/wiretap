@@ -20,8 +20,9 @@ import (
 )
 
 type ApiDocument struct {
-	DocumentName string
-	Document     libopenapi.Document
+	DocumentName  string
+	Document      libopenapi.Document
+	DocumentModel *libopenapi.DocumentModel[v3.Document]
 }
 type ApiDocumentModel struct {
 	DocumentName  string
@@ -48,6 +49,10 @@ type WiretapConfiguration struct {
 	Variables                   map[string]string                           `json:"variables,omitempty" yaml:"variables,omitempty"`
 	Spec                        string                                      `json:"contract,omitempty" yaml:"contract,omitempty"`
 	Specs                       []string                                    `json:"contracts,omitempty" yaml:"contracts,omitempty"`
+	SpecDirs                    []string                                    `json:"contractDirs,omitempty" yaml:"contractDirs,omitempty"`
+	SpecIgnore                  []string                                    `json:"contractIgnore,omitempty" yaml:"contractIgnore,omitempty"`
+	DryRun                      bool                                        `json:"dryRun,omitempty" yaml:"dryRun,omitempty"`
+	IgnoreClashingOperationID   bool                                        `json:"ignoreClashingOperationId,omitempty" yaml:"ignoreClashingOperationId,omitempty"`
 	Certificate                 string                                      `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	CertificateKey              string                                      `json:"certificateKey,omitempty" yaml:"certificateKey,omitempty"`
 	HardErrors                  bool                                        `json:"hardValidation,omitempty" yaml:"hardValidation,omitempty"`

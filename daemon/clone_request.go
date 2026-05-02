@@ -44,13 +44,22 @@ func CloneExistingRequest(request CloneRequest) *http.Request {
 
 	newURL = ReconstructURL(request.Request, request.Protocol, request.Host, request.BasePath, request.Port)
 
+	bodyReader := bytes.NewReader(b)
+
 	// create cloned request
 	var err error
-	newReq, err = http.NewRequest(request.Request.Method, newURL, io.NopCloser(bytes.NewBuffer(b)))
+	newReq, err = http.NewRequest(request.Request.Method, newURL, bodyReader)
 
 	if err != nil {
 		return nil
 	}
+	getBody := func() (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(b)), nil
+	}
+	request.Request.GetBody = getBody
+	request.Request.ContentLength = int64(len(b))
+	newReq.GetBody = getBody
+	newReq.ContentLength = int64(len(b))
 
 	newReq.Header = prepareHeaders(
 		request.Request.Header,

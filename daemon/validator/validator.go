@@ -27,6 +27,8 @@ type Validator struct {
 	router             *validation.SpecRouter
 }
 
+type RouteMatch = validation.RouteMatch
+
 func New(documentValidators []DocumentValidator) *Validator {
 	docs := make([]DocumentValidator, len(documentValidators))
 	copy(docs, documentValidators)
@@ -53,18 +55,46 @@ func (v *Validator) GetValidatorForRequest(request *model.Request) *DocumentVali
 	return v.GetValidatorForHTTPRequest(request.HttpRequest)
 }
 
+func (v *Validator) GetRouteMatchForHTTPRequest(httpRequest *http.Request) *validation.RouteMatch {
+	if v == nil || v.router == nil || httpRequest == nil {
+		return nil
+	}
+	return v.router.ResolveMatch(httpRequest)
+}
+
 func (v *Validator) GetValidatorForHTTPRequest(httpRequest *http.Request) *DocumentValidator {
-	if v == nil || len(v.documentValidators) == 0 {
+	if v == nil || v.router == nil || len(v.documentValidators) == 0 {
 		return nil
 	}
 	if httpRequest == nil {
 		return nil
 	}
 
-	index, routeDoc := v.router.ResolveIndex(httpRequest)
-	if routeDoc == nil {
+	docValidator, _ := v.GetValidatorAndRequestForHTTPRequest(httpRequest)
+	return docValidator
+}
+
+func (v *Validator) GetValidatorAndRequestForHTTPRequest(httpRequest *http.Request) (*DocumentValidator, *http.Request) {
+	if v == nil || v.router == nil || len(v.documentValidators) == 0 {
+		return nil, nil
+	}
+	if httpRequest == nil {
+		return nil, nil
+	}
+
+	routeMatch := v.router.ResolveMatch(httpRequest)
+	docValidator := v.documentValidatorForRouteMatch(routeMatch)
+	if docValidator == nil {
+		return nil, nil
+	}
+	return docValidator, validation.ValidationRequestForRouteMatch(httpRequest, routeMatch)
+}
+
+func (v *Validator) documentValidatorForRouteMatch(routeMatch *validation.RouteMatch) *DocumentValidator {
+	if routeMatch == nil || routeMatch.Document == nil {
 		return nil
 	}
+	index := routeMatch.Index
 	if index >= 0 && index < len(v.documentValidators) {
 		return &v.documentValidators[index]
 	}
@@ -89,10 +119,15 @@ func (v *Validator) ValidateResponseForRequest(
 	returnedResponse *http.Response,
 ) ([]*shared.WiretapValidationError, []*shared.WiretapValidationError) {
 	var validationErrors []*shared.WiretapValidationError
+	if v == nil || v.router == nil {
+		return validationErrors, nil
+	}
 
-	docValidator := v.GetValidatorForHTTPRequest(httpRequest)
+	routeMatch := v.router.ResolveMatch(httpRequest)
+	docValidator := v.documentValidatorForRouteMatch(routeMatch)
 	if docValidator != nil {
-		_, newValidationErrors := docValidator.Validator.ValidateHttpResponse(httpRequest, returnedResponse)
+		validationRequest := validation.ValidationRequestForRouteMatch(httpRequest, routeMatch)
+		_, newValidationErrors := docValidator.Validator.ValidateHttpResponse(validationRequest, returnedResponse)
 		validationErrors = shared.ConvertValidationErrors(docValidator.DocumentName, newValidationErrors)
 	}
 
@@ -111,10 +146,15 @@ func (v *Validator) ValidateRequest(
 	httpRequest *http.Request,
 ) []*shared.WiretapValidationError {
 	var validationErrors []*shared.WiretapValidationError
+	if v == nil || v.router == nil {
+		return validationErrors
+	}
 
-	docValidator := v.GetValidatorForHTTPRequest(httpRequest)
+	routeMatch := v.router.ResolveMatch(httpRequest)
+	docValidator := v.documentValidatorForRouteMatch(routeMatch)
 	if docValidator != nil {
-		_, newValidationErrors := docValidator.Validator.ValidateHttpRequest(httpRequest)
+		validationRequest := validation.ValidationRequestForRouteMatch(httpRequest, routeMatch)
+		_, newValidationErrors := docValidator.Validator.ValidateHttpRequest(validationRequest)
 		validationErrors = shared.ConvertValidationErrors(docValidator.DocumentName, newValidationErrors)
 	}
 	return validationErrors

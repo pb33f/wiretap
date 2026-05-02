@@ -108,6 +108,14 @@ export class HttpTransactionItemComponent extends LitElement {
         }
 
         let chainLink: TemplateResult;
+        let specConflict: TemplateResult;
+
+        if (this._httpTransaction.specConflict) {
+            specConflict = html`
+                <sl-tooltip content="Ambiguous OpenAPI route">
+                    <div class="spec-conflict"><sl-icon name="exclamation-triangle"></sl-icon></div>
+                </sl-tooltip>`
+        }
 
         if (this._httpTransaction.containsChainLink) {
             const matches = this._linkCache.findLinks(this.httpTransaction);
@@ -157,6 +165,7 @@ export class HttpTransactionItemComponent extends LitElement {
                 </div>
                 <div class="transaction-status">
                     ${this.hideControls? '' : chainLink}
+                    ${specConflict}
                     ${statusIcon}
                 </div>
             </div>`

@@ -24,7 +24,7 @@ import (
 	staticMock "github.com/pb33f/wiretap/static-mock"
 )
 
-func runWiretapService(wiretapConfig *shared.WiretapConfiguration, docs []shared.ApiDocument, primaryDoc libopenapi.Document) (server.PlatformServer, error) {
+func runWiretapService(wiretapConfig *shared.WiretapConfiguration, docs []shared.ApiDocument, primaryDoc libopenapi.Document, conflictReports ...*specs.ConflictReport) (server.PlatformServer, error) {
 	// create a new ranch config.
 	ranchConfig, err := server.CreateServerConfig()
 	if err != nil {
@@ -71,7 +71,11 @@ func runWiretapService(wiretapConfig *shared.WiretapConfiguration, docs []shared
 	harStore.Put(shared.HARKey, wiretapConfig.HAR, nil)
 
 	// create wiretap service
-	wtService := daemon.NewWiretapService(docs, wiretapConfig, storeManager)
+	var conflictReport *specs.ConflictReport
+	if len(conflictReports) > 0 {
+		conflictReport = conflictReports[0]
+	}
+	wtService := daemon.NewWiretapService(docs, wiretapConfig, storeManager, conflictReport)
 
 	// register wiretap service
 	if err := registerPlatformService(platformServer, "wiretap", daemon.WiretapServiceChan, wtService); err != nil {

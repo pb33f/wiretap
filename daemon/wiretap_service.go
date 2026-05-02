@@ -19,6 +19,7 @@ import (
 	daemonvalidator "github.com/pb33f/wiretap/daemon/validator"
 	"github.com/pb33f/wiretap/mock"
 	"github.com/pb33f/wiretap/shared"
+	"github.com/pb33f/wiretap/specs"
 	"github.com/pb33f/wiretap/validation"
 )
 
@@ -46,9 +47,10 @@ type WiretapService struct {
 	streamChan       chan []*shared.WiretapValidationError
 	reportFile       string
 	StaticMockDir    string
+	routeConflicts   *specs.RouteConflictIndex
 }
 
-func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapConfiguration, storeManager store.Manager) *WiretapService {
+func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapConfiguration, storeManager store.Manager, conflictReports ...*specs.ConflictReport) *WiretapService {
 	controlsStore := storeManager.CreateStore(controls.ControlServiceChan)
 	transactionStore := storeManager.CreateStore(WiretapServiceChan)
 
@@ -72,19 +74,27 @@ func NewWiretapService(documents []shared.ApiDocument, config *shared.WiretapCon
 		mock:             mockproxy.NewHandler(),
 		StaticMockDir:    config.StaticMockDir,
 	}
+	if len(conflictReports) > 0 && conflictReports[0] != nil {
+		wts.routeConflicts = conflictReports[0].RouteIndex
+	}
 
 	documentValidators := make([]daemonvalidator.DocumentValidator, 0, len(documents))
 	for _, document := range documents {
-		m, _ := document.Document.BuildV3Model()
-		docModel := &m.Model
+		docModel := document.DocumentModel
+		if docModel == nil {
+			docModel, _ = document.Document.BuildV3Model()
+		}
+		if docModel == nil {
+			continue
+		}
 
 		documentValidators = append(documentValidators, daemonvalidator.DocumentValidator{
 			DocumentName: document.DocumentName,
 			Document:     document.Document,
-			DocModel:     docModel,
-			Validator:    validation.NewHttpValidatorWithConfig(docModel, config.StrictMode),
+			DocModel:     &docModel.Model,
+			Validator:    validation.NewHttpValidatorWithConfig(&docModel.Model, config.StrictMode),
 			MockEngine: mock.NewMockEngineWithConfig(
-				docModel,
+				&docModel.Model,
 				config.MockModePretty,
 				config.UseAllMockResponseFields,
 				config.StrictMode,

@@ -49,6 +49,67 @@ func TestRootCommandPropagatesStartupErrors(t *testing.T) {
 	assert.Contains(t, err.Error(), `parse websocket port "not-a-port"`)
 }
 
+func TestRootCommandRejectsInvalidRedirectURL(t *testing.T) {
+	err := executeTestRootCommand(t, "--url", "::::")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid redirect URL")
+}
+
+func TestRootCommandFailsNormalRunWhenSpecLoadFails(t *testing.T) {
+	err := executeTestRootCommand(t, "--spec", "missing.yaml", "--url", "http://example.com")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load 1 OpenAPI specification")
+	assert.Contains(t, err.Error(), "missing.yaml")
+}
+
+func TestRootCommandDryRunSkipsInvalidRedirectURLParsing(t *testing.T) {
+	tmpDir := t.TempDir()
+	users := tmpDir + "/users.yaml"
+	accounts := tmpDir + "/accounts.yaml"
+	writeTestSpecWithOperation(t, users, "/health", "healthUsers")
+	writeTestSpecWithOperation(t, accounts, "/health", "healthAccounts")
+
+	err := executeTestRootCommand(t, "--dry-run", "--url", "::::", "--specs", users, "--specs", accounts)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "dry run failed")
+	assert.Contains(t, err.Error(), "detected 1 conflicts")
+	assert.NotContains(t, err.Error(), "invalid redirect URL")
+}
+
+func TestRootCommandDryRunIgnoresClashingOperationIDWhenFlagged(t *testing.T) {
+	tmpDir := t.TempDir()
+	users := tmpDir + "/users.yaml"
+	accounts := tmpDir + "/accounts.yaml"
+	writeTestSpecWithOperation(t, users, "/users", "listThings")
+	writeTestSpecWithOperation(t, accounts, "/accounts", "listThings")
+
+	err := executeTestRootCommand(t, "--dry-run", "--specs", users, "--specs", accounts)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "detected 1 conflicts")
+
+	err = executeTestRootCommand(t, "--dry-run", "--ignore-clashing-operationid", "--specs", users, "--specs", accounts)
+	require.NoError(t, err)
+}
+
+func TestResolvePrimarySpecPreservesConfiguredContract(t *testing.T) {
+	tmpDir := t.TempDir()
+	first := tmpDir + "/first.yaml"
+	primary := tmpDir + "/primary.yaml"
+	writeTestSpec(t, first)
+	writeTestSpec(t, primary)
+
+	discovered, err := resolvePrimarySpec("", []string{first, primary}, nil)
+	require.NoError(t, err)
+	assert.Equal(t, first, discovered)
+
+	resolved, err := resolvePrimarySpec(primary, []string{first, primary}, nil)
+	require.NoError(t, err)
+	assert.Equal(t, primary, resolved)
+}
+
 func executeTestRootCommand(t *testing.T, args ...string) error {
 	t.Helper()
 	resetPFlagCommandLine(t)
@@ -77,6 +138,34 @@ func executeTestRootCommand(t *testing.T, args ...string) error {
 		return err
 	}
 	return cmd.RunE(cmd, args)
+}
+
+func writeTestSpec(t *testing.T, path string) {
+	t.Helper()
+
+	require.NoError(t, os.WriteFile(path, []byte(`openapi: 3.1.0
+info:
+  title: test
+  version: "1.0"
+paths: {}
+`), 0644))
+}
+
+func writeTestSpecWithOperation(t *testing.T, path, pathName, operationID string) {
+	t.Helper()
+
+	require.NoError(t, os.WriteFile(path, []byte(`openapi: 3.1.0
+info:
+  title: test
+  version: "1.0"
+paths:
+  "`+pathName+`":
+    get:
+      operationId: `+operationID+`
+      responses:
+        "200":
+          description: ok
+`), 0644))
 }
 
 func writeTestConfig(t *testing.T, contents string) string {

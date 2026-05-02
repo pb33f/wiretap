@@ -104,6 +104,16 @@ export default css`
   .chain sl-icon:hover {
     color: var(--terminal-yellow);
   }
+
+  .spec-conflict {
+    width: 20px;
+    margin: 5px 10px 0 0;
+    color: var(--sl-color-warning-600);
+  }
+  .spec-conflict sl-icon {
+    vertical-align: bottom;
+    font-size: 21px;
+  }
   
   .transaction-status {
     display: flex; 
