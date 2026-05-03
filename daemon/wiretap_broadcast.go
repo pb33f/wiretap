@@ -42,6 +42,9 @@ func (ws *WiretapService) broadcastRequest(request *model.Request, txn *transact
 }
 
 func (ws *WiretapService) broadcastResponse(request *model.Request, txn *transaction.HttpTransaction) {
+	if request != nil && request.Id != nil {
+		ws.storeResponseTransaction(request.Id.String(), txn)
+	}
 	ws.activeBroadcaster().Response(request, txn)
 }
 
@@ -62,9 +65,15 @@ func (ws *WiretapService) broadcastResponseError(request *model.Request, respons
 	resp := BuildResponse(request, response)
 	resp.Response.Body = string(respBodyString)
 
+	if request != nil && request.Id != nil {
+		ws.storeResponseTransaction(request.Id.String(), resp)
+	}
 	ws.activeBroadcaster().ResponseError(request, resp, err)
 }
 
 func (ws *WiretapService) broadcastResponseValidationErrors(request *model.Request, txn *transaction.HttpTransaction, errors []*shared.WiretapValidationError) {
+	if request != nil && request.Id != nil {
+		ws.storeResponseTransaction(request.Id.String(), txn)
+	}
 	ws.activeBroadcaster().ResponseValidationErrors(request, txn, errors)
 }

@@ -1,5 +1,5 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: AGPL
+// SPDX-License-Identifier: BUSL-1.1
 
 package cmd
 
@@ -12,12 +12,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pb33f/doctor/terminal"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pb33f/wiretap/har"
 	"github.com/pb33f/wiretap/shared"
 	wiretapSpecs "github.com/pb33f/wiretap/specs"
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v4"
 )
@@ -27,6 +27,8 @@ var (
 	Commit  string
 	Date    string
 	FS      embed.FS
+	cliLog  = terminal.NewCLIPrettyLogger(os.Stdout, slog.LevelInfo)
+	style   = terminal.DefaultTextStyler()
 
 	rootCmd = &cobra.Command{
 		SilenceUsage: true,
@@ -92,6 +94,9 @@ var (
 			harReplayDelay, _ := flags.GetInt("har-replay-delay")
 
 			debug, _ := flags.GetBool("debug")
+			if debug {
+				cliLog = terminal.NewCLIPrettyLogger(os.Stdout, slog.LevelDebug)
+			}
 			staticMockDir, _ = flags.GetString("static-mock-dir")
 			mockMode, _ = flags.GetBool("mock-mode")
 			mockBypassValidation, _ := flags.GetBool("mock-bypass-validation")
@@ -196,15 +201,15 @@ var (
 
 				cBytes, err := os.ReadFile(configFlag)
 				if err != nil {
-					pterm.Error.Printf("Failed to read wiretap configuration '%s': %s\n", configFlag, err.Error())
+					cliLog.Error(fmt.Sprintf("Failed to read wiretap configuration '%s': %s", configFlag, err.Error()))
 					return err
 				}
 				err = yaml.Unmarshal(cBytes, &config)
 				if err != nil {
-					pterm.Error.Printf("Failed to parse wiretap configuration '%s': %s\n", configFlag, err.Error())
+					cliLog.Error(fmt.Sprintf("Failed to parse wiretap configuration '%s': %s", configFlag, err.Error()))
 					return err
 				}
-				pterm.Info.Printf("Loaded wiretap configuration '%s'...\n\n", configFlag)
+				cliLog.Info(fmt.Sprintf("Loaded wiretap configuration '%s'...", configFlag))
 				if config.RedirectURL != "" {
 					redirectURL = config.RedirectURL
 				}
@@ -294,7 +299,7 @@ var (
 
 			} else {
 
-				pterm.Info.Println("No wiretap configuration located. Using defaults")
+				cliLog.Info("No wiretap configuration located. Using defaults")
 				config.StaticIndex = staticIndex
 				if len(staticMockDir) != 0 {
 					if len(config.StaticMockDir) == 0 {
@@ -339,13 +344,13 @@ var (
 
 			discoveredSpecs, discoveryErr := wiretapSpecs.DiscoverSpecs(specs, specDirs, specIgnore)
 			if discoveryErr != nil {
-				pterm.Error.Printf("Failed to discover OpenAPI specifications: %s\n", discoveryErr.Error())
+				cliLog.Error(fmt.Sprintf("Failed to discover OpenAPI specifications: %s", discoveryErr.Error()))
 				return discoveryErr
 			}
 			specs = discoveredSpecs
 			primarySpec, discoveryErr = resolvePrimarySpec(primarySpec, specs, specIgnore)
 			if discoveryErr != nil {
-				pterm.Error.Printf("Failed to resolve primary OpenAPI specification: %s\n", discoveryErr.Error())
+				cliLog.Error(fmt.Sprintf("Failed to resolve primary OpenAPI specification: %s", discoveryErr.Error()))
 				return discoveryErr
 			}
 
@@ -360,29 +365,29 @@ var (
 			}
 
 			if len(specs) == 0 {
-				pterm.Println()
-				pterm.Warning.Println("No OpenAPI specification provided. " +
+				fmt.Println()
+				cliLog.Warn("No OpenAPI specification provided. " +
 					"Please provide a path to at least one OpenAPI specification using the --spec or -s flags. \n" +
 					"Without an OpenAPI specification, wiretap will not be able to validate " +
 					"requests and responses")
-				pterm.Println()
+				fmt.Println()
 			}
 
 			wantsMockMode := config.MockMode || mockMode || len(config.MockModeList) > 0
 			if !dryRun && wantsMockMode && len(specs) == 0 {
-				pterm.Println()
-				pterm.Error.Println("Cannot enable mock mode, no OpenAPI specification provided!\n" +
+				fmt.Println()
+				cliLog.Error("Cannot enable mock mode, no OpenAPI specification provided!\n" +
 					"Please provide a path to an OpenAPI specification using the --spec or -s flags.\n" +
 					"Without an OpenAPI specification, wiretap will not be able to generate mock responses")
-				pterm.Println()
+				fmt.Println()
 				return fmt.Errorf("cannot enable mock mode: no OpenAPI specification provided")
 			}
 
 			if !dryRun && !config.MockMode && redirectURL == "" && config.HAR == "" && !config.HARValidate {
-				pterm.Println()
-				pterm.Error.Println("No redirect URL provided. " +
+				fmt.Println()
+				cliLog.Error("No redirect URL provided. " +
 					"Please provide a URL to redirect API traffic to using the --url or -u flags.")
-				pterm.Println()
+				fmt.Println()
 				return nil
 			}
 
@@ -390,17 +395,17 @@ var (
 
 				parsedURL, e := url.Parse(redirectURL)
 				if e != nil {
-					pterm.Println()
-					pterm.Error.Printf("URL is not valid. "+
-						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
-					pterm.Println()
+					fmt.Println()
+					cliLog.Error(fmt.Sprintf("URL is not valid. "+
+						"Please provide a valid URL to redirect to. %s cannot be parsed", redirectURL))
+					fmt.Println()
 					return fmt.Errorf("invalid redirect URL %q: %w", redirectURL, e)
 				}
 				if parsedURL.Scheme == "" || parsedURL.Host == "" {
-					pterm.Println()
-					pterm.Error.Printf("URL is not valid. "+
-						"Please provide a valid URL to redirect to. %s cannot be parsed\n\n", redirectURL)
-					pterm.Println()
+					fmt.Println()
+					cliLog.Error(fmt.Sprintf("URL is not valid. "+
+						"Please provide a valid URL to redirect to. %s cannot be parsed", redirectURL))
+					fmt.Println()
 					return fmt.Errorf("invalid redirect URL %q: missing scheme or host", redirectURL)
 				}
 				redirectHost = parsedURL.Hostname()
@@ -531,135 +536,120 @@ var (
 
 			// static headers
 			if config.Headers != nil && len(config.Headers.DropHeaders) > 0 {
-				pterm.Info.Printf("Dropping the following %d %s globally:\n", len(config.Headers.DropHeaders),
-					shared.Pluralize(len(config.Headers.DropHeaders), "header", "headers"))
+				cliLog.Info(fmt.Sprintf("Dropping the following %d %s globally", len(config.Headers.DropHeaders),
+					shared.Pluralize(len(config.Headers.DropHeaders), "header", "headers")))
 				for _, header := range config.Headers.DropHeaders {
-					pterm.Printf("🗑️  %s\n", pterm.LightRed(header))
+					fmt.Printf("🗑️  %s\n", style.Error(header))
 				}
-				pterm.Println()
+				fmt.Println()
 			}
 
 			// static paths
 			if len(config.StaticPaths) > 0 && config.StaticDir != "" {
 				staticPath := filepath.Join(config.StaticDir, config.StaticIndex)
-				pterm.Info.Printf("Mapping %d static %s to '%s':\n", len(config.StaticPaths),
-					shared.Pluralize(len(config.StaticPaths), "path", "paths"), staticPath)
+				cliLog.Info(fmt.Sprintf("Mapping %d static %s to '%s'", len(config.StaticPaths),
+					shared.Pluralize(len(config.StaticPaths), "path", "paths"), staticPath))
 				for _, path := range config.StaticPaths {
-					pterm.Printf("⛱️  %s\n", pterm.LightMagenta(path))
+					fmt.Printf("⛱️  %s\n", style.Secondary(path))
 				}
-				pterm.Println()
+				fmt.Println()
 			}
 
 			// hard errors
 			if config.HardErrors {
-				pterm.Printf("❌  Hard validation mode enabled. HTTP error %s for requests and error %s for responses that "+
+				fmt.Printf("❌  Hard validation mode enabled. HTTP error %s for requests and error %s for responses that "+
 					"fail to pass validation.\n",
-					pterm.LightRed(config.HardErrorCode), pterm.LightRed(config.HardErrorReturnCode))
-				pterm.Println()
+					style.Error(config.HardErrorCode), style.Error(config.HardErrorReturnCode))
+				fmt.Println()
 			}
 
 			// static mock dir
 			if len(config.StaticMockDir) != 0 {
-				pterm.Printf("Ⓜ️ %s. Requests matching mock definitions in the static-mock-dir will return mocked responses.\n",
-					pterm.LightCyan("Static mock directory defined"))
-				pterm.Println()
+				fmt.Printf("Ⓜ️ %s. Requests matching mock definitions in the static-mock-dir will return mocked responses.\n",
+					style.Primary("Static mock directory defined"))
+				fmt.Println()
 			}
 
 			// mock mode
 			if config.MockMode {
-				pterm.Printf("Ⓜ️ %s. All responses will be mocked and no traffic will be sent to the target API.\n",
-					pterm.LightCyan("Mock mode enabled"))
-				pterm.Println()
+				fmt.Printf("Ⓜ️ %s. All responses will be mocked and no traffic will be sent to the target API.\n",
+					style.Primary("Mock mode enabled"))
+				fmt.Println()
 			}
 
 			// strict mode
 			if config.StrictMode {
-				pterm.Printf("🔬 %s. Undeclared properties, parameters, headers, and cookies will be reported as validation errors.\n",
-					pterm.LightCyan("Strict validation mode enabled"))
-				pterm.Println()
+				fmt.Printf("🔬 %s. Undeclared properties, parameters, headers, and cookies will be reported as validation errors.\n",
+					style.Primary("Strict validation mode enabled"))
+				fmt.Println()
 			}
 
 			// using TLS?
 			if config.CertificateKey != "" && config.Certificate != "" {
-				pterm.Printf("🔐 Running over %s using certificate: %s and key: %s\n",
-					pterm.LightYellow("TLS/HTTPS & HTTP/2"), pterm.LightMagenta(config.Certificate), pterm.LightCyan(config.CertificateKey))
-				pterm.Println()
+				fmt.Printf("🔐 Running over %s using certificate: %s and key: %s\n",
+					style.Warning("TLS/HTTPS & HTTP/2"), style.Secondary(config.Certificate), style.Primary(config.CertificateKey))
+				fmt.Println()
 			}
 
 			// streaming violations?
 			if config.StreamReport {
-				pterm.Printf("⏩  Streaming API violations to file: %s\n", pterm.LightMagenta(config.ReportFile))
-				pterm.Println()
+				fmt.Printf("⏩  Streaming API violations to file: %s\n", style.Secondary(config.ReportFile))
+				fmt.Println()
 			}
 
 			// check if we're using a HAR file
 			if !dryRun && config.HAR != "" {
-				pterm.Println()
-				pterm.Printf("📦 Loading HAR file: %s\n", pterm.LightMagenta(config.HAR))
+				fmt.Println()
+				fmt.Printf("📦 Loading HAR file: %s\n", style.Secondary(config.HAR))
 				info, err := os.Stat(config.HAR)
 				if err != nil {
-					pterm.Error.Printf("Cannot read HAR file: %s (%s)\n", config.HAR, err.Error())
+					cliLog.Error(fmt.Sprintf("Cannot read HAR file: %s (%s)", config.HAR, err.Error()))
 					return fmt.Errorf("cannot read HAR file %q: %w", config.HAR, err)
 				}
 				if info.IsDir() {
-					pterm.Error.Printf("Cannot read HAR file: %s is a directory\n", config.HAR)
+					cliLog.Error(fmt.Sprintf("Cannot read HAR file: %s is a directory", config.HAR))
 					return fmt.Errorf("cannot read HAR file %q: is a directory", config.HAR)
 				}
-				pterm.Println()
+				fmt.Println()
 			}
 			// let's create a logger first.
-			logLevel := pterm.LogLevelWarn
+			logLevel := slog.LevelWarn
 			if debug {
-				logLevel = pterm.LogLevelDebug
+				logLevel = slog.LevelDebug
 			}
 
 			// check if we want to validate the HAR file against the OpenAPI spec.
 			if !dryRun && config.HARValidate {
 				if config.MockMode {
-					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification in mock mode!")
-					pterm.Println()
+					cliLog.Error("Cannot validate HAR file against OpenAPI specification in mock mode!")
+					fmt.Println()
 					return fmt.Errorf("cannot validate HAR file against OpenAPI specification in mock mode")
 				}
 
 				if len(config.Contracts) == 0 {
-					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification, no specification provided, use '-s'")
-					pterm.Println()
+					cliLog.Error("Cannot validate HAR file against OpenAPI specification, no specification provided, use '-s'")
+					fmt.Println()
 					return fmt.Errorf("cannot validate HAR file against OpenAPI specification: no specification provided")
 				}
 
 				if config.HAR == "" {
-					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification, no HAR file provided, use '-z' / '--har'")
-					pterm.Println()
+					cliLog.Error("Cannot validate HAR file against OpenAPI specification, no HAR file provided, use '-z' / '--har'")
+					fmt.Println()
 					return fmt.Errorf("cannot validate HAR file against OpenAPI specification: no HAR file provided")
 				}
 
-				pterm.Printf("🔍 Validating HAR file against OpenAPI specification(s): %s\n", pterm.LightMagenta(config.GetContractList()))
+				fmt.Printf("🔍 Validating HAR file against OpenAPI specification(s): %s\n", style.Secondary(config.GetContractList()))
 
 				// check if whitelist is empty, if so, fail.
 				if len(config.HARPathAllowList) == 0 {
-					pterm.Error.Println("Cannot validate HAR file against OpenAPI specification, no paths provided to allow list, use '-j' / '--har-allow' to define allow-list paths")
-					pterm.Println()
+					cliLog.Error("Cannot validate HAR file against OpenAPI specification, no paths provided to allow list, use '-j' / '--har-allow' to define allow-list paths")
+					fmt.Println()
 					return fmt.Errorf("cannot validate HAR file against OpenAPI specification: no HAR allow-list paths provided")
 				}
 				printLoadedHarWhitelist(config.HARPathAllowList)
 			}
 
-			ptermLog := &pterm.Logger{
-				Formatter:  pterm.LogFormatterColorful,
-				Writer:     os.Stdout,
-				Level:      logLevel,
-				ShowTime:   true,
-				TimeFormat: "2006-01-02 15:04:05",
-				MaxWidth:   180,
-				KeyStyles: map[string]pterm.Style{
-					"error":  *pterm.NewStyle(pterm.FgRed, pterm.Bold),
-					"err":    *pterm.NewStyle(pterm.FgRed, pterm.Bold),
-					"caller": *pterm.NewStyle(pterm.FgGray, pterm.Bold),
-				},
-			}
-
-			handler := pterm.NewSlogHandler(ptermLog)
-			config.Logger = slog.New(handler)
+			config.Logger = terminal.NewCLIPrettyLogger(os.Stdout, logLevel)
 
 			// load the openapi specs and analyze conflicts
 			var primaryDoc libopenapi.Document
@@ -693,8 +683,11 @@ var (
 			}
 
 			if len(docs) != 0 {
-				pterm.Info.Printf("OpenAPI Specification(s): '%s' parsed and read\n", config.GetContractList())
-				pterm.Info.Printf("Primary OpenAPI Specification: '%s'\n", config.PrimaryContract)
+				cliLog.Info("OpenAPI Specification(s) parsed and read",
+					"count", len(config.Contracts),
+					"specs", config.GetContractList())
+				cliLog.Info("Primary OpenAPI Specification",
+					"spec", config.PrimaryContract)
 			}
 
 			if len(conflictReport.LoadErrors) > 0 {
@@ -709,9 +702,9 @@ var (
 				_, pErr := runWiretapService(&config, docs, primaryDoc, conflictReport)
 
 				if pErr != nil {
-					pterm.Println()
-					pterm.Error.Printf("Cannot start wiretap: %s\n", pErr.Error())
-					pterm.Println()
+					fmt.Println()
+					cliLog.Error(fmt.Sprintf("Cannot start wiretap: %s", pErr.Error()))
+					fmt.Println()
 					return fmt.Errorf("cannot start wiretap: %w", pErr)
 				}
 			} else {
@@ -721,70 +714,70 @@ var (
 					count := result.MessageCount
 					validationErrors := result.Errors
 					if result.Err != nil {
-						pterm.Println()
-						pterm.Error.Printf("HAR file could not be validated: %s\n", result.Err.Error())
-						pterm.Println()
+						fmt.Println()
+						cliLog.Error(fmt.Sprintf("HAR file could not be validated: %s", result.Err.Error()))
+						fmt.Println()
 						return fmt.Errorf("har file could not be validated: %w", result.Err)
 					}
 					if len(validationErrors) > 0 {
-						pterm.Println()
-						pterm.Error.Printf("HAR file failed validation against OpenAPI specification(s): %s\n", config.GetContractList())
-						pterm.Println()
+						fmt.Println()
+						cliLog.Error(fmt.Sprintf("HAR file failed validation against OpenAPI specification(s): %s", config.GetContractList()))
+						fmt.Println()
 
 						for _, e := range validationErrors {
 
-							location := pterm.Sprintf("Violation location: %s:%d:%d", pterm.LightCyan(e.SpecName), e.SpecLine, e.SpecCol)
-							var items []pterm.BulletListItem
-							items = append(items, pterm.BulletListItem{
-								Level: 0, Text: pterm.LightRed(e.Message),
+							location := fmt.Sprintf("Violation location: %s:%d:%d", style.Primary(e.SpecName), e.SpecLine, e.SpecCol)
+							var items []terminal.BulletListItem
+							items = append(items, terminal.BulletListItem{
+								Level: 0, Text: style.Error(e.Message),
 							})
 							if e.Reason != e.Message {
-								items = append(items, pterm.BulletListItem{
-									Level: 1, Text: pterm.Sprintf("Reason: %s", pterm.Gray(e.Reason)),
+								items = append(items, terminal.BulletListItem{
+									Level: 1, Text: fmt.Sprintf("Reason: %s", style.Muted(e.Reason)),
 								})
 							}
 							if len(e.SchemaValidationErrors) > 0 {
 
-								items = append(items, pterm.BulletListItem{
-									Level: 2, Text: pterm.Gray(e.SchemaValidationErrors[0].Reason),
+								items = append(items, terminal.BulletListItem{
+									Level: 2, Text: style.Muted(e.SchemaValidationErrors[0].Reason),
 								})
 								if e.SchemaValidationErrors[0].Line >= 1 {
-									items = append(items, pterm.BulletListItem{
-										Level: 3, Text: pterm.Sprintf("Schema violation Location: %s:%d:%d",
-											pterm.LightCyan(e.SpecName), e.SchemaValidationErrors[0].Line,
+									items = append(items, terminal.BulletListItem{
+										Level: 3, Text: fmt.Sprintf("Schema violation Location: %s:%d:%d",
+											style.Primary(e.SpecName), e.SchemaValidationErrors[0].Line,
 											e.SchemaValidationErrors[0].Column),
 									})
 								}
 
 							}
 							if e.SpecLine >= 1 {
-								items = append(items, pterm.BulletListItem{
+								items = append(items, terminal.BulletListItem{
 									Level: 1, Text: location,
 								})
 							}
-							pterm.DefaultBulletList.WithItems(items).Render()
+							terminal.FprintBulletList(os.Stdout, items)
 						}
 
 						if len(validationErrors) > 0 {
 							// render validationErrors to JSON
 							b, _ := json.MarshalIndent(validationErrors, "", "  ")
 							os.WriteFile(reportFilename, b, 0644)
-							pterm.Printf("Report generated and saved to: %s", pterm.LightMagenta(reportFilename))
-							pterm.Println()
+							fmt.Printf("Report generated and saved to: %s", style.Secondary(reportFilename))
+							fmt.Println()
 
-							pterm.Println()
-							pterm.Error.Printf("Wiretap detected %d contract violations against %d requests and responses",
-								len(validationErrors), count)
-							pterm.Println()
+							fmt.Println()
+							cliLog.Error(fmt.Sprintf("Wiretap detected %d contract violations against %d requests and responses",
+								len(validationErrors), count))
+							fmt.Println()
 
 						}
 
 						return fmt.Errorf("har file failed validation: detected %d contract violations against %d requests and responses",
 							len(validationErrors), count)
 					} else {
-						pterm.Println()
-						pterm.Success.Printf("HAR file passed validation against %d requests and responses", count)
-						pterm.Println()
+						fmt.Println()
+						terminal.LogSuccess(cliLog, fmt.Sprintf("HAR file passed validation against %d requests and responses", count))
+						fmt.Println()
 
 					}
 
@@ -809,6 +802,13 @@ func Execute(version, commit, date string, fs embed.FS) {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
+}
+
+func commandLogger(config *shared.WiretapConfiguration) *slog.Logger {
+	if config != nil && config.Logger != nil {
+		return config.Logger
+	}
+	return cliLog
 }
 
 func resolvePrimarySpec(primarySpec string, discoveredSpecs []string, ignorePatterns []string) (string, error) {
@@ -873,146 +873,146 @@ func registerRootFlags(cmd *cobra.Command) {
 }
 
 func printLoadedIgnorePathRewrite(ignoreRewritePaths []*shared.IgnoreRewriteConfig) {
-	pterm.Info.Printf("Loaded %d %s on which to globally ignore rewriting", len(ignoreRewritePaths),
-		shared.Pluralize(len(ignoreRewritePaths), "path", "paths"))
-	pterm.Println()
+	cliLog.Info(fmt.Sprintf("Loaded %d %s on which to globally ignore rewriting", len(ignoreRewritePaths),
+		shared.Pluralize(len(ignoreRewritePaths), "path", "paths")))
+	fmt.Println()
 
 	for _, ignoreRewrite := range ignoreRewritePaths {
-		pterm.Printf("🙅 Paths matching '%s' will not be re-written regardless of Path Rewrite configuration\n", pterm.LightCyan(ignoreRewrite.Path))
+		fmt.Printf("🙅 Paths matching '%s' will not be re-written regardless of Path Rewrite configuration\n", style.Primary(ignoreRewrite.Path))
 	}
-	pterm.Println()
+	fmt.Println()
 }
 
 func printLoadedPathConfigurations(configs *orderedmap.Map[string, *shared.WiretapPathConfig]) {
-	pterm.Info.Printf("Loaded %d path %s:\n", configs.Len(),
-		shared.Pluralize(configs.Len(), "configuration", "configurations"))
-	pterm.Println()
+	cliLog.Info(fmt.Sprintf("Loaded %d path %s", configs.Len(),
+		shared.Pluralize(configs.Len(), "configuration", "configurations")))
+	fmt.Println()
 
 	for x := configs.First(); x != nil; x = x.Next() {
 		k, v := x.Key(), x.Value()
-		pterm.Printf("%s --> %s\n", pterm.LightMagenta(k), pterm.LightCyan(v.Target))
+		fmt.Printf("%s --> %s\n", style.Secondary(k), style.Primary(v.Target))
 		for ka, p := range v.PathRewrite {
-			pterm.Printf("✏️  '%s' re-written to '%s'\n", pterm.LightCyan(ka), pterm.LightGreen(p))
+			fmt.Printf("✏️  '%s' re-written to '%s'\n", style.Primary(ka), style.Success(p))
 		}
 		if v.Headers != nil {
 			for kb, h := range v.Headers.InjectHeaders {
-				pterm.Printf("💉 '%s' injected with '%s'\n", pterm.LightCyan(kb), pterm.LightGreen(h))
+				fmt.Printf("💉 '%s' injected with '%s'\n", style.Primary(kb), style.Success(h))
 			}
 			for _, h := range v.Headers.DropHeaders {
-				pterm.Printf("🗑️  '%s' is being %s\n", pterm.LightCyan(h), pterm.LightRed("dropped"))
+				fmt.Printf("🗑️  '%s' is being %s\n", style.Primary(h), style.Error("dropped"))
 			}
 		}
 		for _, ignoreRewrite := range v.IgnoreRewrite {
-			pterm.Printf("🙅 Paths matching '%s' will not be re-written for this path configuration\n", pterm.LightCyan(ignoreRewrite.Path))
+			fmt.Printf("🙅 Paths matching '%s' will not be re-written for this path configuration\n", style.Primary(ignoreRewrite.Path))
 		}
 
 		if v.Auth != "" {
-			pterm.Printf("🔒 Basic authentication implemented for '%s'\n", pterm.LightMagenta(k))
+			fmt.Printf("🔒 Basic authentication implemented for '%s'\n", style.Secondary(k))
 		}
 
 		if v.RewriteId != "" {
-			pterm.Printf("💳  Identifier '%s' registered for this configuration\n", pterm.LightCyan(v.RewriteId))
+			fmt.Printf("💳  Identifier '%s' registered for this configuration\n", style.Primary(v.RewriteId))
 		}
 
-		pterm.Println()
+		fmt.Println()
 	}
 }
 
 func printLoadedPathDelayConfigurations(pathDelays map[string]int) {
-	pterm.Info.Printf("Loaded %d path %s:\n", len(pathDelays),
-		shared.Pluralize(len(pathDelays), "delay", "delays"))
+	cliLog.Info(fmt.Sprintf("Loaded %d path %s", len(pathDelays),
+		shared.Pluralize(len(pathDelays), "delay", "delays")))
 
 	for k, v := range pathDelays {
-		pterm.Printf("⏱️ %sms --> %s\n", pterm.LightCyan(v), pterm.LightMagenta(k))
+		fmt.Printf("⏱️ %sms --> %s\n", style.Primary(v), style.Secondary(k))
 	}
-	pterm.Println()
+	fmt.Println()
 
 }
 
 func printLoadedVariables(variables map[string]string) {
-	pterm.Info.Printf("Loaded %d %s:\n", len(variables),
-		shared.Pluralize(len(variables), "variable", "variables"))
+	cliLog.Info(fmt.Sprintf("Loaded %d %s", len(variables),
+		shared.Pluralize(len(variables), "variable", "variables")))
 	for k, v := range variables {
-		pterm.Printf("📌 Variable '${%s}' points to '%s'\n", pterm.LightCyan(k), pterm.LightGreen(v))
+		fmt.Printf("📌 Variable '${%s}' points to '%s'\n", style.Primary(k), style.Success(v))
 	}
-	pterm.Println()
+	fmt.Println()
 }
 
 func printLoadedHarWhitelist(variables []string) {
-	pterm.Println()
-	pterm.Info.Printf("Loaded %d %s:\n", len(variables),
-		shared.Pluralize(len(variables), "HAR whitelist path", "HAR whitelist paths"))
+	fmt.Println()
+	cliLog.Info(fmt.Sprintf("Loaded %d %s", len(variables),
+		shared.Pluralize(len(variables), "HAR whitelist path", "HAR whitelist paths")))
 	for _, v := range variables {
-		pterm.Printf("📝 '%s' has been whitelisted for HAR analysis\n", pterm.LightCyan(v))
+		fmt.Printf("📝 '%s' has been whitelisted for HAR analysis\n", style.Primary(v))
 	}
-	pterm.Println()
+	fmt.Println()
 }
 
 func printLoadedIgnoreRedirectPaths(ignoreRedirects []string) {
-	pterm.Info.Printf("Loaded %d %s to ignore for redirects:\n", len(ignoreRedirects),
-		shared.Pluralize(len(ignoreRedirects), "path", "paths"))
+	cliLog.Info(fmt.Sprintf("Loaded %d %s to ignore for redirects", len(ignoreRedirects),
+		shared.Pluralize(len(ignoreRedirects), "path", "paths")))
 
 	for _, x := range ignoreRedirects {
-		pterm.Printf("🙈 Paths matching '%s' will be ignored for resolving redirects\n", pterm.LightCyan(x))
+		fmt.Printf("🙈 Paths matching '%s' will be ignored for resolving redirects\n", style.Primary(x))
 	}
-	pterm.Println()
+	fmt.Println()
 }
 
 func printLoadedRedirectAllowList(allowRedirects []string) {
-	pterm.Info.Printf("Loaded %d allow listed redirect %s:\n", len(allowRedirects),
-		shared.Pluralize(len(allowRedirects), "path", "paths"))
+	cliLog.Info(fmt.Sprintf("Loaded %d allow listed redirect %s", len(allowRedirects),
+		shared.Pluralize(len(allowRedirects), "path", "paths")))
 
 	for _, x := range allowRedirects {
-		pterm.Printf("🐵 Paths matching '%s' will always follow redirects, regardless of ignoreRedirect settings\n", pterm.LightCyan(x))
+		fmt.Printf("🐵 Paths matching '%s' will always follow redirects, regardless of ignoreRedirect settings\n", style.Primary(x))
 	}
-	pterm.Println()
+	fmt.Println()
 }
 
 func printLoadedWebsockets(websockets map[string]*shared.WiretapWebsocketConfig) {
-	pterm.Info.Printf("Loaded %d %s: \n", len(websockets), shared.Pluralize(len(websockets), "websocket", "websockets"))
+	cliLog.Info(fmt.Sprintf("Loaded %d %s", len(websockets), shared.Pluralize(len(websockets), "websocket", "websockets")))
 
 	for websocket := range websockets {
-		pterm.Printf("🔌 Paths prefixed '%s' will be managed as a websocket\n", pterm.LightCyan(websocket))
+		fmt.Printf("🔌 Paths prefixed '%s' will be managed as a websocket\n", style.Primary(websocket))
 	}
-	pterm.Println()
+	fmt.Println()
 }
 
 func printLoadedIgnoreValidationPaths(ignoreValidations []string) {
-	pterm.Info.Printf("Loaded %d %s to ignore validation:\n", len(ignoreValidations),
-		shared.Pluralize(len(ignoreValidations), "path", "paths"))
+	cliLog.Info(fmt.Sprintf("Loaded %d %s to ignore validation", len(ignoreValidations),
+		shared.Pluralize(len(ignoreValidations), "path", "paths")))
 
 	for _, x := range ignoreValidations {
-		pterm.Printf("⚖️ Paths matching '%s' will not have requests validated\n", pterm.LightCyan(x))
+		fmt.Printf("⚖️ Paths matching '%s' will not have requests validated\n", style.Primary(x))
 	}
-	pterm.Println()
+	fmt.Println()
 }
 
 func printLoadedValidationAllowList(validationAllowList []string) {
-	pterm.Info.Printf("Loaded %d allow listed validation paths %s :\n", len(validationAllowList),
-		shared.Pluralize(len(validationAllowList), "path", "paths"))
+	cliLog.Info(fmt.Sprintf("Loaded %d allow listed validation paths %s", len(validationAllowList),
+		shared.Pluralize(len(validationAllowList), "path", "paths")))
 
 	for _, x := range validationAllowList {
-		pterm.Printf("👮 Paths matching '%s' will always have validation run, regardless of ignoreValidation settings\n", pterm.LightCyan(x))
+		fmt.Printf("👮 Paths matching '%s' will always have validation run, regardless of ignoreValidation settings\n", style.Primary(x))
 	}
-	pterm.Println()
+	fmt.Println()
 }
 
 func printLoadedMockModeList(mockModeList []string) {
-	pterm.Info.Printf("Loaded %d %s from mock mode list:\n", len(mockModeList),
-		shared.Pluralize(len(mockModeList), "path", "paths"))
+	cliLog.Info(fmt.Sprintf("Loaded %d %s from mock mode list", len(mockModeList),
+		shared.Pluralize(len(mockModeList), "path", "paths")))
 
 	for _, x := range mockModeList {
-		pterm.Printf("️Ⓜ️  Paths matching '%s' will have all responses %s.\n", x, pterm.LightMagenta("generated as mocks/simulations"))
+		fmt.Printf("️Ⓜ️  Paths matching '%s' will have all responses %s.\n", x, style.Secondary("generated as mocks/simulations"))
 	}
-	pterm.Println()
+	fmt.Println()
 }
 
 func printLoadedHardErrorList(HardErrorList []string) {
-	pterm.Info.Printf("Loaded %d %s from hard validation list:\n", len(HardErrorList),
-		shared.Pluralize(len(HardErrorList), "path", "paths"))
+	cliLog.Info(fmt.Sprintf("Loaded %d %s from hard validation list", len(HardErrorList),
+		shared.Pluralize(len(HardErrorList), "path", "paths")))
 
 	for _, x := range HardErrorList {
-		pterm.Printf("️️❌ Paths matching '%s' will create HTTP %s errors for requests and %s errors for responses that fail to pass validation.\n", x, pterm.LightRed("400"), pterm.LightRed("502"))
+		fmt.Printf("️️❌ Paths matching '%s' will create HTTP %s errors for requests and %s errors for responses that fail to pass validation.\n", x, style.Error("400"), style.Error("502"))
 	}
-	pterm.Println()
+	fmt.Println()
 }

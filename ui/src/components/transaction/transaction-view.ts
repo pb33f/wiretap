@@ -183,18 +183,25 @@ export class HttpTransactionViewComponent extends LitElement {
             const responseBodyView = new ResponseBodyViewComponent(resp);
             const requestBodyView = new RequestBodyViewComponent(req);
             const conflict = this._httpTransaction.specConflict;
-            const specConflictAlert: TemplateResult = conflict ? html`
-                <sl-alert variant="warning" open class="spec-conflict-alert">
-                    <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
-                    <strong>Ambiguous OpenAPI route</strong>
-                    <div>
-                        ${conflict.method} ${conflict.routePath || conflict.path} matched ${conflict.matchedSpec}.
-                        ${conflict.conflictSpecs?.length > 0 ? html`
-                            Also covered by ${conflict.conflictSpecs.join(', ')}.
-                        ` : null}
-                    </div>
-                    ${conflict.kind ? html`<div class="spec-conflict-kind">${conflict.kind}</div>` : null}
-                </sl-alert>` : null;
+            const specName = (path: string) => {
+                if (!path) return '';
+                const parts = path.split(/[\\/]/);
+                return parts[parts.length - 1] || path;
+            };
+            const routePath = conflict?.routePath || conflict?.path;
+            const conflictSpecs = conflict?.conflictSpecs?.filter(Boolean) || [];
+            const conflictKindLabel = conflict?.kind ? conflict.kind.replace(/-/g, ' ') : '';
+            const specConflictNotice: TemplateResult = conflict ? html`
+                <pb33f-attention-box type="warning" headerText="Ambiguous OpenAPI route" class="spec-conflict-notice">
+                    ${conflict.method || routePath ? html`
+                        <span class="spec-conflict-route">
+                            ${conflict.method ? html`<pb33f-http-method tiny method="${conflict.method}"></pb33f-http-method>` : null}
+                            ${routePath ? html`<pb33f-render-operation-path path="${routePath}"></pb33f-render-operation-path>` : null}
+                        </span>` : html`This route`}
+                    matched <span class="spec-conflict-spec">${specName(conflict.matchedSpec)}</span>${conflictSpecs.length > 0 ? html`;
+                    also covered by ${conflictSpecs.map((s, i) => html`${i > 0 ? ', ' : ''}<span class="spec-conflict-spec">${specName(s)}</span>`)}`
+                    : null}${conflictKindLabel ? html`. <span class="spec-conflict-kind">${conflictKindLabel}</span>` : null}.
+                </pb33f-attention-box>` : null;
 
             let requestTab: TemplateResult;
             if (req.requestBody == null || req.requestBody.length <= 0) {
@@ -229,7 +236,6 @@ export class HttpTransactionViewComponent extends LitElement {
             }
 
             const tabGroup: TemplateResult = html`
-                ${specConflictAlert}
                 ${req.url ? html`
                 <div class="request-destination">
                     <span class="destination-label">Destination</span>
@@ -243,7 +249,8 @@ export class HttpTransactionViewComponent extends LitElement {
                     ${this._currentLinks?.length > 0 ? html`
                         <sl-tab slot="nav" panel="chain" class="tab">Chain</sl-tab>` : null}
                     <sl-tab-panel name="violations" class="tab-panel">
-                        ${total <= 0 ? noData : null}
+                        ${specConflictNotice}
+                        ${total <= 0 && !conflict ? noData : null}
                         ${requestViolations}
                         ${(this._httpTransaction?.requestValidation?.length > 0
                                 && this._httpTransaction?.responseValidation?.length > 0) ? html`

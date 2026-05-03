@@ -1,5 +1,5 @@
 // Copyright 2026 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: AGPL
+// SPDX-License-Identifier: BUSL-1.1
 
 package daemon
 
@@ -12,7 +12,6 @@ import (
 	"github.com/pb33f/ranch/model"
 	configModel "github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/pterm/pterm"
 )
 
 type PreparedRequest struct {
@@ -206,10 +205,14 @@ func prepareURLForRequest(req *http.Request, config *shared.WiretapConfiguration
 	}
 
 	if replaced.PathConfiguration != nil && replaced.PathConfiguration.RewriteId != "" {
-		pterm.Info.Printf("[wiretap] Re-writing path '%s' to '%s' with identifier '%s'\n",
-			req.URL.String(), rewrittenURL.String(), replaced.PathConfiguration.RewriteId)
+		wiretapLogger(config).Info("[wiretap] Re-writing path",
+			"from", req.URL.String(),
+			"to", rewrittenURL.String(),
+			"rewrite_id", replaced.PathConfiguration.RewriteId)
 	} else {
-		pterm.Info.Printf("[wiretap] Re-writing path '%s' to '%s'\n", req.URL.String(), rewrittenURL.String())
+		wiretapLogger(config).Info("[wiretap] Re-writing path",
+			"from", req.URL.String(),
+			"to", rewrittenURL.String())
 	}
 
 	return cloneURL(rewrittenURL)

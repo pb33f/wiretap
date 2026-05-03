@@ -6,7 +6,7 @@ import {ExchangeMethod} from "@pb33f/cowboy-components/model/exchange_method.js"
 import {WiretapFilters} from "@/model/controls";
 import {GlobalDelayChangedEvent} from "@/model/events";
 import {SlInput} from "@shoelace-style/shoelace";
-import {Bag, BagManager, GetBagManager} from "@pb33f/saddlebag";
+import {Bag, BagManager, GetBagManager, type Subscription} from "@pb33f/saddlebag";
 import {WiretapFiltersKey, WiretapFiltersStore} from "@/model/constants";
 import localforage from "localforage";
 import {RanchUtils} from "@pb33f/ranch";
@@ -16,9 +16,10 @@ export class WiretapControlsFiltersComponent extends LitElement {
 
     static styles = [sharedCss, filtersComponentCss]
 
-    private _methods: string[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD', 'TRACE'];
+    private _methods: string[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD', 'TRACE', 'QUERY'];
     private readonly _filtersStore: Bag<WiretapFilters>;
     private readonly _storeManager: BagManager;
+    private readonly _filtersSubscription: Subscription;
 
     @query('#keyword-input')
     keywordInput: SlInput;
@@ -33,6 +34,10 @@ export class WiretapControlsFiltersComponent extends LitElement {
         super();
         this._storeManager = GetBagManager();
         this._filtersStore = this._storeManager.getBag(WiretapFiltersStore);
+        this._filtersSubscription = this._filtersStore.subscribe(WiretapFiltersKey, (filters?: WiretapFilters) => {
+            this.filters = filters ?? new WiretapFilters();
+            this.requestUpdate();
+        });
 
         this.loadFiltersFromStorage().then((filters: WiretapFilters) => {
             if (!filters) {
@@ -43,6 +48,11 @@ export class WiretapControlsFiltersComponent extends LitElement {
             this._filtersStore.set(WiretapFiltersKey, this.filters)
         });
 
+    }
+
+    disconnectedCallback() {
+        this._filtersSubscription.unsubscribe();
+        super.disconnectedCallback();
     }
 
     async loadFiltersFromStorage(): Promise<WiretapFilters> {

@@ -1,15 +1,15 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: AGPL
+// SPDX-License-Identifier: BUSL-1.1
 
 package config
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/pb33f/wiretap/shared"
-	"github.com/pterm/pterm"
 )
 
 const (
@@ -22,6 +22,13 @@ var rewriteIdHeaders = []string{
 	PascalCaseRewriteIdHeader,
 	SnakeCaseRewriteIdHeader,
 	KebabCaseRewriteIdHeader,
+}
+
+func configurationLogger(configuration *shared.WiretapConfiguration) *slog.Logger {
+	if configuration != nil && configuration.Logger != nil {
+		return configuration.Logger
+	}
+	return slog.Default()
 }
 
 type PathRewrite struct {
@@ -220,7 +227,7 @@ func RewritePath(path string, req *http.Request, configuration *shared.WiretapCo
 			if globalIgnoreRewrite.RewriteTarget {
 				return rewriteTaget(path, pathConfig, configuration)
 			} else {
-				pterm.Info.Printf("[wiretap] Not re-writing path '%s' due to global ignore rewrite configuration\n", path)
+				configurationLogger(configuration).Info("[wiretap] Not re-writing path due to global ignore rewrite configuration", "path", path)
 				return &PathRewrite{
 					RewrittenPath:     path,
 					PathConfiguration: pathConfig,
@@ -240,7 +247,7 @@ func RewritePath(path string, req *http.Request, configuration *shared.WiretapCo
 					if ignoreRewrite.RewriteTarget {
 						return rewriteTaget(path, pathConfig, configuration)
 					} else {
-						pterm.Info.Printf("[wiretap] Not re-writing path '%s' due to local ignore rewrite configuration\n", path)
+						configurationLogger(configuration).Info("[wiretap] Not re-writing path due to local ignore rewrite configuration", "path", path)
 						return &PathRewrite{
 							RewrittenPath:     path,
 							PathConfiguration: pathConfig,

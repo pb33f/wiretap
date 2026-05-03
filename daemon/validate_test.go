@@ -139,6 +139,40 @@ func TestValidateRequestAttachesSpecConflict(t *testing.T) {
 	assert.Equal(t, []string{"accounts.yaml"}, txn.SpecConflict.ConflictSpecs)
 }
 
+func TestTransactionStoreMergesRequestAndResponseUpdates(t *testing.T) {
+	config := &shared.WiretapConfiguration{
+		ReportFile: t.TempDir() + "/violations.jsonl",
+		Logger:     slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+	eventBus := bus.NewEventBus()
+	storeManager := store.NewManager(eventBus)
+	ws := NewWiretapService(nil, config, storeManager)
+
+	id := uuid.New()
+	ws.storeResponseTransaction(id.String(), &transaction.HttpTransaction{
+		Id: id.String(),
+		Response: &transaction.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+	})
+	ws.storeRequestTransaction(id.String(), &transaction.HttpTransaction{
+		Id: id.String(),
+		Request: &transaction.HttpRequest{
+			Method: http.MethodGet,
+			Path:   "/items/fresh",
+		},
+	})
+
+	stored, ok := ws.transactionStore.Get(id.String())
+	require.True(t, ok)
+	txn, ok := stored.(*transaction.HttpTransaction)
+	require.True(t, ok)
+	require.NotNil(t, txn.Request)
+	require.NotNil(t, txn.Response)
+	assert.Equal(t, http.MethodGet, txn.Request.Method)
+	assert.Equal(t, http.StatusOK, txn.Response.StatusCode)
+}
+
 func TestValidateRequestFiltersSpecConflictByCurrentPath(t *testing.T) {
 	docs := []shared.ApiDocument{
 		buildDaemonLiteralSpec(t, "profile.yaml", "/users/me"),

@@ -108,11 +108,34 @@ wiretap -u https://api.pb33f.com
 wiretap -u https://api.pb33f.com -s my-openapi-spec.yaml
 ```
 
+## Multi-spec mode
+
+Got more than one OpenAPI contract? Hand `wiretap` a list, or point it at a directory and let it discover them.
+
+```shell
+wiretap -u https://api.pb33f.com --specs ./users.yaml,./orders.yaml,./billing.yaml
+```
+
+```shell
+wiretap -u https://api.pb33f.com --spec-dir ./contracts
+```
+
+`wiretap` routes each request to the spec that owns it, and reports any duplicate or ambiguous routes across your contracts at startup.
+
+Use `--dry-run` to discover, analyze, and print the conflict report without starting the proxy. Exits non-zero on conflicts or load errors — perfect for CI.
+
+```shell
+wiretap --spec-dir ./contracts --dry-run
+```
+
+Full details: [Multi-spec mode](https://pb33f.io/wiretap/multi-spec-mode/).
+
 # Documentation
 
 - 🚀 [Quick Start](https://pb33f.io/wiretap/quickstart/) 🚀
 - [Installing](https://pb33f.io/wiretap/quickstart/)
 - [Configuring](https://pb33f.io/wiretap/configuring/)
+- [Multi-spec mode](https://pb33f.io/wiretap/multi-spec-mode/)
 - [Monitor UI](https://pb33f.io/wiretap/monitor/)
 - [Serving static content](https://pb33f.io/wiretap/static-content/)
 - [GiftShop example API](https://pb33f.io/wiretap/giftshop-api/)

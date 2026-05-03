@@ -39,9 +39,14 @@ export class ViolationDetailsComponent extends LitElement {
     @state()
     private _data: SchemaValidationFailure[];
 
-    constructor(data: SchemaValidationFailure[]) {
+    private readonly _fallbackLine?: number;
+    private readonly _fallbackColumn?: number;
+
+    constructor(data: SchemaValidationFailure[], fallbackLine?: number, fallbackColumn?: number) {
         super();
         this._data = data;
+        this._fallbackLine = fallbackLine;
+        this._fallbackColumn = fallbackColumn;
     }
 
     set data(value: SchemaValidationFailure[]) {
@@ -59,6 +64,26 @@ export class ViolationDetailsComponent extends LitElement {
                 }
             }))
         }
+    }
+
+    private displayLine(violation: SchemaValidationFailure): number | undefined {
+        if (violation.line && violation.line > 0) {
+            return violation.line;
+        }
+        if (this._fallbackLine && this._fallbackLine > 0) {
+            return this._fallbackLine;
+        }
+        return undefined;
+    }
+
+    private displayColumn(violation: SchemaValidationFailure): number | undefined {
+        if (violation.column && violation.column > 0) {
+            return violation.column;
+        }
+        if (this._fallbackColumn && this._fallbackColumn > 0) {
+            return this._fallbackColumn;
+        }
+        return undefined;
     }
 
     protected firstUpdated() {
@@ -181,10 +206,14 @@ export class ViolationDetailsComponent extends LitElement {
 
                     const location = i.fieldPath || i.keywordLocation || "";
                     const schemaLocation = i.keywordLocation ? `Schema: ${i.keywordLocation}` : "";
+                    const displayLine = this.displayLine(i);
+                    const displayColumn = this.displayColumn(i) || 1;
 
                     return html`
                         <tr>
-                            <td>${i.line}</td>
+                            <td>${displayLine ? html`
+                                <span class="jump-spec"
+                                      @click=${this.jumpToLocation(displayLine, displayColumn)}>${displayLine}</span>` : ""}</td>
                             <td title=${schemaLocation}>${location}</td>
                             <td style="width: 75%">${i.reason}</td>
                         </tr>

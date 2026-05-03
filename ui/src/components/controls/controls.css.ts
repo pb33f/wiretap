@@ -3,17 +3,40 @@ import {css} from "lit";
 
 export default css`
 
+    :host {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        height: 55px;
+    }
+
+    .controls-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        height: 100%;
+        white-space: nowrap;
+    }
+
     pb33f-theme-switcher {
-        position: absolute;
-        margin-top: 8px;
-        right: 2px;
+        position: static;
+        margin-top: 0;
+        flex: 0 0 auto;
     }
     
+    .filter-control {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        flex: 0 0 auto;
+    }
     
     sl-icon-button {
-        margin: 3px auto;
+        margin: 0;
         font-size: 1.3rem;
-        padding-top: 6px;
+        padding-top: 0;
+        flex: 0 0 auto;
     }
 
     sl-drawer::part(panel) {
@@ -44,8 +67,9 @@ export default css`
         font-size: 0.5rem;
         background-color: var(--primary-color);
         position: absolute;
-        top: 5px;
-        left: 25px;
+        top: 7px;
+        right: -2px;
+        z-index: 1;
     }
 
 `

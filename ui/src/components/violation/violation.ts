@@ -63,7 +63,11 @@ export class ViolationViewComponent extends LitElement {
 
         let schemaViolations: TemplateResult = null;
         if (this.violation.validationErrors?.length > 0) {
-            const violationsDetails = new ViolationDetailsComponent(this.violation.validationErrors)
+            const violationsDetails = new ViolationDetailsComponent(
+                this.violation.validationErrors,
+                this.violation.specLine,
+                this.violation.specColumn,
+            )
             schemaViolations = html`
                 <h3>Schema Violations:</h3>
                 <section class="schema-violations">

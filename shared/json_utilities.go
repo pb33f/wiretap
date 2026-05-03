@@ -5,8 +5,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/pterm/pterm"
 )
 
 var (
@@ -166,9 +164,6 @@ func getValueByPath(data interface{}, path string) (interface{}, error) {
 // ReplaceTemplateVars Function to replace template variables in JSON path format
 func ReplaceTemplateVars(jsonStr string, vars interface{}) (string, error) {
 	// Regular expression to match the ${var} format (full path)
-
-	matches := reTemplateVars.Match([]byte(jsonStr))
-	pterm.Info.Println(matches)
 
 	var handleMatchedString = func(match string) string {
 		// Extract the path within the ${}
