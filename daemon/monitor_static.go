@@ -1,16 +1,14 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: AGPL
+// SPDX-License-Identifier: BUSL-1.1
 
 package daemon
 
 import (
-	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/pterm/pterm"
 	"os"
 	"path/filepath"
 )
@@ -30,20 +28,21 @@ func MonitorStatic(wiretapConfig *shared.WiretapConfiguration, eventBus bus.Even
 				return watcher.Add(path)
 			}
 			if fi == nil {
-				pterm.Error.Println(fmt.Sprintf("Error trying to monitor static directory: %s", err))
+				wiretapLogger(wiretapConfig).Error("Error trying to monitor static directory", "error", err)
 			}
 			return nil
 		}
 
-		if wErr := filepath.Walk(wiretapConfig.StaticDir, watchDir); err != nil {
-			pterm.Fatal.Println(fmt.Sprintf("Error trying to monitor static directory: %s", wErr))
+		if wErr := filepath.Walk(wiretapConfig.StaticDir, watchDir); wErr != nil {
+			wiretapLogger(wiretapConfig).Error("Error trying to monitor static directory", "error", wErr)
+			return
 		}
 
 		for {
 			select {
 			case event := <-watcher.Events:
 				if event.Has(fsnotify.Write) {
-					pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("[wiretap] static file changed: %s", event.Name)))
+					wiretapLogger(wiretapConfig).Info("[wiretap] static file changed", "file", event.Name)
 
 					// broadcast the change to all connected clients
 					ch := make(map[string]string)
@@ -62,7 +61,7 @@ func MonitorStatic(wiretapConfig *shared.WiretapConfiguration, eventBus bus.Even
 
 				}
 			case wErr := <-watcher.Errors:
-				pterm.Error.Println(fmt.Sprintf("[wiretap] static error: %s", wErr.Error()))
+				wiretapLogger(wiretapConfig).Error("[wiretap] static error", "error", wErr)
 			}
 		}
 	}()

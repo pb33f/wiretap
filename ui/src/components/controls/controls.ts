@@ -105,20 +105,14 @@ export class WiretapControlsComponent extends LitElement {
 
     controlUpdateHandler(): BusCallback<CommandResponse> {
         return (msg: Message<CommandResponse<ControlsResponse>>) => {
-            const delay = msg.payload.payload?.config.globalAPIDelay;
+            const delay = msg.payload.payload?.config?.globalAPIDelay;
             const existingDelay = this._controls?.globalDelay;
-
-            if (delay == undefined) {
-                // this means a reset back to 0.
-                if (this._controls) {
-                    this._controls.globalDelay = 0;
-                }
-            }
-
-            if (delay != undefined && delay !== existingDelay) {
-                if (this._controls) {
-                    this._controls.globalDelay = delay;
-                }
+            const nextDelay = delay ?? 0;
+            if (!this._controls || nextDelay !== existingDelay) {
+                this._controls = {
+                    ...(this._controls || {}),
+                    globalDelay: nextDelay,
+                };
             }
 
             // update the store
@@ -129,6 +123,9 @@ export class WiretapControlsComponent extends LitElement {
 
     reportHandler(): BusCallback<CommandResponse> {
         return (msg: Message<CommandResponse<ReportResponse>>) => {
+            if (msg.payload.payload?.download === false) {
+                return;
+            }
             const report = msg.payload.payload.transactions
             let reportData = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(report));
             this._downloadReport.download = "wiretap-report.json";
@@ -166,13 +163,15 @@ export class WiretapControlsComponent extends LitElement {
         this._bus.publish({
             destination: "/pub/queue/report",
             body: JSON.stringify(
-                {
-                    id: RanchUtils.genUUID(),
-                    request: RequestReportCommand,
-                    payload: {}
-                }
-            ),
-        });
+                    {
+                        id: RanchUtils.genUUID(),
+                        request: RequestReportCommand,
+                        payload: {
+                            download: true
+                        }
+                    }
+                ),
+            });
     }
 
     closeControls() {
@@ -202,12 +201,16 @@ export class WiretapControlsComponent extends LitElement {
         }
 
         return html`
-            ${filtersBadge}
-            <sl-icon-button @click=${this.openFilters} name="funnel" label="filers">
-            </sl-icon-button>
-            <sl-icon-button @click=${this.openSettings} name="gear" label="controls">
-            </sl-icon-button>
-            <pb33f-theme-switcher></pb33f-theme-switcher>
+            <div class="controls-toolbar">
+                <span class="filter-control">
+                    ${filtersBadge}
+                    <sl-icon-button @click=${this.openFilters} name="funnel" label="filters">
+                    </sl-icon-button>
+                </span>
+                <sl-icon-button @click=${this.openSettings} name="gear" label="controls">
+                </sl-icon-button>
+                <pb33f-theme-switcher></pb33f-theme-switcher>
+            </div>
             <sl-drawer label="wiretap controls" class="drawer-focus" id="controls-drawer">
                 <a id="downloadReport" style="display:none"></a>
                 <wiretap-controls-settings globalDelay=${this._controls?.globalDelay}

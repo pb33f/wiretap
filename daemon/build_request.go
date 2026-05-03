@@ -1,5 +1,5 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: AGPL
+// SPDX-License-Identifier: BUSL-1.1
 
 package daemon
 
@@ -16,7 +16,6 @@ import (
 	"github.com/pb33f/wiretap/config"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/transaction"
-	"github.com/pterm/pterm"
 )
 
 type HttpTransactionConfig struct {
@@ -96,7 +95,7 @@ func BuildHttpTransaction(build HttpTransactionConfig) *transaction.HttpTransact
 		if newReq != nil && strings.Contains(ct, "multipart/form-data") {
 			err := newReq.ParseMultipartForm(32 << 20)
 			if err != nil {
-				pterm.Error.Println(err.Error())
+				wiretapLogger(cf).Error(err.Error())
 			}
 		}
 	}
@@ -146,7 +145,7 @@ func BuildHttpTransaction(build HttpTransactionConfig) *transaction.HttpTransact
 		newUrl, err = url.Parse(rawURL)
 		if err != nil {
 			newUrl = cloneURL(build.NewRequest.URL)
-			pterm.Error.Printf("major configuration problem: cannot parse URL: `%s`: %s", rawURL, err.Error())
+			wiretapLogger(cf).Error("major configuration problem: cannot parse URL", "url", rawURL, "error", err)
 		}
 	}
 

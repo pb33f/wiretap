@@ -40,15 +40,13 @@ export interface Filter {
 
 
 export interface ControlsResponse {
-    config: WiretapConfig;
-}
-
-export interface ControlsResponse {
-    config: WiretapConfig;
+    config?: WiretapConfig;
+    reset?: boolean;
 }
 
 export interface ReportResponse {
     transactions: HttpTransaction[];
+    download?: boolean;
 }
 
 

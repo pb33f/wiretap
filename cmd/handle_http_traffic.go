@@ -1,5 +1,5 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: AGPL
+// SPDX-License-Identifier: BUSL-1.1
 
 package cmd
 
@@ -13,7 +13,6 @@ import (
 	"github.com/pb33f/wiretap/daemon"
 	"github.com/pb33f/wiretap/shared"
 	staticMock "github.com/pb33f/wiretap/static-mock"
-	"github.com/pterm/pterm"
 )
 
 type HandleHttpTraffic struct {
@@ -66,7 +65,7 @@ func handleHttpTraffic(hht *HandleHttpTraffic) {
 			mux.HandleFunc(websocket, handleWebsocket)
 		}
 
-		pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("API Gateway UI booting on port %s...", wiretapConfig.Port)))
+		commandLogger(wiretapConfig).Info(fmt.Sprintf("API Gateway UI booting on port %s...", wiretapConfig.Port))
 
 		var httpErr error
 		if wiretapConfig.CertificateKey != "" && wiretapConfig.Certificate != "" {
@@ -79,7 +78,7 @@ func handleHttpTraffic(hht *HandleHttpTraffic) {
 		}
 
 		if httpErr != nil {
-			pterm.Error.Println(httpErr)
+			commandLogger(wiretapConfig).Error(httpErr.Error())
 		}
 	}()
 }

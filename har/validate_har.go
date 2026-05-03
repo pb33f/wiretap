@@ -1,5 +1,5 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 
 package har
 
@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"strings"
 
@@ -14,7 +15,6 @@ import (
 	harModel "github.com/pb33f/harific/motor/model"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/validation"
-	"github.com/pterm/pterm"
 )
 
 type Transaction struct {
@@ -33,6 +33,10 @@ func ValidateHAR(path string, apiDocumentModels []shared.ApiDocumentModel, confi
 }
 
 func ValidateHARWithResult(path string, apiDocumentModels []shared.ApiDocumentModel, configFile *shared.WiretapConfiguration) ValidationResult {
+	logger := slog.Default()
+	if configFile.Logger != nil {
+		logger = configFile.Logger
+	}
 
 	var validationErrors []*shared.WiretapValidationError
 	validators := make([]validation.DocumentValidator, 0, len(apiDocumentModels))
@@ -48,14 +52,14 @@ func ValidateHARWithResult(path string, apiDocumentModels []shared.ApiDocumentMo
 
 	streamer, err := NewHARStreamer(path, motor.DefaultStreamerOptions())
 	if err != nil {
-		pterm.Error.Printf("error creating HAR streamer: %s", err.Error())
+		logger.Error("error creating HAR streamer", "error", err)
 		return ValidationResult{Err: fmt.Errorf("create HAR streamer: %w", err)}
 	}
 	defer streamer.Close()
 
 	ctx := context.Background()
 	if err = streamer.Initialize(ctx); err != nil {
-		pterm.Error.Printf("error initializing HAR streamer: %s", err.Error())
+		logger.Error("error initializing HAR streamer", "error", err)
 		return ValidationResult{Err: fmt.Errorf("initialize HAR streamer: %w", err)}
 	}
 
@@ -69,14 +73,14 @@ func ValidateHARWithResult(path string, apiDocumentModels []shared.ApiDocumentMo
 
 	results, err := streamAllowedHAREntries(ctx, streamer, configFile.HARPathAllowList)
 	if err != nil {
-		pterm.Error.Printf("error streaming HAR file: %s", err.Error())
+		logger.Error("error streaming HAR file", "error", err)
 		return ValidationResult{Err: fmt.Errorf("stream HAR file: %w", err)}
 	}
 
 	messageCount := 0
 	for result := range results {
 		if result.Error != nil {
-			pterm.Error.Printf("error streaming HAR entry: %s", result.Error.Error())
+			logger.Error("error streaming HAR entry", "error", result.Error)
 			return ValidationResult{
 				Errors:       validationErrors,
 				MessageCount: messageCount,
@@ -90,13 +94,13 @@ func ValidateHARWithResult(path string, apiDocumentModels []shared.ApiDocumentMo
 		httpRequest, err := harModel.ConvertRequestIntoHttpRequest(result.Entry.Request)
 
 		if err != nil {
-			pterm.Error.Printf("error converting request: %s", err.Error())
+			logger.Error("error converting request", "error", err)
 			return ValidationResult{Err: fmt.Errorf("convert HAR request: %w", err)}
 		}
 
 		path, ok := rewriteHARPath(httpRequest.URL.Path, configFile.HARPathAllowList)
 		if !ok {
-			pterm.Debug.Printf("[HAR] skipping request: %s\n", httpRequest.URL.Path)
+			logger.Debug("[HAR] skipping request", "path", httpRequest.URL.Path)
 			continue
 		}
 		httpRequest.URL.Path = path
@@ -110,7 +114,7 @@ func ValidateHARWithResult(path string, apiDocumentModels []shared.ApiDocumentMo
 
 		docValidator := router.Resolve(httpRequest)
 		if docValidator == nil {
-			pterm.Error.Printf("no validators available; a valid specification must be provided in order to perform HAR validation")
+			logger.Error("no validators available; a valid specification must be provided in order to perform HAR validation")
 			return ValidationResult{Err: errors.New("no validators available")}
 		}
 

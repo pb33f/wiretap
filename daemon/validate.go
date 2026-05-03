@@ -70,7 +70,7 @@ func (ws *WiretapService) ValidateResponseForRequest(
 	if len(cleanedErrors) > 0 {
 		txn.ResponseValidation = cleanedErrors
 	}
-	ws.transactionStore.Put(request.Id.String(), txn, nil)
+	ws.storeResponseTransaction(request.Id.String(), txn)
 
 	if len(cleanedErrors) > 0 {
 		sendToStreamChan(ws, cleanedErrors)
@@ -123,7 +123,7 @@ func (ws *WiretapService) ValidateRequest(
 	if len(cleanedErrors) > 0 {
 		txn.RequestValidation = cleanedErrors
 	}
-	ws.transactionStore.Put(modelRequest.Id.String(), txn, nil)
+	ws.storeRequestTransaction(modelRequest.Id.String(), txn)
 
 	// broadcast what we found.
 	if len(cleanedErrors) > 0 {
@@ -133,6 +133,52 @@ func (ws *WiretapService) ValidateRequest(
 		ws.broadcastRequest(modelRequest, txn)
 	}
 	return cleanedErrors
+}
+
+func (ws *WiretapService) storeRequestTransaction(key string, txn *transaction.HttpTransaction) {
+	ws.storeTransactionUpdate(key, txn)
+}
+
+func (ws *WiretapService) storeResponseTransaction(key string, txn *transaction.HttpTransaction) {
+	ws.storeTransactionUpdate(key, txn)
+}
+
+func (ws *WiretapService) storeTransactionUpdate(key string, txn *transaction.HttpTransaction) {
+	if ws == nil || ws.transactionStore == nil || key == "" || txn == nil {
+		return
+	}
+	existingValue, ok := ws.transactionStore.Get(key)
+	if !ok {
+		ws.transactionStore.Put(key, txn, nil)
+		return
+	}
+	existing, ok := existingValue.(*transaction.HttpTransaction)
+	if !ok || existing == nil {
+		ws.transactionStore.Put(key, txn, nil)
+		return
+	}
+
+	merged := *existing
+	if txn.Id != "" {
+		merged.Id = txn.Id
+	}
+	if txn.Request != nil {
+		merged.Request = txn.Request
+	}
+	if txn.RequestValidation != nil {
+		merged.RequestValidation = txn.RequestValidation
+	}
+	if txn.Response != nil {
+		merged.Response = txn.Response
+	}
+	if txn.ResponseValidation != nil {
+		merged.ResponseValidation = txn.ResponseValidation
+	}
+	if txn.SpecConflict != nil {
+		merged.SpecConflict = txn.SpecConflict
+	}
+
+	ws.transactionStore.Put(key, &merged, nil)
 }
 
 func (ws *WiretapService) specConflictForRequest(request *http.Request) *transaction.SpecConflict {

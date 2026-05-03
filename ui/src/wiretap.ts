@@ -1,15 +1,15 @@
 import {customElement, property, query} from "lit/decorators.js";
 import {html, LitElement, PropertyValues} from "lit";
-import {HttpRequest, HttpResponse, HttpTransaction, HttpTransactionBase} from "./model/http_transaction";
+import {BuildLiveTransactionFromState, HttpRequest, HttpResponse, HttpTransaction, HttpTransactionBase} from "./model/http_transaction";
 import {Bag, BagManager, CreateBagManager} from "@pb33f/saddlebag";
-import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Subscription} from "@pb33f/ranch";
+import {Bus, BusCallback, Channel, CommandResponse, CreateBus, Message, RanchUtils, Subscription} from "@pb33f/ranch";
 import {HttpTransactionContainerComponent} from "./components/transaction/transaction-container";
 import * as localforage from "localforage";
 import {HeaderComponent} from "@/components/wiretap-header/header";
-import {WiretapControls, WiretapFilters} from "@/model/controls";
+import {ReportResponse, WiretapControls, WiretapFilters} from "@/model/controls";
 import {
     GetCurrentSpecCommand, NoSpec, QueuePrefix,
-    SpecChannel, StartTheHARCommand, TopicPrefix,
+    RequestReportCommand, ResetStateCommand, SpecChannel, StartTheHARCommand, TopicPrefix,
     WiretapChannel, WiretapConfigurationChannel,
     WiretapControlsChannel, WiretapControlsKey, WiretapControlsStore,
     WiretapCurrentSpec, WiretapFiltersStore,
@@ -47,6 +47,7 @@ export class WiretapComponent extends LitElement {
     private readonly _wiretapVersion: string;
     private _transactionChannelSubscription: Subscription;
     private _specChannelSubscription: Subscription;
+    private _reportChannelSubscription: Subscription;
     private _configChannelSubscription: Subscription;
     private _staticChannelSubscription: Subscription;
     private _useTLS: boolean = false;
@@ -116,6 +117,7 @@ export class WiretapComponent extends LitElement {
                 }
             );
         }
+        void this.clearDurableRuntimeState();
 
         // set up bus and stores
         this._bus = CreateBus();
@@ -161,20 +163,9 @@ export class WiretapComponent extends LitElement {
         // handle incoming messages on different channels.
         this._transactionChannelSubscription = this._wiretapChannel.subscribe(this.wireTransactionHandler());
         this._specChannelSubscription = this._wiretapSpecChannel.subscribe(this.specHandler());
+        this._reportChannelSubscription = this._wiretapReportChannel.subscribe(this.reportHandler());
         this._configChannelSubscription = this._wiretapConfigChannel.subscribe(this.configHandler());
         this._staticChannelSubscription = this._staticNotificationChannel.subscribe(this.staticHandler());
-
-
-        // load previous transactions from local storage.
-        this.loadHistoryFromLocalStorage().then((previousTransactions: Map<string, HttpTransaction>) => {
-            // populate store with previous transactions.
-            this._httpTransactionStore.populate(previousTransactions)
-
-            // calculate counts from stored state.
-            this.calculateMetricsFromState(previousTransactions);
-        });
-
-
     }
 
     firstUpdated() {
@@ -191,42 +182,12 @@ export class WiretapComponent extends LitElement {
             heartbeatOutgoing: 0,
             onConnect: () => {
                 this.requestSpec();
+                this.requestReport(false);
                 this.startTheHar();
             }
         }
 
         this._bus.connectToBroker(config);
-    }
-
-    calculateMetricsFromState(previousTransactions: Map<string, HttpTransaction>) {
-        let requests = 0;
-        let responses = 0;
-        let violations = 0;
-        let violated = 0;
-        if (previousTransactions) {
-            previousTransactions.forEach((transaction: HttpTransaction) => {
-                requests++;
-                if (transaction.httpResponse) {
-                    responses++;
-                }
-                let v = false;
-                if (transaction.requestValidation) {
-                    violated++
-                    v = true
-                    violations += transaction.requestValidation.length
-                }
-                if (transaction.responseValidation) {
-                    if (!v)
-                        violated++;
-                    violations += transaction.responseValidation.length;
-                }
-            });
-        }
-        this.requestCount = requests;
-        this.responseCount = responses;
-        this.violationsCount = violations;
-        this.violatedTransactions = violated;
-        this.calcComplianceLevel();
     }
 
     requestSpec() {
@@ -243,8 +204,26 @@ export class WiretapComponent extends LitElement {
         })
     }
 
-    async loadHistoryFromLocalStorage(): Promise<Map<string, HttpTransaction>> {
-        return localforage.getItem<Map<string, HttpTransaction>>(WiretapLocalStorage);
+    requestReport(download: boolean) {
+        this._bus.publish({
+            destination: "/pub/queue/report",
+            body: JSON.stringify(
+                {
+                    id: RanchUtils.genUUID(),
+                    request: RequestReportCommand,
+                    payload: {
+                        download: download
+                    }
+                }
+            ),
+        });
+    }
+
+    private async clearDurableRuntimeState(): Promise<void> {
+        await Promise.all([
+            localforage.removeItem(WiretapLocalStorage),
+            localforage.removeItem(WiretapLinkCacheStore),
+        ]);
     }
 
     specHandler(): BusCallback<CommandResponse> {
@@ -256,6 +235,59 @@ export class WiretapComponent extends LitElement {
                 this.requestUpdate();
             }
         }
+    }
+
+    reportHandler(): BusCallback<CommandResponse> {
+        return (msg: Message<CommandResponse<ReportResponse>>) => {
+            const report = msg.payload.payload;
+            if (report?.download === false) {
+                this.replaceTransactionsFromReport(report.transactions ?? []);
+            }
+        }
+    }
+
+    private replaceTransactionsFromReport(transactions: HttpTransaction[]): void {
+        this._httpTransactionStore.reset();
+        this._selectedTransactionStore.reset();
+        this._linkCacheStore.reset();
+        this._transactionContainer?.reset();
+
+        transactions.forEach((transaction) => {
+            if (!transaction?.id) {
+                return;
+            }
+            this._httpTransactionStore.set(transaction.id, BuildLiveTransactionFromState(transaction));
+        });
+        this.calculateMetricsFromStore();
+    }
+
+    private calculateMetricsFromStore(): void {
+        let requests = 0;
+        let responses = 0;
+        let violated = 0;
+
+        this._httpTransactionStore.export().forEach((transaction: HttpTransaction) => {
+            if (!transaction?.httpRequest) {
+                return;
+            }
+            requests++;
+            if (transaction.httpResponse) {
+                responses++;
+            }
+            if (transaction.requestValidation && transaction.requestValidation.length > 0) {
+                violated++;
+            }
+            if (transaction.responseValidation && transaction.responseValidation.length > 0) {
+                violated++;
+            }
+        });
+
+        this.requestCount = requests;
+        this.responseCount = responses;
+        this.violatedTransactions = violated;
+        this.violationsCount = violated;
+        this.calcComplianceLevel();
+        this.requestUpdate();
     }
 
 
@@ -350,16 +382,39 @@ export class WiretapComponent extends LitElement {
     }
 
 
-    wipeData(e: CustomEvent) {
-        this._storeManager.resetBags();
+    resetBackendState() {
+        if (this._bus.getClient()?.connected) {
+            this._bus.publish({
+                destination: "/pub/queue/controls",
+                body: JSON.stringify(
+                    {
+                        id: RanchUtils.genUUID(),
+                        request: ResetStateCommand,
+                        payload: {}
+                    }
+                ),
+            });
+        }
+    }
+
+    async wipeData(_e: CustomEvent) {
+        this.resetBackendState();
+        this._httpTransactionStore.reset();
+        this._selectedTransactionStore.reset();
+        this._filtersStore.reset();
+        this._linkCacheStore.reset();
+        this._transactionContainer?.reset();
         this.responseCount = 0;
         this.requestCount = 0;
+        this.totalTransactions = 0;
         this.violatedTransactions = 0;
         this.violationsCount = 0;
         this.calcComplianceLevel();
-        localforage.clear().then(() => {
-            window.location.reload()
-        });
+        await localforage.clear();
+        this.requestUpdate();
+        if (this._bus.getClient()?.connected) {
+            this.requestSpec();
+        }
 
     }
 

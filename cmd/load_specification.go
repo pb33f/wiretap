@@ -1,15 +1,16 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: AGPL
+// SPDX-License-Identifier: BUSL-1.1
 
 package cmd
 
 import (
 	"fmt"
+
+	"github.com/pb33f/doctor/terminal"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/datamodel"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
-	"github.com/pterm/pterm"
 	"io"
 	"log/slog"
 	"net/http"
@@ -24,7 +25,7 @@ func loadOpenAPISpec(contract, base string) (libopenapi.Document, error) {
 
 	if strings.HasPrefix(contract, "http://") || strings.HasPrefix(contract, "https://") {
 		if docUrl, err := url.Parse(contract); err == nil {
-			pterm.Info.Printf("Fetching OpenAPI Specification from URL: '%s'\n", docUrl.String())
+			cliLog.Info(fmt.Sprintf("Fetching OpenAPI Specification from URL: '%s'", docUrl.String()))
 			resp, er := http.Get(docUrl.String())
 			if er != nil {
 				return nil, er
@@ -60,18 +61,16 @@ func loadOpenAPISpec(contract, base string) (libopenapi.Document, error) {
 		if strings.HasPrefix(base, "http") {
 			u, _ := url.Parse(base)
 			if u != nil {
-				pterm.Debug.Printf("Setting OpenAPI reference base URL to: '%s'\n", u.String())
+				cliLog.Debug(fmt.Sprintf("Setting OpenAPI reference base URL to: '%s'", u.String()))
 				docConfig.BaseURL = u
 			}
 		} else {
-			pterm.Debug.Printf("Setting OpenAPI reference base path to: '%s'\n", base)
+			cliLog.Debug(fmt.Sprintf("Setting OpenAPI reference base path to: '%s'", base))
 			docConfig.BasePath = base
 		}
 	}
 
-	handler := pterm.NewSlogHandler(&pterm.DefaultLogger)
-	docConfig.Logger = slog.New(handler)
-	pterm.DefaultLogger.Level = pterm.LogLevelError
+	docConfig.Logger = terminal.NewCLIPrettyLogger(os.Stdout, slog.LevelError)
 
 	return libopenapi.NewDocumentWithConfiguration(specBytes, docConfig)
 }
@@ -93,8 +92,8 @@ func loadAllSpecs(paths []string, base string) ([]shared.ApiDocument, []specs.Lo
 
 		docModel, docErr := doc.BuildV3Model()
 		if docErr != nil && docModel != nil {
-			pterm.Warning.Printf("OpenAPI Specification loaded, but there was an issue detected...\n")
-			pterm.Warning.Printf("--> %s\n", docErr.Error())
+			cliLog.Warn("OpenAPI Specification loaded, but there was an issue detected...")
+			cliLog.Warn(fmt.Sprintf("--> %s", docErr.Error()))
 		}
 		if docErr != nil && docModel == nil {
 			loadErrors = append(loadErrors, specs.LoadError{Spec: contract, Error: docErr})

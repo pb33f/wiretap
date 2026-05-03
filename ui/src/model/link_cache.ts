@@ -10,7 +10,6 @@ import {
     WiretapLinkCacheStore,
 } from "@/model/constants";
 import {HttpTransaction, HttpTransactionBase, HttpTransactionLink} from "@/model/http_transaction";
-import localforage from "localforage";
 
 export class TransactionLinkCache {
     // The key of the outer map is the link keyword that was detected in a transaction.
@@ -24,6 +23,7 @@ export class TransactionLinkCache {
 
     private readonly _linkCacheWorker: Worker;
     private _filters: WiretapFilters;
+    private _updateGeneration: number = 0;
 
     constructor() {
 
@@ -45,16 +45,8 @@ export class TransactionLinkCache {
         this._filters = this._filtersStore.get(WiretapFiltersKey);
         this._filtersStore.subscribe(WiretapFiltersKey, this.filtersChanged.bind(this))
 
-        // load the link cache from storage
-        this.loadLinkCacheFromStorage().then((linkCache) => {
-            if (linkCache) {
-                this._state = linkCache;
-                this._linkCacheStore.set(WiretapLinkCacheKey, this._state);
-            } else {
-                this._state = new Map<string, Map<string, HttpTransactionLink[]>>();
-                this.populateState();
-            }
-        });
+        this._linkCacheStore.set(WiretapLinkCacheKey, this._state);
+        this.populateState();
     }
 
     private populateState() {
@@ -62,22 +54,18 @@ export class TransactionLinkCache {
             this._filters.filterChain.forEach((chain) => {
                 this._state.set(chain.keyword, new Map<string, HttpTransactionLink[]>())
             });
+            const generation = this.nextUpdateGeneration();
             this.update().then((result) => {
-                this.updated(result)
+                this.updated(result, generation)
             }).catch((err) => {
                 console.error("it failed", err);
             });
         }
     }
 
-    private async loadLinkCacheFromStorage(): Promise<Map<string, Map<string, HttpTransactionLink[]>>> {
-        return localforage.getItem<Map<string, Map<string, HttpTransactionLink[]>>>(WiretapLinkCacheStore);
-    }
-
-    private saveLinkCacheToStorage() {
+    private saveLinkCache() {
         //console.log('link cache updated', this._state);
         this._linkCacheStore.set(WiretapLinkCacheKey, this._state);
-        localforage.setItem(WiretapLinkCacheStore, this._state);
     }
 
     private filtersChanged(filters: WiretapFilters) {
@@ -97,16 +85,32 @@ export class TransactionLinkCache {
         this._state = newState;
 
         // update the link cache
-        this.update().then(this.updated.bind(this))
+        const generation = this.nextUpdateGeneration();
+        this.update().then((state) => this.updated(state, generation))
     }
 
-    private updated(state: Map<string, Map<string, HttpTransactionLink[]>>) {
+    private updated(state: Map<string, Map<string, HttpTransactionLink[]>>, generation?: number) {
+        if (generation != undefined && generation !== this._updateGeneration) {
+            return;
+        }
         this._state = state
-        this.saveLinkCacheToStorage();
+        this.saveLinkCache();
     }
 
     public sync() {
-        this.update().then(this.updated.bind(this))
+        const generation = this.nextUpdateGeneration();
+        this.update().then((state) => this.updated(state, generation))
+    }
+
+    public clear() {
+        this.nextUpdateGeneration();
+        this._state = new Map<string, Map<string, HttpTransactionLink[]>>();
+        this._linkCacheStore.set(WiretapLinkCacheKey, this._state);
+    }
+
+    private nextUpdateGeneration(): number {
+        this._updateGeneration++;
+        return this._updateGeneration;
     }
 
     public async update(): Promise<Map<string, Map<string, HttpTransactionLink[]>>> {

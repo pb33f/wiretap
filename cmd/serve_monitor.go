@@ -1,5 +1,5 @@
 // Copyright 2023 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: AGPL
+// SPDX-License-Identifier: BUSL-1.1
 
 package cmd
 
@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/gorilla/handlers"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/pterm/pterm"
 	"io"
 	"io/fs"
 	"log"
@@ -72,7 +71,7 @@ func serveMonitor(wiretapConfig *shared.WiretapConfiguration) {
 		// handle the assets
 		mux.Handle("/assets/", http.StripPrefix("/assets", handlers.CompressHandler(fileServer)))
 
-		pterm.Info.Println(pterm.LightMagenta(fmt.Sprintf("Monitor UI booting on port %s...", wiretapConfig.MonitorPort)))
+		commandLogger(wiretapConfig).Info(fmt.Sprintf("Monitor UI booting on port %s...", wiretapConfig.MonitorPort))
 
 		if wiretapConfig.CertificateKey != "" && wiretapConfig.Certificate != "" {
 			err = http.ListenAndServeTLS(fmt.Sprintf(":%s", wiretapConfig.MonitorPort),

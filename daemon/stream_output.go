@@ -1,11 +1,10 @@
 // Copyright 2024 Princess B33f Heavy Industries / Dave Shanley
-// SPDX-License-Identifier: AGPL
+// SPDX-License-Identifier: BUSL-1.1
 
 package daemon
 
 import (
 	jsoniter "github.com/json-iterator/go"
-	"github.com/pterm/pterm"
 	"os"
 	"sync"
 )
@@ -18,7 +17,7 @@ func (ws *WiretapService) listenForValidationErrors() {
 	_ = os.Remove(ws.reportFile)
 	f, err := os.OpenFile(ws.reportFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		pterm.Error.Println("cannot stream violations: " + err.Error())
+		serviceLogger(ws).Error("cannot stream violations", "error", err)
 		return
 	}
 
@@ -32,7 +31,7 @@ func (ws *WiretapService) listenForValidationErrors() {
 					for _, v := range violations {
 						bytes, _ := json.Marshal(v)
 						if _, e := f.WriteString(string(bytes) + "\n"); e != nil {
-							pterm.Error.Println("cannot write violation to stream: " + e.Error())
+							serviceLogger(ws).Error("cannot write violation to stream", "error", e)
 						}
 					}
 					lock.Unlock()

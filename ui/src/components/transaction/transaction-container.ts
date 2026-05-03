@@ -3,7 +3,6 @@ import {html, LitElement, TemplateResult} from "lit";
 import {Bag} from "@pb33f/saddlebag";
 import {BuildLiveTransactionFromState, HttpTransaction, HttpTransactionLink} from '@/model/http_transaction';
 import {HttpTransactionItemComponent} from "./transaction-item";
-import localforage from "localforage";
 import transactionContainerComponentCss from "./transaction-container.css";
 import {HttpTransactionViewComponent} from "./transaction-view";
 import {SpecEditor} from "@/components/editor/editor";
@@ -12,8 +11,7 @@ import {
     NoSpec,
     WiretapCurrentSpec,
     WiretapFiltersKey,
-    WiretapLinkCacheStore,
-    WiretapLocalStorage
+    WiretapLinkCacheStore
 } from "@/model/constants";
 import {AreFiltersActive, WiretapFilters} from "@/model/controls";
 import {TransactionLinkCache} from "@/model/link_cache";
@@ -88,7 +86,18 @@ export class HttpTransactionContainerComponent extends LitElement {
     }
 
     reset(): void {
+        this._mappedHttpTransactions = new Map<string, HttpTransactionContainer>()
+        this._transactionComponents = [];
+        this._filteredTransactionComponents = [];
+        this._selectedTransaction = null;
         this._selectedTransactionStore.reset()
+        if (this._transactionView) {
+            this._transactionView.httpTransaction = null;
+        }
+        if (this._transactionLinkCache) {
+            this._transactionLinkCache.clear();
+        }
+        this.requestUpdate();
     }
 
     firstUpdated() {
@@ -97,38 +106,42 @@ export class HttpTransactionContainerComponent extends LitElement {
         this._selectedTransactionStore.onAllChanges(this.handleSelectedTransactionChange.bind(this))
         this._specStore.subscribe(WiretapCurrentSpec, this.handleSpecChange.bind(this))
         this._allTransactionStore.onAllChanges(this.handleTransactionChange.bind(this))
-        this._allTransactionStore.onPopulated((storeData: Map<string, HttpTransaction>) => {
-
-            // rebuild our internal state
-            const savedTransactions: Map<string, HttpTransactionContainer> = new Map<string, HttpTransactionContainer>()
-            storeData.forEach((value: HttpTransaction, key: string) => {
-                const container: HttpTransactionContainer = {
-                    Transaction: BuildLiveTransactionFromState(value),
-                    Listener: () => {
-                        this.requestUpdate();
-                    }
-                }
-                savedTransactions.set(key, container)
-            });
-            // save our internal state.
-            this._mappedHttpTransactions = savedTransactions
-
-            //extract state
-            this._mappedHttpTransactions.forEach(
-                (v: HttpTransactionContainer) => {
-                    const comp = new HttpTransactionItemComponent(v.Transaction, this._transactionLinkCache);
-                    this._transactionComponents.push(comp)
-                }
-            );
-
-            // perform filtering.
-            this.filterComponents()
-        });
+        this._allTransactionStore.onPopulated(this.rebuildTransactionsFromStore.bind(this));
 
         this._transactionLinkCache = new TransactionLinkCache()
         this._transactionView = new HttpTransactionViewComponent();
         this._transactionView.linkCache = this._transactionLinkCache;
+        this.rebuildTransactionsFromStore(this._allTransactionStore.export());
 
+    }
+
+    private rebuildTransactionsFromStore(storeData: Map<string, HttpTransaction>) {
+        if (!storeData || storeData.size === 0) {
+            return;
+        }
+
+        const savedTransactions: Map<string, HttpTransactionContainer> = new Map<string, HttpTransactionContainer>()
+        storeData.forEach((value: HttpTransaction, key: string) => {
+            const container: HttpTransactionContainer = {
+                Transaction: BuildLiveTransactionFromState(value),
+                Listener: () => {
+                    this.requestUpdate();
+                }
+            }
+            savedTransactions.set(key, container)
+        });
+        this._mappedHttpTransactions = savedTransactions
+        this._transactionComponents = [];
+
+        this._mappedHttpTransactions.forEach(
+            (v: HttpTransactionContainer) => {
+                const comp = new HttpTransactionItemComponent(v.Transaction, this._transactionLinkCache);
+                this._transactionComponents.push(comp)
+            }
+        );
+
+        this.filterComponents()
+        this.requestUpdate();
     }
 
     handleSelectedTransactionChange(key: string, transaction: HttpTransaction) {
@@ -167,20 +180,8 @@ export class HttpTransactionContainerComponent extends LitElement {
                 // otherwise, add it.
                 const container: HttpTransactionContainer = {
                     Transaction: BuildLiveTransactionFromState(value),
-                    Listener: (trans: HttpTransaction) => {
-
-                        // update db.
-                        let exp = this._allTransactionStore.export()
-                        localforage.setItem<Map<string, HttpTransaction>>
-                        (WiretapLocalStorage, exp).then(
-                            () => {
-                                this._transactionView.requestUpdate();
-                            }
-                        ).catch(
-                            (err) => {
-                                console.error(err)
-                            }
-                        )
+                    Listener: () => {
+                        this._transactionView.requestUpdate();
                     }
                 }
                 this._mappedHttpTransactions.set(value.id, container);
@@ -189,17 +190,19 @@ export class HttpTransactionContainerComponent extends LitElement {
             }
         } else {
             // remove it.
-            let allTransactions = this._allTransactionStore.export();
-            allTransactions.delete(key);
-            localforage.setItem<Map<string, HttpTransaction>>(WiretapLocalStorage, allTransactions);
+            this._mappedHttpTransactions.delete(key);
 
             // remove from components.
             const comp: HttpTransactionItemComponent =
                 this._transactionComponents.find((v: HttpTransactionItemComponent) => {
                     return v.transactionId === key;
                 });
-            const index = this._transactionComponents.indexOf(comp);
-            this._transactionComponents.splice(index, 1);
+            if (comp) {
+                const index = this._transactionComponents.indexOf(comp);
+                if (index > -1) {
+                    this._transactionComponents.splice(index, 1);
+                }
+            }
         }
         if (this._filters) {
             this.filterComponents();

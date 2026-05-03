@@ -4,7 +4,7 @@
 package config
 
 import (
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/ranch/store"

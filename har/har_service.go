@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	HARServiceChan     = "har-service"
+	HARServiceChan     = shared.HARServiceChan
 	StartTheHARRequest = "start-the-har"
 )
 
@@ -97,6 +97,9 @@ func (hs *HARService) startTheHAR(request *model.Request) {
 	}
 
 	for result := range results {
+		if !hs.shouldContinueReplay(harPath) {
+			return
+		}
 		if result.Error != nil {
 			hs.logger.Error("error streaming HAR entry", "error", result.Error.Error())
 			continue
@@ -123,4 +126,12 @@ func (hs *HARService) startTheHAR(request *model.Request) {
 		httpResponse := harModel.ConvertResponseIntoHttpResponse(result.Entry.Response)
 		hs.wiretapService.ValidateResponse(request, httpResponse)
 	}
+}
+
+func (hs *HARService) shouldContinueReplay(harPath string) bool {
+	if hs.harStore == nil || harPath == "" {
+		return false
+	}
+	current, ok := hs.harStore.GetValue(shared.HARKey).(string)
+	return ok && current == harPath
 }

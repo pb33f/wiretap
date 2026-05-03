@@ -189,13 +189,38 @@ export default css`
     word-break: break-all;
   }
 
-  .spec-conflict-alert {
-    margin: 10px 20px 0 20px;
+  .spec-conflict-notice {
+    display: block;
+    --global-padding: 1rem;
+    --global-space: 10px;
+    --warn-400: var(--warn-color);
+    --warn-300: var(--warn-color);
+    --warn-200: var(--warn-color);
+    --warn-400-lowalpha: var(--warn-color-lowalpha);
+    --warn-300-lowalpha: var(--warn-color-lowalpha);
+    --warn-200-lowalpha: var(--warn-color-lowalpha);
+    color: var(--warn-color);
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+
+  .spec-conflict-spec {
+    color: var(--secondary-color);
+    font-family: var(--font-stack-heading), monospace;
+    word-break: break-all;
+  }
+
+  .spec-conflict-route {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 4px;
+    vertical-align: middle;
   }
 
   .spec-conflict-kind {
-    color: var(--dark-font-color);
-    font-size: 0.75rem;
-    margin-top: 4px;
+    color: var(--warn-color);
+    text-transform: lowercase;
   }
 `

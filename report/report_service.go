@@ -4,7 +4,7 @@
 package report
 
 import (
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/service"
 	"github.com/pb33f/ranch/store"
@@ -22,10 +22,12 @@ type ReportService struct {
 }
 
 type GenerateReport struct {
+	Download *bool `json:"download,omitempty" mapstructure:"download"`
 }
 
 type ReportResponse struct {
 	Transactions []*transaction.HttpTransaction `json:"transactions,omitempty"`
+	Download     *bool                          `json:"download,omitempty"`
 }
 
 func NewReportService(storeManager store.Manager) *ReportService {
@@ -60,7 +62,14 @@ func (rs *ReportService) buildReport(request *model.Request, core service.Fabric
 				transactions = append(transactions, i)
 			}
 		}
-		core.SendResponse(request, &ReportResponse{transactions})
+		download := true
+		if r.Download != nil {
+			download = *r.Download
+		}
+		core.SendResponse(request, &ReportResponse{
+			Transactions: transactions,
+			Download:     &download,
+		})
 
 	} else {
 		core.SendErrorResponse(request, 400, "Invalid report request")

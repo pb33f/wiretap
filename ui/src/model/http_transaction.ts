@@ -208,14 +208,24 @@ export class HttpTransaction extends HttpTransactionBase {
 
 
 export function BuildLiveTransactionFromState(httpTransaction: HttpTransaction): HttpTransaction {
+    if (!httpTransaction) {
+        return null;
+    }
+    const httpRequest = httpTransaction.httpRequest
+        ? Object.assign(new HttpRequest(), httpTransaction.httpRequest)
+        : undefined;
+    const httpResponse = httpTransaction.httpResponse
+        ? Object.assign(new HttpResponse(), httpTransaction.httpResponse)
+        : undefined;
+
     return new HttpTransaction(
         httpTransaction.timestamp,
         httpTransaction.delay,
-        Object.assign(new HttpRequest(), httpTransaction.httpRequest),
-        Object.assign(new HttpResponse(), httpTransaction.httpResponse),
+        httpRequest,
+        httpResponse,
         httpTransaction.id,
-        httpTransaction.requestValidation,
-        httpTransaction.responseValidation,
+        httpTransaction.requestValidation ?? [],
+        httpTransaction.responseValidation ?? [],
         httpTransaction.containsChainLink,
         httpTransaction.specConflict)
 }

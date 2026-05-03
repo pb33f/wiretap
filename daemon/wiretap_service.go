@@ -24,9 +24,9 @@ import (
 )
 
 const (
-	WiretapServiceChan      = "wiretap"
-	WiretapBroadcastChan    = "wiretap-broadcast"
-	WiretapStaticChangeChan = "wiretap-static-change"
+	WiretapServiceChan      = shared.WiretapServiceChan
+	WiretapBroadcastChan    = shared.WiretapBroadcastChan
+	WiretapStaticChangeChan = shared.WiretapStaticChangeChan
 	IncomingHttpRequest     = "incoming-http-request"
 )
 
