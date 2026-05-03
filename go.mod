@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/json-iterator/go v1.1.12
-	github.com/pb33f/doctor v0.0.61
+	github.com/pb33f/doctor v0.0.62
 	github.com/pb33f/harific v0.0.6
 	github.com/pb33f/libopenapi v0.36.3
 	github.com/pb33f/libopenapi-validator v0.13.7
