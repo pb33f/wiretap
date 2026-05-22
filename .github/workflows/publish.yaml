@@ -103,6 +103,9 @@ jobs:
           images: |
             pb33f/wiretap
             ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ github.event.client_payload.new-tag }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         
@@ -112,4 +115,5 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: pb33f/wiretap:latest, pb33f/wiretap:${{ github.event.client_payload.new-tag }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
