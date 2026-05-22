@@ -58,3 +58,27 @@ jobs:
       - name: Build
         run: npm run build
         working-directory: ui
+
+  docker-build-smoke:
+    name: Docker build smoke test
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs:
+      - build
+      - build-report-ui
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          outputs: type=cacheonly
+          tags: wiretap:ci
