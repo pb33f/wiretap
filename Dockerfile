@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS uibuilder
+FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS uibuilder
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -6,17 +6,16 @@ ARG TARGETARCH
 RUN echo "I am building ui for OS:$TARGETOS, ARCH:$TARGETARCH" > /log
 
 # set up ui build
-RUN mkdir -p /wt_build
-WORKDIR /wt_build
-COPY ui/ ./ui
-RUN npm install yarn
+RUN mkdir -p /wt_build/ui
 WORKDIR /wt_build/ui
+COPY ui/package.json ui/package-lock.json ./
+RUN npm ci
+COPY ui/ ./
 
 # run ui build
-RUN yarn install
-RUN yarn build
+RUN npm run build
 
-FROM golang:1.25-bookworm AS gobuilder
+FROM --platform=$BUILDPLATFORM golang:1.25-bookworm AS gobuilder
 
 ARG TARGETOS
 ARG TARGETARCH

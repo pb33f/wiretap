@@ -2,3 +2,13 @@
 ui/dist
 go.work
 go.work.sum
+.git
+.DS_Store
+.claude
+.idea
+dist
+wiretap
+bin/wiretap
+*.har
+*.jsonl
+har.zip

@@ -37,22 +37,14 @@ brew install pb33f/taps/wiretap
 
 ---
 
-## Installing using npm or yarn
+## Installing using npm
 
-Building a JavaScript / TypeScript application? No problem, grab your copy of `wiretap` using your preference
-of **[yarn](https://yarnpkg.com/)** or **[npm](https://npmjs.com)**.
-
-```shell
-yarn add global @pb33f/wiretap
-```
-
-or...
+Building a JavaScript / TypeScript application? No problem, grab your copy of `wiretap` using
+**[npm](https://npmjs.com)**.
 
 ```shell
-npm -i -g @pb33f/wiretap
+npm install -g @pb33f/wiretap
 ```
-
----
 
 ## Installing using cURL
 
@@ -140,4 +132,3 @@ Full details: [Multi-spec mode](https://pb33f.io/wiretap/multi-spec-mode/).
 - [Serving static content](https://pb33f.io/wiretap/static-content/)
 - [GiftShop example API](https://pb33f.io/wiretap/giftshop-api/)
 - [Contributing](https://pb33f.io/wiretap/contributing/)
-
