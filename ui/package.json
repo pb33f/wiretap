@@ -12,7 +12,7 @@
     "@types/prismjs": "^1.26.0",
     "rollup-plugin-copy": "^3.4.0",
     "typescript": "^5.0.4",
-    "vite": "^8.0.8",
+    "vite": "^8.0.16",
     "vite-plugin-dts": "^4.5.4",
     "vite-tsconfig-paths": "^4.2.0"
   },
