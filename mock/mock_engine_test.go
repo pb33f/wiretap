@@ -15,8 +15,8 @@ import (
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi-validator/helpers"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/pb33f/testify/assert"
+	"github.com/pb33f/testify/require"
 )
 
 var giftshopBytes []byte
@@ -1768,4 +1768,3 @@ func TestMockBypass_NonHardValidation_IsNoOp(t *testing.T) {
 		})
 	}
 }
-

@@ -14,8 +14,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pb33f/ranch/model"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/pb33f/testify/assert"
+	"github.com/pb33f/testify/require"
 )
 
 func TestHandleStaticResponseWritesResponseAndBroadcasts(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/store"
-	"github.com/stretchr/testify/assert"
+	"github.com/pb33f/testify/assert"
 )
 
 func TestNewHARServiceUsesDefaultReplayDelay(t *testing.T) {

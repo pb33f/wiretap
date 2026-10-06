@@ -15,7 +15,7 @@ COPY ui/ ./
 # run ui build
 RUN npm run build
 
-FROM --platform=$BUILDPLATFORM golang:1.25-bookworm AS gobuilder
+FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS gobuilder
 
 ARG TARGETOS
 ARG TARGETARCH

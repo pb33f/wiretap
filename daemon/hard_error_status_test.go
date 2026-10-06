@@ -6,9 +6,9 @@ package daemon
 import (
 	"testing"
 
+	"github.com/pb33f/testify/assert"
 	"github.com/pb33f/wiretap/daemon/problems"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPickHardErrorStatus(t *testing.T) {
