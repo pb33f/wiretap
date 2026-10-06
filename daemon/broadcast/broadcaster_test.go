@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
+	"github.com/pb33f/testify/assert"
+	"github.com/pb33f/testify/require"
 	"github.com/pb33f/wiretap/transaction"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestBroadcasterSendsPreMarshaledTransactionPayload(t *testing.T) {

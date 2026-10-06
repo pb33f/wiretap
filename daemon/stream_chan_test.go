@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pb33f/testify/assert"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/stretchr/testify/assert"
 )
 
 // TestSendToStreamChan_DoesNotBlockWhenFull proves that the sync hard-error

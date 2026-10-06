@@ -18,12 +18,12 @@ import (
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/model"
 	"github.com/pb33f/ranch/store"
+	"github.com/pb33f/testify/assert"
+	"github.com/pb33f/testify/require"
 	"github.com/pb33f/wiretap/daemon/proxy"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/specs"
 	"github.com/pb33f/wiretap/transaction"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestHandleHttpRequestValidatesResponseAgainstPreparedRequestPath(t *testing.T) {

@@ -10,9 +10,9 @@ import (
 
 	"github.com/pb33f/libopenapi"
 	v3 "github.com/pb33f/libopenapi/datamodel/high/v3"
+	"github.com/pb33f/testify/assert"
+	"github.com/pb33f/testify/require"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestValidateHARStreamsFromPath(t *testing.T) {

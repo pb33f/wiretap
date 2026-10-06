@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	validationerrors "github.com/pb33f/libopenapi-validator/errors"
+	"github.com/pb33f/testify/assert"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/stretchr/testify/assert"
 )
 
 func buildSampleErrors(messages ...string) []*shared.WiretapValidationError {

@@ -16,10 +16,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pb33f/libopenapi/orderedmap"
+	"github.com/pb33f/testify/assert"
+	"github.com/pb33f/testify/require"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/pb33f/wiretap/transaction"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestBuildHttpTransactionMultipartLargeForm(t *testing.T) {

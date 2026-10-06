@@ -15,9 +15,9 @@ import (
 	"github.com/google/uuid"
 	validationerrors "github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/ranch/model"
+	"github.com/pb33f/testify/assert"
 	"github.com/pb33f/wiretap/daemon/problems"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestHandlerWritesUpstreamResponse(t *testing.T) {

@@ -13,13 +13,13 @@ import (
 	"path/filepath"
 
 	"github.com/pb33f/doctor/terminal"
+	"github.com/pb33f/go-yaml"
 	"github.com/pb33f/libopenapi"
 	"github.com/pb33f/libopenapi/orderedmap"
 	"github.com/pb33f/wiretap/har"
 	"github.com/pb33f/wiretap/shared"
 	wiretapSpecs "github.com/pb33f/wiretap/specs"
 	"github.com/spf13/cobra"
-	"go.yaml.in/yaml/v4"
 )
 
 var (

@@ -7,11 +7,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/pb33f/testify/assert"
+	"github.com/pb33f/testify/require"
 	"github.com/pb33f/wiretap/shared"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestRunWiretapServiceRejectsInvalidWebSocketPort(t *testing.T) {

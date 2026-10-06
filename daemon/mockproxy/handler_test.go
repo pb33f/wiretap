@@ -14,10 +14,10 @@ import (
 	"github.com/google/uuid"
 	validationerrors "github.com/pb33f/libopenapi-validator/errors"
 	"github.com/pb33f/ranch/model"
+	"github.com/pb33f/testify/assert"
+	"github.com/pb33f/testify/require"
 	"github.com/pb33f/wiretap/daemon/problems"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestHandlerWritesMockResponse(t *testing.T) {

@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/pb33f/go-yaml"
+	"github.com/pb33f/testify/assert"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/stretchr/testify/assert"
-	"go.yaml.in/yaml/v4"
 )
 
 func TestIsHardErrorsSet(t *testing.T) {

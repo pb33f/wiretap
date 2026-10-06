@@ -8,8 +8,8 @@ import (
 
 	"github.com/pb33f/ranch/bus"
 	"github.com/pb33f/ranch/store"
+	"github.com/pb33f/testify/assert"
 	"github.com/pb33f/wiretap/shared"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestResetRuntimeStateClearsTransactionAndHARState(t *testing.T) {
