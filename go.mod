@@ -12,7 +12,7 @@ require (
 	github.com/pb33f/doctor v0.0.82-0.20260928215936-a5a9b7e66598
 	github.com/pb33f/go-yaml v0.1.1
 	github.com/pb33f/harific v0.0.6
-	github.com/pb33f/libopenapi v0.41.2
+	github.com/pb33f/libopenapi v0.41.4
 	github.com/pb33f/libopenapi-validator v0.15.0
 	github.com/pb33f/ranch v0.9.0
 	github.com/pb33f/testify v0.1.1
