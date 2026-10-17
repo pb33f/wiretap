@@ -10,10 +10,8 @@
     "@rollup/plugin-typescript": "^11.1.1",
     "@types/node": "^20.2.1",
     "@types/prismjs": "^1.26.0",
-    "rollup-plugin-copy": "^3.4.0",
     "typescript": "^5.0.4",
     "vite": "^8.0.8",
-    "vite-plugin-dts": "^4.5.4",
     "vite-tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
@@ -24,20 +22,19 @@
     "@stomp/stompjs": "^7.0.0",
     "lit": "^3.1.1",
     "localforage": "^1.10.0",
-    "moment": "^2.29.4",
+    "moment": "^2.31.0",
     "monaco-editor": "^0.38.0",
-    "prismjs": "^1.29.0"
+    "prismjs": "^1.29.0",
+    "dompurify": "3.4.17"
   },
   "overrides": {
-    "postcss": "8.5.10",
+    "postcss": "8.5.30",
     "semver": ">=7.5.2",
-    "nanoid": ">=3.3.8",
     "esbuild": ">=0.25.0",
-    "mermaid": "11.15.0",
-    "fast-uri": "3.1.2",
-    "minimatch@10.2.3": {
-      "brace-expansion": "5.0.6"
-    }
+    "mermaid": "11.17.2",
+    "fast-uri": "3.1.7",
+    "dompurify": "$dompurify",
+    "katex": "0.18.2"
   },
   "scripts": {
     "start": "vite",
