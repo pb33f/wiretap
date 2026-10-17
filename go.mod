@@ -9,11 +9,11 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/json-iterator/go v1.1.12
-	github.com/pb33f/doctor v0.0.82-0.20260928215936-a5a9b7e66598
+	github.com/pb33f/doctor v0.0.83
 	github.com/pb33f/go-yaml v0.1.1
 	github.com/pb33f/harific v0.0.6
-	github.com/pb33f/libopenapi v0.41.4
-	github.com/pb33f/libopenapi-validator v0.15.0
+	github.com/pb33f/libopenapi v0.41.6
+	github.com/pb33f/libopenapi-validator v0.16.1
 	github.com/pb33f/ranch v0.9.0
 	github.com/pb33f/testify v0.1.1
 	github.com/spf13/cobra v1.10.2
@@ -23,7 +23,7 @@ require (
 require (
 	charm.land/bubbles/v2 v2.1.0 // indirect
 	charm.land/bubbletea/v2 v2.0.7 // indirect
-	github.com/Masterminds/semver/v3 v3.2.1 // indirect
+	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/a-h/templ v0.3.1020 // indirect
 	github.com/alecthomas/chroma/v2 v2.27.0 // indirect
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
@@ -31,7 +31,8 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
-	github.com/pb33f/libasyncapi v0.0.3-0.20260928174225-e79f2595d641 // indirect
+	github.com/pb33f/jsonschema/v6 v6.0.3 // indirect
+	github.com/pb33f/libasyncapi v0.0.4 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/yuin/goldmark v1.8.2 // indirect
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc // indirect
@@ -45,7 +46,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.4 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/basgys/goxml2json v1.1.1-0.20231018121955-e66ee54ceaad // indirect
-	github.com/buger/jsonparser v1.1.2 // indirect
+	github.com/buger/jsonparser v1.6.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20260525132238-948f4557a654 // indirect
@@ -58,8 +59,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0
-	github.com/go-openapi/jsonpointer v0.23.2 // indirect
-	github.com/go-openapi/swag/jsonname v0.26.1 // indirect
+	github.com/go-openapi/jsonpointer v1.0.2 // indirect
 	github.com/go-stomp/stomp/v3 v3.1.3 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
@@ -76,7 +76,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
-	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
@@ -86,8 +85,8 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.38.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
