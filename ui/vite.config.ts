@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
-import copy from 'rollup-plugin-copy';
+import { cp } from 'node:fs/promises';
 //import typescript from "@rollup/plugin-typescript";
 import * as path from "path"
 
@@ -14,6 +14,13 @@ const paths = {
 const vitePath = `${paths[mode]}`
 
 export default defineConfig({
+    resolve: {
+        alias: [{
+            // Monaco 0.38 imports this vendored module through relative paths.
+            find: /^(?:\.{1,2}\/)+dompurify\/dompurify\.js$/,
+            replacement: path.resolve(__dirname, 'src/monaco-sanitizer.ts'),
+        }],
+    },
     plugins: [tsconfigPaths()],
     build: {
         minify: true,
@@ -26,16 +33,16 @@ export default defineConfig({
                 // "lit/decorators.js",
             ],
 
-            plugins: [copy({
-                    targets: [
-                        {
-                            src: path.resolve(__dirname, 'node_modules/@shoelace-style/shoelace/dist/assets'),
-                            dest: path.resolve(__dirname, vitePath)
-                        }
-                    ],
-                hook: 'writeBundle',
-                }),
-            ],
+            plugins: [{
+                name: 'copy-shoelace-assets',
+                async writeBundle() {
+                    await cp(
+                        path.resolve(__dirname, 'node_modules/@shoelace-style/shoelace/dist/assets'),
+                        path.resolve(__dirname, vitePath, 'assets'),
+                        { recursive: true },
+                    );
+                },
+            }],
         }
     }
 })
