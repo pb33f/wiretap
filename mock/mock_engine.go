@@ -26,6 +26,7 @@ type ResponseMockEngine struct {
 	doc              *v3.Document
 	validator        validation.HttpValidator
 	mockEngine       *renderer.MockGenerator
+	mockMu           sync.Mutex // protects the renderer's shared random generator
 	pretty           bool
 	validationOpts   *config.ValidationOptions
 	hardValidation   bool // when true, reject requests with validation errors
@@ -297,6 +298,12 @@ func (rme *ResponseMockEngine) extractPreferred(request *http.Request) string {
 	return request.Header.Get(helpers.Preferred)
 }
 
+func (rme *ResponseMockEngine) generateMock(mediaType *v3.MediaType, preferred string) ([]byte, error) {
+	rme.mockMu.Lock()
+	defer rme.mockMu.Unlock()
+	return rme.mockEngine.GenerateMock(mediaType, preferred)
+}
+
 func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, error) {
 
 	// get path, not valid? return 404
@@ -320,7 +327,7 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 	if err != nil {
 		mt, _ := rme.findBestMediaTypeMatch(operation, request, []string{"401"})
 		if mt != nil {
-			mock, mockErr := rme.mockEngine.GenerateMock(mt, rme.extractPreferred(request))
+			mock, mockErr := rme.generateMock(mt, rme.extractPreferred(request))
 			if mockErr != nil {
 				return rme.buildError(
 					500,
@@ -404,7 +411,7 @@ func (rme *ResponseMockEngine) runWorkflow(request *http.Request) ([]byte, int, 
 		), 415, nil
 	}
 
-	mock, mockErr := rme.mockEngine.GenerateMock(mt, preferred)
+	mock, mockErr := rme.generateMock(mt, preferred)
 	if mockErr != nil {
 		return rme.buildError(
 			422,
