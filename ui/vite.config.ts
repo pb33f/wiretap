@@ -1,7 +1,5 @@
 import { defineConfig } from 'vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
 import { cp } from 'node:fs/promises';
-//import typescript from "@rollup/plugin-typescript";
 import * as path from "path"
 
 
@@ -15,13 +13,17 @@ const vitePath = `${paths[mode]}`
 
 export default defineConfig({
     resolve: {
+        tsconfigPaths: true,
         alias: [{
-            // Monaco 0.38 imports this vendored module through relative paths.
+            // Monaco no longer exports its aggregate stylesheet.
+            find: 'monaco-editor/min/vs/editor/editor.main.css?inline',
+            replacement: path.resolve(__dirname, 'node_modules/monaco-editor/min/vs/editor/editor.main.css') + '?inline',
+        }, {
+            // Monaco imports its vendored sanitizer through relative paths.
             find: /^(?:\.{1,2}\/)+dompurify\/dompurify\.js$/,
             replacement: path.resolve(__dirname, 'src/monaco-sanitizer.ts'),
         }],
     },
-    plugins: [tsconfigPaths()],
     build: {
         minify: true,
         cssCodeSplit: false,

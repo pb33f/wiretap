@@ -7,10 +7,10 @@ import * as monaco from "monaco-editor";
 // @ts-ignore
 import styles from "monaco-editor/min/vs/editor/editor.main.css?inline";
 // @ts-ignore
-import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+import editorWorker from "monaco-editor/editor/editor.worker.js?worker";
 
 // @ts-ignore
-import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
+import jsonWorker from "monaco-editor/language/json/json.worker.js?worker";
 
 
 // @ts-ignore
