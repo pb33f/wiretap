@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM node:22-bookworm-slim AS uibuilder
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS uibuilder
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -15,7 +15,7 @@ COPY ui/ ./
 # run ui build
 RUN npm run build
 
-FROM --platform=$BUILDPLATFORM golang:1.26-bookworm AS gobuilder
+FROM --platform=$BUILDPLATFORM golang:1.27.3-bookworm AS gobuilder
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -32,7 +32,7 @@ RUN echo "I am building go for GOOS:$TARGETOS, GOARCH:$TARGETARCH" > /log
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go mod download && go mod verify
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-w -s" -v -o /wiretap wiretap.go
 
-FROM alpine:3.20.3 AS runner
+FROM alpine:3.24.3 AS runner
 
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
