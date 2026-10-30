@@ -14,7 +14,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/pb33f/doctor v0.0.84
 	github.com/pb33f/go-yaml v0.1.1
-	github.com/pb33f/harific v0.0.6
+	github.com/pb33f/harific v0.0.7-0.20261021212734-e3736d6b7824
 	github.com/pb33f/libopenapi v0.41.6
 	github.com/pb33f/libopenapi-validator v0.16.1
 	github.com/pb33f/ranch v0.9.0
