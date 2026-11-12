@@ -25,7 +25,7 @@
   "dependencies": {
     "https-proxy-agent": "^9.1.0",
     "node-fetch": "^3.3.2",
-    "tar": "^7.5.22"
+    "tar": "^7.5.23"
   },
   "bugs": {
     "url": "https://github.com/pb33f/wiretap/issues"
