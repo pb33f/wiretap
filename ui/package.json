@@ -10,7 +10,7 @@
     "@types/node": "^24.19.2",
     "@types/prismjs": "^1.26.6",
     "typescript": "^7.0.2",
-    "vite": "^8.3.5"
+    "vite": "^8.3.8"
   },
   "dependencies": {
     "@pb33f/cowboy-components": "0.15.7",
@@ -26,13 +26,13 @@
     "dompurify": "3.4.17"
   },
   "overrides": {
-    "postcss": "8.5.31",
+    "postcss": "8.5.32",
     "semver": ">=7.5.2",
     "esbuild": ">=0.25.0",
     "mermaid": "11.17.2",
     "fast-uri": "3.1.9",
     "dompurify": "$dompurify",
-    "katex": "0.18.2"
+    "katex": "0.18.10"
   },
   "scripts": {
     "start": "vite",
